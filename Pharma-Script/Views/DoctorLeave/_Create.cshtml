@@ -1,0 +1,31 @@
+@model Pharma_Script.ViewModels.Doctor.DoctorLeaveViewModel
+
+<form asp-action="Create" asp-controller="DoctorLeave" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DoctorID" />
+
+    <div class="row g-3">
+        <div class="col-12 col-md-6">
+            <label asp-for="LeaveStartDate" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="LeaveStartDate" class="form-control" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            <span asp-validation-for="LeaveStartDate" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="LeaveEndDate" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="LeaveEndDate" class="form-control" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+            <span asp-validation-for="LeaveEndDate" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="Reason" class="form-label small fw-semibold text-secondary"></label>
+            <textarea asp-for="Reason" class="form-control" rows="3" placeholder="Enter reason (e.g. Personal emergency, Conference, Medical Leave)..."></textarea>
+            <span asp-validation-for="Reason" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Apply Leave</button>
+    </div>
+</form>

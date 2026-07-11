@@ -1,0 +1,47 @@
+@model Pharma_Script.ViewModels.Department.DepartmentViewModel
+@using Pharma_Script.Helpers
+
+<form asp-action="Create" asp-controller="Departments" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-3">
+        @if (User.IsPlatformOwner())
+        {
+            <div class="col-12">
+                <label asp-for="OrganizationID" class="form-label small fw-semibold text-secondary"></label>
+                <select asp-for="OrganizationID" class="form-select" asp-items="ViewBag.Organizations">
+                    <option value="">-- Choose Organization --</option>
+                </select>
+                <span asp-validation-for="OrganizationID" class="text-danger small" style="font-size: 0.75rem;"></span>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="OrganizationID" value="@User.GetOrganizationId()" />
+        }
+
+        <div class="col-12">
+            <label asp-for="DepartmentName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="DepartmentName" class="form-control" placeholder="Pediatrics" />
+            <span asp-validation-for="DepartmentName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="Description" class="form-label small fw-semibold text-secondary"></label>
+            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Pediatrics medical services, infant care, and immunization programs..."></textarea>
+            <span asp-validation-for="Description" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <div class="form-check mb-1">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Status</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Department</button>
+    </div>
+</form>

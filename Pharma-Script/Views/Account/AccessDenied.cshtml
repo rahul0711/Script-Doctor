@@ -1,0 +1,21 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="text-center p-5 bg-white rounded-3 border shadow-sm" style="max-width: 450px; border-radius: 12px !important;">
+        <div class="mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-danger-subtle rounded-circle" style="width: 72px; height: 72px;">
+                <i class="bi bi-shield-slash-fill text-danger fs-1"></i>
+            </div>
+        </div>
+        <h4 class="fw-bold text-dark mb-2" style="letter-spacing: -0.3px;">Access Denied</h4>
+        <p class="text-secondary small mb-4">
+            Your current account permissions do not authorize access to this page. Please switch accounts or contact your platform administrator.
+        </p>
+        <a href="@Url.Action("Index", "Dashboard")" class="btn btn-primary px-4 py-2 fw-semibold">
+            Back to Dashboard
+        </a>
+    </div>
+</div>

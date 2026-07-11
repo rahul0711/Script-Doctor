@@ -1,0 +1,110 @@
+@model Pharma_Script.ViewModels.Organization.OrganizationViewModel
+
+<form asp-action="Edit" asp-controller="Organizations" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="OrganizationID" />
+
+    <div class="row g-3">
+        <div class="col-12 col-md-6">
+            <label asp-for="OrganizationName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="OrganizationName" class="form-control" />
+            <span asp-validation-for="OrganizationName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="OrganizationSlug" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="OrganizationSlug" class="form-control" />
+            <span class="form-text small">Public website: /@Model.OrganizationSlug</span>
+            <span asp-validation-for="OrganizationSlug" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="OrganizationType" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="OrganizationType" class="form-select">
+                <option value="Clinic">Clinic</option>
+                <option value="Hospital">Hospital</option>
+                <option value="Dental Clinic">Dental Clinic</option>
+                <option value="Diagnostic Center">Diagnostic Center</option>
+            </select>
+            <span asp-validation-for="OrganizationType" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Email" class="form-control" />
+            <span asp-validation-for="Email" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Phone" class="form-control" />
+            <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="AlternatePhone" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="AlternatePhone" class="form-control" />
+            <span asp-validation-for="AlternatePhone" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="GSTNumber" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="GSTNumber" class="form-control" />
+            <span asp-validation-for="GSTNumber" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="LicenseNumber" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="LicenseNumber" class="form-control" />
+            <span asp-validation-for="LicenseNumber" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 d-flex align-items-end">
+            <div class="form-check mb-2">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Status</label>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="AddressLine1" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="AddressLine1" class="form-control" />
+            <span asp-validation-for="AddressLine1" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="AddressLine2" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="AddressLine2" class="form-control" />
+            <span asp-validation-for="AddressLine2" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="City" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="City" class="form-control" />
+            <span asp-validation-for="City" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="State" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="State" class="form-control" />
+            <span asp-validation-for="State" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="Country" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Country" class="form-control" />
+            <span asp-validation-for="Country" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="Pincode" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Pincode" class="form-control" />
+            <span asp-validation-for="Pincode" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Settings</button>
+    </div>
+</form>

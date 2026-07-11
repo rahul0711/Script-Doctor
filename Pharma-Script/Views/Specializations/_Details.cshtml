@@ -1,0 +1,40 @@
+@model Pharma_Script.Models.Specialization
+
+<div class="container-fluid px-0">
+    <div class="row g-4">
+        <!-- Header -->
+        <div class="col-12 d-flex align-items-center gap-3 pb-3 border-bottom mb-2">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle" style="width: 56px; height: 56px;">
+                <i class="bi bi-stethoscope fs-3"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-dark mb-0">@Model.SpecializationName</h5>
+                <span class="badge bg-light text-secondary border px-2.5 py-1 small">Doctor Specialization</span>
+                @if (Model.IsActive)
+                {
+                    <span class="badge-active ms-1.5">Active Category</span>
+                }
+                else
+                {
+                    <span class="badge-inactive ms-1.5">Inactive Category</span>
+                }
+            </div>
+        </div>
+
+        <!-- Details -->
+        <div class="col-12">
+            <div class="d-flex flex-column gap-3">
+                <div>
+                    <small class="text-muted d-block mb-1" style="font-size: 0.75rem;">Specialization Category Description</small>
+                    <div class="p-3 bg-light rounded-3 text-secondary small border" style="line-height: 1.5;">
+                        @(string.IsNullOrEmpty(Model.Description) ? "No description provided for this specialization category." : Model.Description)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+    </div>
+</div>

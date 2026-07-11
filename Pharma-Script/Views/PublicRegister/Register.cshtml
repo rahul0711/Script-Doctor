@@ -1,0 +1,81 @@
+@model Pharma_Script.ViewModels.Public.PublicPatientRegisterViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var slug = ((Pharma_Script.Models.PublicTenant)ViewData["Tenant"]!).Organization.OrganizationSlug;
+}
+
+<section class="pub-section" style="min-height:70vh;">
+    <div class="container" style="max-width:520px;">
+        <div class="text-center mb-4">
+            <span class="pub-eyebrow">New Patient</span>
+            <h2 class="pub-heading mt-2">Create Your Account</h2>
+            <p class="pub-subheading mx-auto">Register once to book and manage appointments with our doctors.</p>
+        </div>
+
+        <div class="pub-service-card">
+            <form asp-action="Register" method="post" asp-route-returnUrl="@returnUrl">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label asp-for="FirstName" class="form-label small fw-semibold text-secondary"></label>
+                        <input asp-for="FirstName" class="form-control" />
+                        <span asp-validation-for="FirstName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="LastName" class="form-label small fw-semibold text-secondary"></label>
+                        <input asp-for="LastName" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+                        <input asp-for="Email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
+                        <input asp-for="Phone" class="form-control" />
+                        <span asp-validation-for="Phone" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="DateOfBirth" class="form-label small fw-semibold text-secondary"></label>
+                        <input asp-for="DateOfBirth" class="form-control" />
+                        <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Gender" class="form-label small fw-semibold text-secondary"></label>
+                        <select asp-for="Gender" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Password" class="form-label small fw-semibold text-secondary"></label>
+                        <input asp-for="Password" type="password" class="form-control" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label asp-for="ConfirmPassword" class="form-label small fw-semibold text-secondary"></label>
+                        <input asp-for="ConfirmPassword" type="password" class="form-control" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <button type="submit" class="pub-btn-cta w-100 mt-4 py-2">Create Account</button>
+
+                <div class="text-center mt-3 small">
+                    Already have an account?
+                    <a href="/Account/Login?returnUrl=@Uri.EscapeDataString(returnUrl ?? $"/{slug}")">Sign in</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

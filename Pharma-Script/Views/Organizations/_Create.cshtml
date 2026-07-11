@@ -1,0 +1,110 @@
+@model Pharma_Script.ViewModels.Organization.OrganizationViewModel
+
+<form asp-action="Create" asp-controller="Organizations" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-3">
+        <div class="col-12 col-md-6">
+            <label asp-for="OrganizationName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="OrganizationName" class="form-control" placeholder="Max Healthcare" />
+            <span asp-validation-for="OrganizationName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="OrganizationSlug" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="OrganizationSlug" class="form-control" placeholder="Auto-generated from name if left blank" />
+            <span class="form-text small">Public website: /<span id="slugPreview">your-org-slug</span></span>
+            <span asp-validation-for="OrganizationSlug" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="OrganizationType" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="OrganizationType" class="form-select">
+                <option value="">-- Choose Type --</option>
+                <option value="Clinic">Clinic</option>
+                <option value="Hospital">Hospital</option>
+                <option value="Dental Clinic">Dental Clinic</option>
+                <option value="Diagnostic Center">Diagnostic Center</option>
+            </select>
+            <span asp-validation-for="OrganizationType" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Email" class="form-control" placeholder="contact@maxhealthcare.com" />
+            <span asp-validation-for="Email" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Phone" class="form-control" placeholder="+91 9876543210" />
+            <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="AlternatePhone" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="AlternatePhone" class="form-control" placeholder="+91 1122334455 (Optional)" />
+            <span asp-validation-for="AlternatePhone" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="GSTNumber" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="GSTNumber" class="form-control" placeholder="07AAAAA1111A1Z1 (Optional)" />
+            <span asp-validation-for="GSTNumber" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="LicenseNumber" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="LicenseNumber" class="form-control" placeholder="L-12345/2026 (Optional)" />
+            <span asp-validation-for="LicenseNumber" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 d-flex align-items-end">
+            <div class="form-check mb-2">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Status</label>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="AddressLine1" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="AddressLine1" class="form-control" placeholder="Building, Street, Area" />
+            <span asp-validation-for="AddressLine1" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="AddressLine2" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="AddressLine2" class="form-control" placeholder="Landmark, Locality (Optional)" />
+            <span asp-validation-for="AddressLine2" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="City" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="City" class="form-control" placeholder="New Delhi" />
+            <span asp-validation-for="City" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="State" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="State" class="form-control" placeholder="Delhi" />
+            <span asp-validation-for="State" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="Country" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Country" class="form-control" placeholder="India" />
+            <span asp-validation-for="Country" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <label asp-for="Pincode" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Pincode" class="form-control" placeholder="110001" />
+            <span asp-validation-for="Pincode" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Organization</button>
+    </div>
+</form>

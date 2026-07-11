@@ -1,0 +1,222 @@
+@model Pharma_Script.ViewModels.Doctor.DoctorViewModel
+@using Pharma_Script.Helpers
+
+<form asp-action="Create" asp-controller="Doctors" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-3">
+        <h6 class="text-primary border-bottom pb-2 mb-2"><i class="bi bi-person-badge me-2"></i>Account & Identity</h6>
+
+        @if (User.IsPlatformOwner())
+        {
+            <div class="col-12 col-md-6">
+                <label asp-for="OrganizationID" class="form-label small fw-semibold text-secondary"></label>
+                <select asp-for="OrganizationID" class="form-select" id="ddlOrg" asp-items="@ViewBag.Organizations" required>
+                    <option value="">-- Choose Organization --</option>
+                </select>
+                <span asp-validation-for="OrganizationID" class="text-danger small" style="font-size: 0.75rem;"></span>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="OrganizationID" value="@User.GetOrganizationId()" />
+        }
+
+        <div class="col-12 col-md-6">
+            <label asp-for="FirstName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="FirstName" class="form-control" placeholder="Dr. Rajesh" required />
+            <span asp-validation-for="FirstName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="LastName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="LastName" class="form-control" placeholder="Sharma" />
+            <span asp-validation-for="LastName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Email" class="form-control" type="email" placeholder="rajesh@scriptindia.com" required />
+            <span asp-validation-for="Email" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Phone" class="form-control" placeholder="+91 9988776655" required />
+            <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Password" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Password" class="form-control" type="password" placeholder="••••••••" required />
+            <span asp-validation-for="Password" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="ConfirmPassword" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="ConfirmPassword" class="form-control" type="password" placeholder="••••••••" required />
+            <span asp-validation-for="ConfirmPassword" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <h6 class="text-primary border-bottom pb-2 mb-2 mt-4"><i class="bi bi-file-medical me-2"></i>Professional Info</h6>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="BranchID" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="BranchID" class="form-select" id="ddlBranch" asp-items="@ViewBag.Branches">
+                <option value="">-- Choose Branch (Optional) --</option>
+            </select>
+            <span asp-validation-for="BranchID" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="DepartmentID" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="DepartmentID" class="form-select" id="ddlDept" asp-items="@ViewBag.Departments">
+                <option value="">-- Choose Department (Optional) --</option>
+            </select>
+            <span asp-validation-for="DepartmentID" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Qualification" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Qualification" class="form-control" placeholder="MBBS, MD (Cardiology)" required />
+            <span asp-validation-for="Qualification" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="ExperienceYears" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="ExperienceYears" class="form-control" type="number" min="0" placeholder="10" required />
+            <span asp-validation-for="ExperienceYears" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="MedicalRegistrationNumber" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="MedicalRegistrationNumber" class="form-control" placeholder="MCI-12345" required />
+            <span asp-validation-for="MedicalRegistrationNumber" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="ConsultationFee" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="ConsultationFee" class="form-control" type="number" step="0.01" min="0" placeholder="500.00" required />
+            <span asp-validation-for="ConsultationFee" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="VideoConsultationFee" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="VideoConsultationFee" class="form-control" type="number" step="0.01" min="0" placeholder="600.00" required />
+            <span asp-validation-for="VideoConsultationFee" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="VoiceConsultationFee" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="VoiceConsultationFee" class="form-control" type="number" step="0.01" min="0" placeholder="400.00" required />
+            <span asp-validation-for="VoiceConsultationFee" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="PriorityConsultationFee" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="PriorityConsultationFee" class="form-control" type="number" step="0.01" min="0" placeholder="1000.00" required />
+            <span asp-validation-for="PriorityConsultationFee" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="Biography" class="form-label small fw-semibold text-secondary"></label>
+            <textarea asp-for="Biography" class="form-control" rows="3" placeholder="Brief professional description..."></textarea>
+            <span asp-validation-for="Biography" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <h6 class="text-primary border-bottom pb-2 mb-2 mt-4"><i class="bi bi-stethoscope me-2"></i>Specializations</h6>
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2 py-1">
+                @if (ViewBag.Specializations != null)
+                {
+                    foreach (var spec in (IEnumerable<Pharma_Script.Models.Specialization>)ViewBag.Specializations)
+                    {
+                        <div>
+                            <input type="checkbox" class="btn-check" id="spec_@spec.SpecializationID" name="SpecializationIDs" value="@spec.SpecializationID" autocomplete="off" />
+                            <label class="btn btn-outline-primary btn-sm rounded-pill px-3" for="spec_@spec.SpecializationID">@spec.SpecializationName</label>
+                        </div>
+                    }
+                }
+            </div>
+            <span asp-validation-for="SpecializationIDs" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <h6 class="text-primary border-bottom pb-2 mb-2 mt-4"><i class="bi bi-clock me-2"></i>Priority Availability Settings</h6>
+        <div class="col-12">
+            <div class="form-check form-switch mb-3">
+                <input asp-for="IsPriorityAvailable" class="form-check-input" type="checkbox" id="chkPriority" />
+                <label asp-for="IsPriorityAvailable" class="form-check-label small fw-semibold text-secondary">Enable Priority Consultation Availability</label>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 priority-fields" style="display:none;">
+            <label asp-for="PriorityStartTime" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="PriorityStartTime" class="form-control" type="datetime-local" />
+            <span asp-validation-for="PriorityStartTime" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6 priority-fields" style="display:none;">
+            <label asp-for="PriorityEndTime" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="PriorityEndTime" class="form-control" type="datetime-local" />
+            <span asp-validation-for="PriorityEndTime" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 mt-3">
+            <div class="form-check mb-1">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Status</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Doctor Profile</button>
+    </div>
+</form>
+
+<script>
+    $(document).ready(function () {
+        // Toggle Priority availability fields
+        $('#chkPriority').on('change', function () {
+            if ($(this).is(':checked')) {
+                $('.priority-fields').slideDown(200);
+            } else {
+                $('.priority-fields').slideUp(200);
+                $('.priority-fields input').val('');
+            }
+        });
+
+        @if (User.IsPlatformOwner())
+        {
+            <text>
+            // Dynamic Dropdowns for Platform Owner
+            $('#ddlOrg').on('change', function () {
+                var orgId = $(this).val();
+                var ddlBranch = $('#ddlBranch');
+                var ddlDept = $('#ddlDept');
+
+                ddlBranch.empty().append('<option value="">-- Choose Branch --</option>');
+                ddlDept.empty().append('<option value="">-- Choose Department --</option>');
+
+                if (!orgId) return;
+
+                $.get('@Url.Action("GetBranchesAndDepartments", "Doctors")?orgId=' + orgId, function (res) {
+                    $.each(res.branches, function (i, item) {
+                        var opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.text = item.name;
+                        ddlBranch.append(opt);
+                    });
+                    $.each(res.departments, function (i, item) {
+                        var opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.text = item.name;
+                        ddlDept.append(opt);
+                    });
+                });
+            });
+            </text>
+        }
+    });
+</script>

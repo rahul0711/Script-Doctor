@@ -1,0 +1,21 @@
+@model Pharma_Script.Models.ContactMessage
+
+<dl class="row mb-0">
+    <dt class="col-4 text-muted small">Name</dt>
+    <dd class="col-8">@Model.Name</dd>
+
+    <dt class="col-4 text-muted small">Email</dt>
+    <dd class="col-8">@(Model.Email ?? "&mdash;")</dd>
+
+    <dt class="col-4 text-muted small">Phone</dt>
+    <dd class="col-8">@(Model.Phone ?? "&mdash;")</dd>
+
+    <dt class="col-4 text-muted small">Subject</dt>
+    <dd class="col-8">@(Model.Subject ?? "&mdash;")</dd>
+
+    <dt class="col-4 text-muted small">Received</dt>
+    <dd class="col-8">@Model.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</dd>
+
+    <dt class="col-4 text-muted small">Message</dt>
+    <dd class="col-8" style="white-space: pre-wrap;">@Model.Message</dd>
+</dl>

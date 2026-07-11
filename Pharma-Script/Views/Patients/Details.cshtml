@@ -1,0 +1,749 @@
+@model Pharma_Script.Models.Patient
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = $"Patient EHR — {Model.FirstName} {Model.LastName}";
+
+    var history = (Pharma_Script.Models.PatientMedicalHistory)ViewBag.MedicalHistory;
+    var latestVitals = (Pharma_Script.Models.PatientVitals)ViewBag.LatestVitals;
+    var vitalsHistory = (IEnumerable<Pharma_Script.Models.PatientVitals>)ViewBag.VitalsHistory;
+    var documents = (IEnumerable<Pharma_Script.Models.MedicalDocument>)ViewBag.Documents;
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Electronic Health Record (EHR)</h4>
+        <p class="text-muted small mb-0 font-medium">Patient: @Model.FirstName @Model.LastName — ID: @Model.PatientID</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index")" class="btn btn-light fw-medium px-3.5 py-2">
+            <i class="bi bi-arrow-left me-1.5"></i>Back to Registry
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Sidebar: Patient Summary Card -->
+    <div class="col-12 col-lg-3">
+        <div class="card border shadow-sm">
+            <div class="card-body p-4 text-center">
+                <div class="rounded-circle bg-light text-primary d-inline-flex align-items-center justify-content-center border mb-3" style="width: 90px; height: 90px; font-size: 2.25rem; font-weight: bold;">
+                    @Model.FirstName[0]
+                </div>
+                <h5 class="mb-1 text-dark fw-bold">@Model.FirstName @Model.LastName</h5>
+                <div class="text-muted small mb-3">DOB: @Model.DateOfBirth.ToString("dd MMM yyyy")</div>
+                <span class="badge bg-@(Model.IsActive ? "success-subtle text-success" : "danger-subtle text-danger") border rounded-pill px-3 py-1.5 font-semibold">
+                    @(Model.IsActive ? "Active" : "Deactivated")
+                </span>
+                
+                <hr class="my-4" />
+
+                <div class="text-start">
+                    <div class="mb-3">
+                        <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.65rem;">Gender</small>
+                        <span class="small fw-semibold text-dark">@Model.Gender</span>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.65rem;">Blood Group</small>
+                        <span class="small fw-semibold text-dark">@(string.IsNullOrEmpty(Model.BloodGroup) ? "Unknown" : Model.BloodGroup)</span>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.65rem;">Contact Info</small>
+                        <span class="small fw-semibold text-dark d-block mb-1"><i class="bi bi-telephone text-muted me-1.5"></i>@Model.Phone</span>
+                        <span class="small fw-semibold text-dark d-block text-truncate" title="@Model.Email"><i class="bi bi-envelope text-muted me-1.5"></i>@Model.Email</span>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.65rem;">Emergency Contact</small>
+                        <span class="small fw-semibold text-dark d-block">@(Model.EmergencyContactName ?? "N/A")</span>
+                        <span class="small text-secondary">@(Model.EmergencyContactNumber)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Content: Medical Record Tabs -->
+    <div class="col-12 col-lg-9">
+        <div class="card border shadow-sm">
+            <div class="card-header bg-white p-0 border-bottom">
+                <ul class="nav nav-tabs border-0 px-3 mt-2" id="emrTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-medium px-3.5 py-2.5" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary-pane" type="button" role="tab" aria-controls="summary-pane" aria-selected="true">
+                            <i class="bi bi-info-circle me-2"></i>Profile Summary
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-medium px-3.5 py-2.5" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab" aria-controls="history-pane" aria-selected="false">
+                            <i class="bi bi-file-medical me-2"></i>Medical History
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-medium px-3.5 py-2.5" id="vitals-tab" data-bs-toggle="tab" data-bs-target="#vitals-pane" type="button" role="tab" aria-controls="vitals-pane" aria-selected="false">
+                            <i class="bi bi-heart-pulse me-2"></i>Vitals Log
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-medium px-3.5 py-2.5" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents-pane" type="button" role="tab" aria-controls="documents-pane" aria-selected="false">
+                            <i class="bi bi-file-earmark-arrow-up me-2"></i>Documents
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body p-4 tab-content" id="emrTabContent">
+                <!-- 1. Profile Summary Tab -->
+                <div class="tab-pane fade show active" id="summary-pane" role="tabpanel" aria-labelledby="summary-tab" tabindex="0">
+                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Location Details</h6>
+                    <div class="row g-3 p-3 bg-light rounded border mb-4">
+                        <div class="col-12">
+                            <small class="text-muted d-block">Street Address</small>
+                            <span class="text-dark fw-medium small">@(Model.Address ?? "No address details available.")</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">City</small>
+                            <span class="text-dark fw-medium small">@(Model.City ?? "N/A")</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">State</small>
+                            <span class="text-dark fw-medium small">@(Model.State ?? "N/A")</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">Country</small>
+                            <span class="text-dark fw-medium small">@(Model.Country ?? "N/A")</span>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted d-block">Pincode</small>
+                            <span class="text-dark fw-medium small">@(Model.Pincode ?? "N/A")</span>
+                        </div>
+                    </div>
+
+                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-card-checklist me-2"></i>System Information</h6>
+                    <div class="row g-3 p-3 bg-light rounded border">
+                        <div class="col-6 col-md-4">
+                            <small class="text-muted d-block">Assigned Branch</small>
+                            <span class="text-dark fw-medium small">@(Model.BranchName ?? "All Branches")</span>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <small class="text-muted d-block">Organization Name</small>
+                            <span class="text-dark fw-medium small">@(Model.OrganizationName ?? "N/A")</span>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <small class="text-muted d-block">Record Registered</small>
+                            <span class="text-dark fw-medium small">@Model.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Medical History Tab -->
+                <div class="tab-pane fade" id="history-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+                    <form id="frmMedicalHistory" asp-action="SaveMedicalHistory" asp-controller="Patients" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="MedicalHistoryID" value="@history.MedicalHistoryID" />
+                        <input type="hidden" name="PatientID" value="@Model.PatientID" />
+
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-activity me-2"></i>Chronic Medical Conditions</h6>
+                        <div class="row g-2 p-3 bg-light rounded border mb-4">
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check form-switch p-2 bg-white rounded border d-flex justify-content-between align-items-center">
+                                    <label class="form-check-label small fw-semibold text-secondary ms-2" for="chkDiabetes">Diabetes</label>
+                                    <input class="form-check-input me-2" type="checkbox" id="chkDiabetes" name="Diabetes" value="true" @(history.Diabetes ? "checked" : "") />
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check form-switch p-2 bg-white rounded border d-flex justify-content-between align-items-center">
+                                    <label class="form-check-label small fw-semibold text-secondary ms-2" for="chkBP">High Blood Pressure</label>
+                                    <input class="form-check-input me-2" type="checkbox" id="chkBP" name="BloodPressure" value="true" @(history.BloodPressure ? "checked" : "") />
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check form-switch p-2 bg-white rounded border d-flex justify-content-between align-items-center">
+                                    <label class="form-check-label small fw-semibold text-secondary ms-2" for="chkHeart">Heart Disease</label>
+                                    <input class="form-check-input me-2" type="checkbox" id="chkHeart" name="HeartDisease" value="true" @(history.HeartDisease ? "checked" : "") />
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check form-switch p-2 bg-white rounded border d-flex justify-content-between align-items-center">
+                                    <label class="form-check-label small fw-semibold text-secondary ms-2" for="chkAsthma">Asthma</label>
+                                    <input class="form-check-input me-2" type="checkbox" id="chkAsthma" name="Asthma" value="true" @(history.Asthma ? "checked" : "") />
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-6 col-lg-4">
+                                <div class="form-check form-switch p-2 bg-white rounded border d-flex justify-content-between align-items-center">
+                                    <label class="form-check-label small fw-semibold text-secondary ms-2" for="chkThyroid">Thyroid Condition</label>
+                                    <input class="form-check-input me-2" type="checkbox" id="chkThyroid" name="Thyroid" value="true" @(history.Thyroid ? "checked" : "") />
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-journal-medical me-2"></i>Medical History Details</h6>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Allergies (Drugs, Foods, environmental)</label>
+                                <textarea name="Allergies" class="form-control small" rows="2" placeholder="Describe any allergies...">@history.Allergies</textarea>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Current Medications</label>
+                                <textarea name="CurrentMedications" class="form-control small" rows="2" placeholder="List active medications & doses...">@history.CurrentMedications</textarea>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Past Surgeries / Hospitalizations</label>
+                                <textarea name="PastSurgeries" class="form-control small" rows="2" placeholder="List past operations & dates...">@history.PastSurgeries</textarea>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-secondary">Family Medical History</label>
+                                <textarea name="FamilyMedicalHistory" class="form-control small" rows="2" placeholder="List generic family illnesses...">@history.FamilyMedicalHistory</textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary">Other Medical Conditions / Notes</label>
+                                <textarea name="OtherMedicalConditions" class="form-control small" rows="2" placeholder="Other notes...">@history.OtherMedicalConditions</textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-2 text-end">
+                            <button type="submit" class="btn btn-primary fw-medium px-4 py-2"><i class="bi bi-save me-1.5"></i>Update Medical History</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 3. Vitals Log Tab -->
+                <div class="tab-pane fade" id="vitals-pane" role="tabpanel" aria-labelledby="vitals-tab" tabindex="0">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="text-primary fw-bold m-0"><i class="bi bi-heart-pulse me-2"></i>Latest Vital Readings</h6>
+                        <button class="btn btn-primary btn-sm fw-medium" id="btnAddVitals"><i class="bi bi-plus-lg me-1"></i>Record Vitals</button>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 border rounded text-center bg-light">
+                                <small class="text-muted d-block">Weight</small>
+                                <h4 class="text-dark fw-bold mb-1">@(latestVitals?.Weight?.ToString("0.0") ?? "--") <span class="small font-normal" style="font-size: 0.8rem;">kg</span></h4>
+                                <div class="text-muted" style="font-size: 0.72rem;">Height: @(latestVitals?.Height?.ToString("0.0") ?? "--") cm</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 border rounded text-center bg-light">
+                                <small class="text-muted d-block">Blood Pressure</small>
+                                <h4 class="text-dark fw-bold mb-1">@(latestVitals?.BloodPressure ?? "--")</h4>
+                                <div class="text-muted" style="font-size: 0.72rem;">mmHg</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 border rounded text-center bg-light">
+                                <small class="text-muted d-block">Oxygen Level</small>
+                                <h4 class="text-dark fw-bold mb-1">@(latestVitals?.OxygenLevel?.ToString() ?? "--") <span class="small font-normal" style="font-size: 0.8rem;">%</span></h4>
+                                <div class="text-muted" style="font-size: 0.72rem;">SpO2</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="p-3 border rounded text-center bg-light">
+                                <small class="text-muted d-block">BMI (Body Mass Index)</small>
+                                <h4 class="text-dark fw-bold mb-1">@(latestVitals?.BMI?.ToString("0.00") ?? "--")</h4>
+                                <div class="text-muted" style="font-size: 0.72rem;">
+                                    @{
+                                        var bmiVal = latestVitals?.BMI;
+                                        if (bmiVal.HasValue)
+                                        {
+                                            if (bmiVal < 18.5m) { <span class="text-warning">Underweight</span> }
+                                            else if (bmiVal < 25m) { <span class="text-success">Normal</span> }
+                                            else if (bmiVal < 30m) { <span class="text-warning">Overweight</span> }
+                                            else { <span class="text-danger">Obese</span> }
+                                        }
+                                        else { <span>--</span> }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="text-secondary fw-semibold small mb-2">Vitals Log Archive</h6>
+                    <div class="table-responsive border rounded bg-white">
+                        <table class="table table-sm custom-table small mb-0">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th>Logged At</th>
+                                    <th>Height (cm)</th>
+                                    <th>Weight (kg)</th>
+                                    <th>BP (mmHg)</th>
+                                    <th>HR (bpm)</th>
+                                    <th>Temp (°F)</th>
+                                    <th>O2 (%)</th>
+                                    <th>Sugar (mg/dL)</th>
+                                    <th>BMI</th>
+                                    @if (User.IsInRole("Platform Owner") || User.IsInRole("Organization Admin") || User.IsInRole("Doctor"))
+                                    {
+                                        <th class="text-end" style="width: 50px;"></th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (vitalsHistory != null && vitalsHistory.Any())
+                                {
+                                    foreach (var v in vitalsHistory)
+                                    {
+                                        <tr>
+                                            <td>@v.RecordedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                                            <td>@(v.Height?.ToString("0.0") ?? "--")</td>
+                                            <td>@(v.Weight?.ToString("0.0") ?? "--")</td>
+                                            <td>@(v.BloodPressure ?? "--")</td>
+                                            <td>@(v.HeartRate?.ToString() ?? "--")</td>
+                                            <td>@(v.Temperature?.ToString("0.0") ?? "--")</td>
+                                            <td>@(v.OxygenLevel?.ToString() ?? "--")</td>
+                                            <td>@(v.BloodSugar ?? "--")</td>
+                                            <td class="fw-semibold">@(v.BMI?.ToString("0.00") ?? "--")</td>
+                                            @if (User.IsInRole("Platform Owner") || User.IsInRole("Organization Admin") || User.IsInRole("Doctor"))
+                                            {
+                                                <td class="text-end">
+                                                    <button class="btn btn-sm btn-outline-danger p-0.5 border-0 btnDeleteVitals" data-id="@v.VitalID" title="Delete Vitals Record"><i class="bi bi-trash small" style="font-size:0.75rem;"></i></button>
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="@(User.IsInRole("Platform Owner") || User.IsInRole("Organization Admin") || User.IsInRole("Doctor") ? 10 : 9)" class="text-center py-4 text-muted">No vitals log available for this patient.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. Medical Documents Tab -->
+                <div class="tab-pane fade" id="documents-pane" role="tabpanel" aria-labelledby="documents-tab" tabindex="0">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="text-primary fw-bold m-0"><i class="bi bi-file-earmark-medical me-2"></i>Medical Attachments & Reports</h6>
+                        <button class="btn btn-primary btn-sm fw-medium" id="btnUploadDoc"><i class="bi bi-upload me-1"></i>Upload Document</button>
+                    </div>
+
+                    <div class="table-responsive border rounded bg-white">
+                        <table class="table table-sm custom-table small mb-0">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Size</th>
+                                    <th>Uploaded By</th>
+                                    <th>Uploaded At</th>
+                                    <th class="text-end" style="width: 120px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (documents != null && documents.Any())
+                                {
+                                    foreach (var doc in documents)
+                                    {
+                                        var sizeStr = "--";
+                                        if (doc.FileSize.HasValue)
+                                        {
+                                            double sizeKB = doc.FileSize.Value / 1024.0;
+                                            if (sizeKB > 1024)
+                                            {
+                                                sizeStr = (sizeKB / 1024.0).ToString("F2") + " MB";
+                                            }
+                                            else
+                                            {
+                                                sizeStr = sizeKB.ToString("F2") + " KB";
+                                            }
+                                        }
+                                        <tr>
+                                            <td class="fw-semibold text-dark"><i class="bi bi-file-earmark-text text-primary me-2"></i>@doc.DocumentTitle</td>
+                                            <td><span class="badge bg-light text-secondary border rounded">@doc.DocumentType</span></td>
+                                            <td>@sizeStr</td>
+                                            <td>@doc.UploadedByUserName</td>
+                                            <td>@doc.UploadDate.ToString("dd MMM yyyy, hh:mm tt")</td>
+                                            <td class="text-end">
+                                                <a class="btn btn-sm btn-outline-primary py-0.5 px-2 border-0" href="@Url.Action("DownloadDocument", "Patients", new { id = doc.DocumentID })" title="Download Document" target="_blank">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                                @if (User.IsInRole("Platform Owner") || User.IsInRole("Organization Admin") || User.IsInRole("Doctor"))
+                                                {
+                                                    <button class="btn btn-sm btn-outline-danger py-0.5 px-2 border-0 btnDeleteDoc" data-id="@doc.DocumentID" title="Delete Document">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">No medical documents uploaded.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Dynamic popups -->
+<div class="modal fade" id="emrActionModal" tabindex="-1" aria-labelledby="emrActionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="emrActionModalLabel">EMR Logger</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="emrActionModalBody">
+                <!-- Dynamic Content -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vitals Dialog template -->
+<div id="divVitalsFormTemplate" style="display:none;">
+    <form asp-action="AddVitals" asp-controller="Patients" method="post" id="frmVitals">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="PatientID" value="@Model.PatientID" />
+        <div class="row g-3">
+            <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary">Height (cm)</label>
+                <input name="Height" type="number" step="0.1" class="form-control" placeholder="175" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary">Weight (kg)</label>
+                <input name="Weight" type="number" step="0.1" class="form-control" placeholder="72" />
+            </div>
+            <div class="col-12">
+                <label class="form-label small fw-semibold text-secondary">Blood Pressure (mmHg)</label>
+                <input name="BloodPressure" type="text" class="form-control" placeholder="120/80" pattern="^\d{2,3}/\d{2,3}$" />
+                <div class="form-text small" style="font-size:0.7rem;">Format: Systolic/Diastolic (e.g. 120/80)</div>
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary">Heart Rate (bpm)</label>
+                <input name="HeartRate" type="number" class="form-control" placeholder="78" min="30" max="250" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary">Temperature (°F)</label>
+                <input name="Temperature" type="number" step="0.1" class="form-control" placeholder="98.6" min="90" max="115" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary">Oxygen Level (%)</label>
+                <input name="OxygenLevel" type="number" class="form-control" placeholder="98" min="50" max="100" />
+            </div>
+            <div class="col-6">
+                <label class="form-label small fw-semibold text-secondary">Blood Sugar (mg/dL)</label>
+                <input name="BloodSugar" type="text" class="form-control" placeholder="110 (Fasting)" />
+            </div>
+        </div>
+        <div class="modal-footer px-0 pb-0 mt-4 border-0">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Vitals</button>
+        </div>
+    </form>
+</div>
+
+<!-- Upload Dialog template -->
+<div id="divUploadFormTemplate" style="display:none;">
+    <form asp-action="UploadDocument" asp-controller="Patients" method="post" id="frmUpload" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="PatientID" value="@Model.PatientID" />
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label small fw-semibold text-secondary">Document Title</label>
+                <input name="DocumentTitle" type="text" class="form-control" placeholder="Blood Report - July 2026" required />
+            </div>
+            <div class="col-12">
+                <label class="form-label small fw-semibold text-secondary">Document Type</label>
+                <select name="DocumentType" class="form-select" required>
+                    <option value="">-- Choose Type --</option>
+                    <option value="Prescription">Prescription</option>
+                    <option value="Blood Report">Blood Report</option>
+                    <option value="MRI">MRI</option>
+                    <option value="CT Scan">CT Scan</option>
+                    <option value="X-Ray">X-Ray</option>
+                    <option value="ECG">ECG</option>
+                    <option value="Insurance">Insurance Document</option>
+                    <option value="Other">Other Medical File</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label small fw-semibold text-secondary">Browse File</label>
+                <input name="File" type="file" class="form-control" accept=".pdf,image/jpeg,image/png" required />
+                <div class="form-text small" style="font-size:0.7rem;">Allowed: PDF, JPG, PNG (Max 10 MB)</div>
+            </div>
+        </div>
+        <div class="modal-footer px-0 pb-0 mt-4 border-0">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Upload File</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('emrActionModal'));
+
+            // Show active tab on page reload if saved in localStorage
+            var activeTab = localStorage.getItem('activeEhrTab');
+            if (activeTab) {
+                var tabTrigger = new bootstrap.Tab(document.querySelector(activeTab));
+                tabTrigger.show();
+            }
+
+            $('#emrTabs button').on('shown.bs.tab', function (e) {
+                var targetId = '#' + e.target.id;
+                localStorage.setItem('activeEhrTab', targetId);
+            });
+
+            // Save Medical History AJAX
+            $('#frmMedicalHistory').on('submit', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                var btn = form.find('button[type="submit"]');
+                var origText = btn.html();
+                btn.html('<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        btn.html(origText).prop('disabled', false);
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Saved',
+                                text: res.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Failed',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        btn.html(origText).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to save medical history.'
+                        });
+                    }
+                });
+            });
+
+            // Load Vitals Dialog
+            $('#btnAddVitals').on('click', function () {
+                $('#emrActionModalLabel').text('Log Patient Vitals');
+                var html = $('#divVitalsFormTemplate').html();
+                $('#emrActionModalBody').html(html);
+                modal.show();
+            });
+
+            // Load Upload Dialog
+            $('#btnUploadDoc').on('click', function () {
+                $('#emrActionModalLabel').text('Upload Medical Document');
+                var html = $('#divUploadFormTemplate').html();
+                $('#emrActionModalBody').html(html);
+                modal.show();
+            });
+
+            // Add Vitals AJAX
+            $(document).on('submit', '#frmVitals', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                var btn = form.find('button[type="submit"]');
+                var origText = btn.html();
+                btn.html('<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Logged',
+                                text: res.message,
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btn.html(origText).prop('disabled', false);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        btn.html(origText).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'Failed to record vitals.'
+                        });
+                    }
+                });
+            });
+
+            // Delete Vitals Log
+            $(document).on('click', '.btnDeleteVitals', function () {
+                var id = $(this).data('id');
+                Swal.fire({
+                    title: 'Delete this vital reading?',
+                    text: "This clinical record will be removed from history. This cannot be undone.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Delete',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("DeleteVitals", "Patients")/' + id,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Removed',
+                                        text: res.message,
+                                        timer: 1200,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Action Denied',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Connection Error',
+                                    text: 'Could not contact the server.'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Upload Document Form Submit AJAX
+            $(document).on('submit', '#frmUpload', function (e) {
+                e.preventDefault();
+                var form = $(this)[0];
+                var formData = new FormData(form);
+
+                var btn = $(this).find('button[type="submit"]');
+                var origText = btn.html();
+                btn.html('<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Uploading...').prop('disabled', true);
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: $(this).attr('method'),
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Uploaded',
+                                text: res.message,
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btn.html(origText).prop('disabled', false);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Upload Failed',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        btn.html(origText).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'Failed to upload document.'
+                        });
+                    }
+                });
+            });
+
+            // Delete Document File
+            $(document).on('click', '.btnDeleteDoc', function () {
+                var id = $(this).data('id');
+                Swal.fire({
+                    title: 'Remove medical document?',
+                    text: "The attachment file will be deleted permanently. This cannot be undone.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Delete',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("DeleteDocument", "Patients")/' + id,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted',
+                                        text: res.message,
+                                        timer: 1200,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Action Failed',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Connection Error',
+                                    text: 'Connection failed.'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

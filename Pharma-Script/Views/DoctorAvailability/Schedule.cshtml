@@ -1,0 +1,232 @@
+@model IEnumerable<Pharma_Script.Models.DoctorAvailability>
+@{
+    Layout = "_Layout";
+    var doctor = (Pharma_Script.Models.Doctor)ViewBag.Doctor;
+    ViewData["Title"] = $"Schedule Availability — Dr. {doctor.FirstName}";
+    
+    var days = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Weekly Availability Schedule</h4>
+        <p class="text-muted small mb-0 font-medium">Dr. @doctor.FirstName @doctor.LastName — @(doctor.Qualification)</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Index", "Doctors")" class="btn btn-light fw-medium px-3.5 py-2">
+            <i class="bi bi-arrow-left me-1.5"></i>Back to Doctors
+        </a>
+        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnAddAvailability">
+            <i class="bi bi-plus-lg me-1.5"></i>Add Slot
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    @foreach (var day in days)
+    {
+        var daySlots = Model.Where(m => m.DayOfWeek.Equals(day, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 border shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
+                    <span class="fw-bold text-dark"><i class="bi bi-calendar3 me-2 text-primary"></i>@day</span>
+                    <span class="badge bg-primary rounded-pill small">@daySlots.Count Slots</span>
+                </div>
+                <div class="card-body p-3 d-flex flex-column gap-2.5">
+                    @if (daySlots.Any())
+                    {
+                        foreach (var slot in daySlots)
+                        {
+                            var activeClass = slot.IsAvailable ? "" : "opacity-60 border-dashed";
+                            <div class="p-2.5 border rounded bg-white position-relative @activeClass d-flex justify-content-between align-items-center">
+                                <div class="small">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <strong class="text-dark">
+                                            @DateTime.Today.Add(slot.StartTime).ToString("hh:mm tt") - 
+                                            @DateTime.Today.Add(slot.EndTime).ToString("hh:mm tt")
+                                        </strong>
+                                        @if (!slot.IsAvailable)
+                                        {
+                                            <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">Disabled</span>
+                                        }
+                                    </div>
+                                    <div class="text-muted mt-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-hourglass me-1"></i>Slot: @slot.SlotDuration mins
+                                        @if (slot.BreakStart.HasValue && slot.BreakEnd.HasValue)
+                                        {
+                                            <div class="mt-0.5 text-warning fw-semibold">
+                                                <i class="bi bi-cup-hot me-1"></i>Break: @DateTime.Today.Add(slot.BreakStart.Value).ToString("hh:mm tt") - @DateTime.Today.Add(slot.BreakEnd.Value).ToString("hh:mm tt")
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-outline-secondary p-1 border-0 btnEditSlot" data-id="@slot.AvailabilityID" title="Edit Slot">
+                                        <i class="bi bi-pencil" style="font-size: 0.8rem;"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger p-1 border-0 btnDeleteSlot" data-id="@slot.AvailabilityID" title="Delete Slot">
+                                        <i class="bi bi-trash" style="font-size: 0.8rem;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted small bg-light rounded border border-dashed">
+                            <i class="bi bi-calendar-x d-block mb-1.5 text-secondary" style="font-size: 1.25rem;"></i>
+                            No availability defined
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal fade" id="availModal" tabindex="-1" aria-labelledby="availModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="availModalLabel">Availability Slot</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="availModalBody">
+                <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('availModal'));
+
+            // Load Create
+            $('#btnAddAvailability').on('click', function () {
+                $('#availModalLabel').text('Add Availability Slot');
+                $('#availModalBody').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+
+                $.get('@Url.Action("Create", "DoctorAvailability")?doctorId=@doctor.DoctorID', function (html) {
+                    $('#availModalBody').html(html);
+                    $.validator.unobtrusive.parse('#availModalBody');
+                });
+            });
+
+            // Load Edit
+            $(document).on('click', '.btnEditSlot', function () {
+                var id = $(this).data('id');
+                $('#availModalLabel').text('Edit Availability Slot');
+                $('#availModalBody').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+
+                $.get('@Url.Action("Edit", "DoctorAvailability")/' + id, function (html) {
+                    $('#availModalBody').html(html);
+                    $.validator.unobtrusive.parse('#availModalBody');
+                });
+            });
+
+            // Form Submit via AJAX
+            $(document).on('submit', '#availModalBody form', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                if (!form.valid()) return false;
+
+                var btnSubmit = form.find('button[type="submit"]');
+                var originalHtml = btnSubmit.html();
+                btnSubmit.html('<span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Saved',
+                                text: res.message,
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btnSubmit.html(originalHtml).prop('disabled', false);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'Failed to process request.'
+                        });
+                    }
+                });
+            });
+
+            // Delete Slot
+            $(document).on('click', '.btnDeleteSlot', function () {
+                var id = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Delete this slot?',
+                    text: "Patients will no longer be able to book slots in this hour range.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Delete',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("Delete", "DoctorAvailability")/' + id,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted',
+                                        text: res.message,
+                                        timer: 1200,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Failed',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Connection error while deleting.'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

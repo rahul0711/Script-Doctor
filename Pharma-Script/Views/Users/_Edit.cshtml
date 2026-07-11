@@ -1,0 +1,72 @@
+@model Pharma_Script.ViewModels.User.UserViewModel
+@using Pharma_Script.Helpers
+
+<form asp-action="Edit" asp-controller="Users" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="UserID" />
+
+    <div class="row g-3">
+        @if (User.IsPlatformOwner())
+        {
+            <div class="col-12 col-md-6">
+                <label asp-for="OrganizationID" class="form-label small fw-semibold text-secondary"></label>
+                <select asp-for="OrganizationID" class="form-select" asp-items="ViewBag.Organizations">
+                    <option value="">-- Platform Owner (Global) --</option>
+                </select>
+                <span asp-validation-for="OrganizationID" class="text-danger small" style="font-size: 0.75rem;"></span>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="OrganizationID" value="@User.GetOrganizationId()" />
+        }
+
+        <div class="col-12 col-md-6">
+            <label asp-for="RoleID" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="RoleID" class="form-select" asp-items="ViewBag.Roles" required>
+                <option value="">-- Choose Access Role --</option>
+            </select>
+            <span asp-validation-for="RoleID" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="FirstName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="FirstName" class="form-control" required />
+            <span asp-validation-for="FirstName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="LastName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="LastName" class="form-control" />
+            <span asp-validation-for="LastName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Email" class="form-control" required />
+            <span asp-validation-for="Email" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Phone" class="form-control" />
+            <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <div class="form-check mb-1">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Access</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden password fields to satisfy edit validation dependencies -->
+    <input type="hidden" asp-for="Password" value="Dummy@123" />
+    <input type="hidden" asp-for="ConfirmPassword" value="Dummy@123" />
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Account</button>
+    </div>
+</form>

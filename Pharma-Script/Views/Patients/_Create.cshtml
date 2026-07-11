@@ -1,0 +1,195 @@
+@model Pharma_Script.ViewModels.Patient.PatientViewModel
+@using Pharma_Script.Helpers
+
+<form asp-action="Create" asp-controller="Patients" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-3">
+        <h6 class="text-primary border-bottom pb-1.5 mb-2"><i class="bi bi-person-badge me-2"></i>Account & Access</h6>
+
+        @if (User.IsPlatformOwner())
+        {
+            <div class="col-12 col-md-6">
+                <label asp-for="OrganizationID" class="form-label small fw-semibold text-secondary"></label>
+                <select asp-for="OrganizationID" class="form-select" id="ddlOrgPatient" asp-items="@ViewBag.Organizations" required>
+                    <option value="">-- Choose Organization --</option>
+                </select>
+                <span asp-validation-for="OrganizationID" class="text-danger small" style="font-size: 0.75rem;"></span>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" asp-for="OrganizationID" value="@User.GetOrganizationId()" />
+        }
+
+        <div class="col-12 col-md-6">
+            <label asp-for="BranchID" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="BranchID" class="form-select" id="ddlBranchPatient" asp-items="@ViewBag.Branches">
+                <option value="">-- Choose Branch Scope --</option>
+            </select>
+            <span asp-validation-for="BranchID" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="FirstName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="FirstName" class="form-control" placeholder="Aarav" required />
+            <span asp-validation-for="FirstName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="LastName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="LastName" class="form-control" placeholder="Patel" />
+            <span asp-validation-for="LastName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Email" class="form-control" type="email" placeholder="aarav@gmail.com" required />
+            <span asp-validation-for="Email" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Phone" class="form-control" placeholder="+91 9988776655" required />
+            <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="Password" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Password" class="form-control" type="password" placeholder="••••••••" required />
+            <span asp-validation-for="Password" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="ConfirmPassword" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="ConfirmPassword" class="form-control" type="password" placeholder="••••••••" required />
+            <span asp-validation-for="ConfirmPassword" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <h6 class="text-primary border-bottom pb-1.5 mb-2 mt-3"><i class="bi bi-file-earmark-person me-2"></i>Demographics & Initial Vitals</h6>
+
+        <div class="col-12 col-md-4">
+            <label asp-for="DateOfBirth" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="DateOfBirth" class="form-control" type="date" required />
+            <span asp-validation-for="DateOfBirth" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <label asp-for="Gender" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="Gender" class="form-select" required>
+                <option value="">-- Choose --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+            <span asp-validation-for="Gender" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <label asp-for="BloodGroup" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="BloodGroup" class="form-select">
+                <option value="">-- Unknown --</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+            <span asp-validation-for="BloodGroup" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6">
+            <label asp-for="Height" class="form-label small fw-semibold text-secondary">Height (cm)</label>
+            <input asp-for="Height" class="form-control" type="number" step="0.1" placeholder="175" />
+            <span asp-validation-for="Height" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6">
+            <label asp-for="Weight" class="form-label small fw-semibold text-secondary">Weight (kg)</label>
+            <input asp-for="Weight" class="form-control" type="number" step="0.1" placeholder="70" />
+            <span asp-validation-for="Weight" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <h6 class="text-primary border-bottom pb-1.5 mb-2 mt-3"><i class="bi bi-shield-exclamation me-2"></i>Emergency Contact</h6>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="EmergencyContactName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="EmergencyContactName" class="form-control" placeholder="Contact Name" />
+            <span asp-validation-for="EmergencyContactName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <label asp-for="EmergencyContactNumber" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="EmergencyContactNumber" class="form-control" placeholder="Emergency Phone" />
+            <span asp-validation-for="EmergencyContactNumber" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <h6 class="text-primary border-bottom pb-1.5 mb-2 mt-3"><i class="bi bi-geo-alt me-2"></i>Address & Location</h6>
+
+        <div class="col-12">
+            <label asp-for="Address" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Address" class="form-control" placeholder="Flat / House No, Street Address, Locality" />
+            <span asp-validation-for="Address" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <label asp-for="City" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="City" class="form-control" placeholder="Mumbai" />
+            <span asp-validation-for="City" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <label asp-for="State" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="State" class="form-control" placeholder="Maharashtra" />
+            <span asp-validation-for="State" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <label asp-for="Country" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Country" class="form-control" value="India" placeholder="India" />
+            <span asp-validation-for="Country" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6 col-md-3">
+            <label asp-for="Pincode" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="Pincode" class="form-control" placeholder="400001" />
+            <span asp-validation-for="Pincode" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 mt-2">
+            <div class="form-check mb-1">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Patient Account</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Register Patient</button>
+    </div>
+</form>
+
+@if (User.IsPlatformOwner())
+{
+    <script>
+        $(document).ready(function () {
+            $('#ddlOrgPatient').on('change', function () {
+                var orgId = $(this).val();
+                var ddlBranch = $('#ddlBranchPatient');
+                ddlBranch.empty().append('<option value="">-- Choose Branch Scope --</option>');
+
+                if (!orgId) return;
+
+                $.get('@Url.Action("GetBranchesAndDepartments", "Doctors")?orgId=' + orgId, function (res) {
+                    $.each(res.branches, function (i, item) {
+                        ddlBranch.append($('<option>', { value: item.id, text: item.name }));
+                    });
+                });
+            });
+        });
+    </script>
+}

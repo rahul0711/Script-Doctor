@@ -1,0 +1,227 @@
+using MySql.Data.MySqlClient;
+using Pharma_Script.Models;
+using Pharma_Script.Repositories.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Pharma_Script.Repositories.Implementations
+{
+    public class PaymentRepository : RepositoryBase<Payment>, IPaymentRepository
+    {
+        public PaymentRepository(MySqlConnection connection, Func<MySqlTransaction?> transactionProvider)
+            : base(connection, transactionProvider)
+        {
+        }
+
+        protected override string TableName => "Payments";
+        protected override string PrimaryKeyName => "PaymentID";
+
+        protected override Payment Map(DbDataReader reader)
+        {
+            var payment = new Payment
+            {
+                PaymentID = reader.GetInt32(reader.GetOrdinal("PaymentID")),
+                AppointmentID = reader.GetInt32(reader.GetOrdinal("AppointmentID")),
+                OrganizationID = reader.GetInt32(reader.GetOrdinal("OrganizationID")),
+                Amount = reader.GetDecimal(reader.GetOrdinal("Amount")),
+                PaymentMethod = reader.GetString(reader.GetOrdinal("PaymentMethod")),
+                TransactionReference = reader.IsDBNull(reader.GetOrdinal("TransactionReference")) ? null : reader.GetString(reader.GetOrdinal("TransactionReference")),
+                PaymentStatus = reader.GetString(reader.GetOrdinal("PaymentStatus")),
+                PaidAt = reader.IsDBNull(reader.GetOrdinal("PaidAt")) ? null : (DateTime?)reader.GetDateTime(reader.GetOrdinal("PaidAt")),
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt"))
+            };
+
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                var col = reader.GetName(i);
+                if (col.Equals("PatientName", StringComparison.OrdinalIgnoreCase))
+                {
+                    payment.PatientName = reader.IsDBNull(i) ? null : reader.GetString(i);
+                }
+                else if (col.Equals("DoctorName", StringComparison.OrdinalIgnoreCase))
+                {
+                    payment.DoctorName = reader.IsDBNull(i) ? null : reader.GetString(i);
+                }
+                else if (col.Equals("AppointmentDate", StringComparison.OrdinalIgnoreCase))
+                {
+                    payment.AppointmentDate = reader.IsDBNull(i) ? null : (DateTime?)reader.GetDateTime(i);
+                }
+            }
+
+            return payment;
+        }
+
+        private void AddParameters(MySqlCommand cmd, Payment entity)
+        {
+            cmd.Parameters.AddWithValue("@AppointmentID", entity.AppointmentID);
+            cmd.Parameters.AddWithValue("@OrganizationID", entity.OrganizationID);
+            cmd.Parameters.AddWithValue("@Amount", entity.Amount);
+            cmd.Parameters.AddWithValue("@PaymentMethod", entity.PaymentMethod);
+            cmd.Parameters.AddWithValue("@TransactionReference", (object?)entity.TransactionReference ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PaymentStatus", entity.PaymentStatus);
+            cmd.Parameters.AddWithValue("@PaidAt", (object?)entity.PaidAt ?? DBNull.Value);
+        }
+
+        public override async Task<int> AddAsync(Payment entity)
+        {
+            var query = $@"INSERT INTO {TableName} 
+                (AppointmentID, OrganizationID, Amount, PaymentMethod, TransactionReference, PaymentStatus, PaidAt) 
+                VALUES 
+                (@AppointmentID, @OrganizationID, @Amount, @PaymentMethod, @TransactionReference, @PaymentStatus, @PaidAt);
+                SELECT LAST_INSERT_ID();";
+
+            await EnsureConnectionOpenAsync();
+            using (var cmd = CreateCommand(query))
+            {
+                AddParameters(cmd, entity);
+                var id = await cmd.ExecuteScalarAsync();
+                return Convert.ToInt32(id);
+            }
+        }
+
+        public override async Task<bool> UpdateAsync(Payment entity)
+        {
+            var query = $@"UPDATE {TableName} SET 
+                Amount = @Amount, 
+                PaymentMethod = @PaymentMethod, 
+                TransactionReference = @TransactionReference, 
+                PaymentStatus = @PaymentStatus, 
+                PaidAt = @PaidAt
+                WHERE PaymentID = @PaymentID";
+
+            await EnsureConnectionOpenAsync();
+            using (var cmd = CreateCommand(query))
+            {
+                AddParameters(cmd, entity);
+                cmd.Parameters.AddWithValue("@PaymentID", entity.PaymentID);
+                var rows = await cmd.ExecuteNonQueryAsync();
+                return rows > 0;
+            }
+        }
+
+        public async Task<Payment?> GetByAppointmentIdAsync(int appointmentId, int? orgId)
+        {
+            var query = $@"SELECT p.*,
+                                  CONCAT(up.FirstName, ' ', IFNULL(up.LastName, '')) AS PatientName,
+                                  CONCAT(ud.FirstName, ' ', IFNULL(ud.LastName, '')) AS DoctorName,
+                                  a.AppointmentDate
+                           FROM {TableName} p
+                           INNER JOIN Appointments a ON p.AppointmentID = a.AppointmentID
+                           INNER JOIN Patients pat ON a.PatientID = pat.PatientID
+                           INNER JOIN Users up ON pat.UserID = up.UserID
+                           INNER JOIN Doctors d ON a.DoctorID = d.DoctorID
+                           INNER JOIN Users ud ON d.UserID = ud.UserID
+                           WHERE p.AppointmentID = @AppointmentID";
+
+            if (orgId.HasValue)
+            {
+                query += " AND p.OrganizationID = @OrganizationID";
+            }
+
+            await EnsureConnectionOpenAsync();
+            using (var cmd = CreateCommand(query))
+            {
+                cmd.Parameters.AddWithValue("@AppointmentID", appointmentId);
+                if (orgId.HasValue)
+                {
+                    cmd.Parameters.AddWithValue("@OrganizationID", orgId.Value);
+                }
+
+                using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return Map(reader);
+                    }
+                }
+            }
+            return null;
+        }
+
+        public async Task<IEnumerable<Payment>> SearchAndPaginateAsync(int? orgId, string? status, string? searchTerm, int page, int pageSize)
+        {
+            var list = new List<Payment>();
+            var sb = new StringBuilder($@"SELECT p.*,
+                                                CONCAT(up.FirstName, ' ', IFNULL(up.LastName, '')) AS PatientName,
+                                                CONCAT(ud.FirstName, ' ', IFNULL(ud.LastName, '')) AS DoctorName,
+                                                a.AppointmentDate
+                                         FROM {TableName} p
+                                         INNER JOIN Appointments a ON p.AppointmentID = a.AppointmentID
+                                         INNER JOIN Patients pat ON a.PatientID = pat.PatientID
+                                         INNER JOIN Users up ON pat.UserID = up.UserID
+                                         INNER JOIN Doctors d ON a.DoctorID = d.DoctorID
+                                         INNER JOIN Users ud ON d.UserID = ud.UserID
+                                         WHERE 1=1");
+
+            var cmd = Connection.CreateCommand();
+            var tx = Transaction;
+            if (tx != null) cmd.Transaction = tx;
+
+            BuildFilterQuery(sb, cmd, orgId, status, searchTerm);
+
+            sb.Append(" ORDER BY p.CreatedAt DESC LIMIT @Limit OFFSET @Offset");
+            cmd.Parameters.AddWithValue("@Limit", pageSize);
+            cmd.Parameters.AddWithValue("@Offset", (page - 1) * pageSize);
+
+            cmd.CommandText = sb.ToString();
+            await EnsureConnectionOpenAsync();
+            using (cmd)
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    list.Add(Map(reader));
+                }
+            }
+            return list;
+        }
+
+        public async Task<int> GetSearchCountAsync(int? orgId, string? status, string? searchTerm)
+        {
+            var sb = new StringBuilder($@"SELECT COUNT(*)
+                                         FROM {TableName} p
+                                         INNER JOIN Appointments a ON p.AppointmentID = a.AppointmentID
+                                         INNER JOIN Patients pat ON a.PatientID = pat.PatientID
+                                         INNER JOIN Users up ON pat.UserID = up.UserID
+                                         INNER JOIN Doctors d ON a.DoctorID = d.DoctorID
+                                         INNER JOIN Users ud ON d.UserID = ud.UserID
+                                         WHERE 1=1");
+
+            var cmd = Connection.CreateCommand();
+            var tx = Transaction;
+            if (tx != null) cmd.Transaction = tx;
+
+            BuildFilterQuery(sb, cmd, orgId, status, searchTerm);
+
+            cmd.CommandText = sb.ToString();
+            await EnsureConnectionOpenAsync();
+            using (cmd)
+            {
+                return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            }
+        }
+
+        private void BuildFilterQuery(StringBuilder sb, MySqlCommand cmd, int? orgId, string? status, string? searchTerm)
+        {
+            if (orgId.HasValue)
+            {
+                sb.Append(" AND p.OrganizationID = @OrgID");
+                cmd.Parameters.AddWithValue("@OrgID", orgId.Value);
+            }
+            if (!string.IsNullOrEmpty(status))
+            {
+                sb.Append(" AND p.PaymentStatus = @Status");
+                cmd.Parameters.AddWithValue("@Status", status);
+            }
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                sb.Append(" AND (up.FirstName LIKE @Term OR up.LastName LIKE @Term OR ud.FirstName LIKE @Term OR ud.LastName LIKE @Term OR p.TransactionReference LIKE @Term)");
+                cmd.Parameters.AddWithValue("@Term", $"%{searchTerm}%");
+            }
+        }
+    }
+}

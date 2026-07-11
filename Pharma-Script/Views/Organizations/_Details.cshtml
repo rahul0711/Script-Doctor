@@ -1,0 +1,80 @@
+@model Pharma_Script.Models.Organization
+
+<div class="container-fluid px-0">
+    <div class="row g-4">
+        <!-- Profile Header -->
+        <div class="col-12 d-flex align-items-center gap-3 pb-3 border-bottom mb-2">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle" style="width: 56px; height: 56px;">
+                <i class="bi bi-building fs-3"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-dark mb-0">@Model.OrganizationName</h5>
+                <span class="badge bg-light text-muted border px-2.5 py-1 small">@Model.OrganizationType</span>
+                @if (Model.IsActive)
+                {
+                    <span class="badge-active ms-1.5">Active</span>
+                }
+                else
+                {
+                    <span class="badge-inactive ms-1.5">Inactive</span>
+                }
+            </div>
+        </div>
+
+        <!-- General Section -->
+        <div class="col-12 col-md-6">
+            <h6 class="fw-bold text-dark small uppercase mb-3" style="letter-spacing: 0.5px; color: var(--text-muted) !important;">Contact Details</h6>
+            <div class="d-flex flex-column gap-2.5">
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Email Address</small>
+                    <span class="text-dark small fw-medium">@Model.Email</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Phone Number</small>
+                    <span class="text-dark small fw-medium">@Model.Phone</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Alternate Phone</small>
+                    <span class="text-dark small fw-medium">@(string.IsNullOrEmpty(Model.AlternatePhone) ? "N/A" : Model.AlternatePhone)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Licensing Section -->
+        <div class="col-12 col-md-6">
+            <h6 class="fw-bold text-dark small uppercase mb-3" style="letter-spacing: 0.5px; color: var(--text-muted) !important;">Licensing & Reg</h6>
+            <div class="d-flex flex-column gap-2.5">
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">GST Registration</small>
+                    <span class="text-dark small fw-medium">@(string.IsNullOrEmpty(Model.GSTNumber) ? "N/A" : Model.GSTNumber)</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">License Number</small>
+                    <span class="text-dark small fw-medium">@(string.IsNullOrEmpty(Model.LicenseNumber) ? "N/A" : Model.LicenseNumber)</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Created Date</small>
+                    <span class="text-dark small fw-medium">@Model.CreatedAt.ToString("g")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Section -->
+        <div class="col-12 border-top pt-3">
+            <h6 class="fw-bold text-dark small uppercase mb-2" style="letter-spacing: 0.5px; color: var(--text-muted) !important;">Registered Address</h6>
+            <div class="text-dark small fw-medium">
+                <div>@Model.AddressLine1</div>
+                @if (!string.IsNullOrEmpty(Model.AddressLine2))
+                {
+                    <div>@Model.AddressLine2</div>
+                }
+                <div>@Model.City, @Model.State - @Model.Pincode</div>
+                <div class="text-muted small">@Model.Country</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+    </div>
+</div>

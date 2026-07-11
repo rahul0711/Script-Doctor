@@ -1,0 +1,116 @@
+@model IEnumerable<Pharma_Script.Models.ContactMessage>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Contact Messages";
+}
+
+@Html.AntiForgeryToken()
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Contact Messages</h4>
+        <p class="text-muted small mb-0 font-medium">Messages submitted through your public website's contact form.</p>
+    </div>
+    @if ((int)ViewBag.UnreadCount > 0)
+    {
+        <span class="badge bg-danger">@ViewBag.UnreadCount unread</span>
+    }
+</div>
+
+<div class="table-card">
+    <div class="table-card-header">
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="@Url.Action("Index", new { filter = "all" })" class="btn @(ViewBag.Filter == "all" ? "btn-primary" : "btn-light")">All</a>
+            <a href="@Url.Action("Index", new { filter = "unread" })" class="btn @(ViewBag.Filter == "unread" ? "btn-primary" : "btn-light")">Unread</a>
+            <a href="@Url.Action("Index", new { filter = "read" })" class="btn @(ViewBag.Filter == "read" ? "btn-primary" : "btn-light")">Read</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table custom-table">
+            <thead>
+                <tr>
+                    <th style="width:40px;"></th>
+                    <th>Name</th>
+                    <th>Subject</th>
+                    <th>Received</th>
+                    <th class="text-end" style="width:80px;">View</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="@(item.IsRead ? "" : "fw-semibold")">
+                            <td>
+                                @if (!item.IsRead)
+                                {
+                                    <span class="badge bg-primary rounded-circle" style="width:8px;height:8px;padding:0;"></span>
+                                }
+                            </td>
+                            <td>@item.Name <div class="small text-muted fw-normal">@item.Email</div></td>
+                            <td class="small">@(string.IsNullOrEmpty(item.Subject) ? "&mdash;" : item.Subject)</td>
+                            <td class="small text-secondary fw-normal">@item.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</td>
+                            <td class="text-end">
+                                <button class="btn-action btnView" data-id="@item.ContactMessageID"><i class="bi bi-eye"></i></button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="5" class="text-center py-5 text-muted small">No messages yet.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems records)</div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { filter = ViewBag.Filter, page = i })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">Message</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="itemModalBody"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('itemModal'));
+
+            $(document).on('click', '.btnView', function () {
+                var id = $(this).data('id');
+                var row = $(this).closest('tr');
+                $('#itemModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>');
+                modal.show();
+                $.get('@Url.Action("Details")/' + id, function (html) {
+                    $('#itemModalBody').html(html);
+                    row.removeClass('fw-semibold');
+                    row.find('.badge.rounded-circle').remove();
+                });
+            });
+        });
+    </script>
+}

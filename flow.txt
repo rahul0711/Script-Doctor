@@ -1,0 +1,69 @@
+1. Platform Owner (Super Admin)
+
+This is YOU.
+
+You created the software.
+
+You can see every clinic, hospital, doctor, and patient.
+
+Tables
+No.	Table	Purpose
+1	Organizations	Every clinic or hospital using your software
+2	Branches (Optional)	Multiple branches of an organization
+3	Users	Login for everyone
+4	Roles	Platform Owner, Admin, Doctor, Patient, Receptionist
+5	SystemSettings	Global application settings
+6	AuditLogs	System activity
+7	UserSessions (LoginHistory)	Login/logout history
+2. Clinic / Hospital Admin
+
+This is the owner or administrator of a clinic or hospital.
+
+They manage everything inside their own organization only.
+
+Tables
+No.	Table	Purpose
+8	Departments (Optional)	Cardiology, ENT, Orthopedics
+9	CMSSettings	Website settings
+10	Services	Services displayed on the website
+11	Gallery	Website gallery
+12	FAQs	Frequently asked questions
+13	Testimonials	Patient testimonials
+14	ContactMessages	Messages from Contact Us page
+15	Receptionists (Optional)	Receptionist accounts
+16	Notifications	Notifications for users in the organization
+3. Doctors
+
+Everything related to doctors.
+
+Tables
+No.	Table	Purpose
+17	Doctors	Doctor profile
+18	Specializations	Master list of specializations
+19	DoctorSpecializations	Connects doctors to one or more specializations
+20	DoctorAvailability	Weekly schedule
+21	DoctorLeave	Leave management
+22	DoctorNotes	Consultation notes
+23	Prescriptions	Prescription header
+24	PrescriptionMedicines	Medicines inside a prescription
+25	Reviews	Patient ratings and reviews
+4. Patients
+
+Everything related to patients.
+
+Tables
+No.	Table	Purpose
+26	Patients	Patient profile
+27	PatientMedicalHistory	Allergies, diseases, surgeries, chronic conditions
+28	PatientVitals	Height, Weight, BP, Sugar, Temperature
+29	MedicalDocuments	Reports, MRI, CT Scan, X-rays, PDFs
+5. Common Tables (Shared by Everyone)
+
+These are used by multiple roles.
+
+Tables
+No.	Table	Purpose
+30	Appointments	Appointment records
+31	AppointmentStatusHistory	Status changes
+32	QueueTokens (Optional)	Queue for clinic visits
+33	Payments	Payment records

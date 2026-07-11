@@ -1,0 +1,160 @@
+@model IEnumerable<Pharma_Script.Models.Role>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Roles";
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">User Roles</h4>
+        <p class="text-muted small mb-0 font-medium">Configure roles and permissions (Doctor, Admin, Patient, etc.).</p>
+    </div>
+    <div>
+        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreateRole">
+            <i class="bi bi-plus-lg me-1.5"></i>Add Role
+        </button>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="table-card-header">
+        <h5 class="table-card-title mb-0">Platform access groups</h5>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Role Name</th>
+                    <th>Description</th>
+                    <th class="text-end" style="width: 120px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.RoleID</td>
+                            <td class="fw-semibold text-dark">@item.RoleName</td>
+                            <td class="text-secondary small">
+                                @(string.IsNullOrEmpty(item.Description) ? "No description provided." : item.Description)
+                            </td>
+                            <td class="text-end">
+                                <button class="btn-action btn-action-edit btnEdit" data-id="@item.RoleID" title="Edit">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted small">No roles defined.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="roleModalLabel">Role Modal</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="roleModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('roleModal'));
+
+            // Load Create
+            $('#btnCreateRole').on('click', function () {
+                $('#roleModalLabel').text('Create Access Role');
+                $('#roleModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading form...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Create")', function (html) {
+                    $('#roleModalBody').html(html);
+                    $.validator.unobtrusive.parse('#roleModalBody');
+                });
+            });
+
+            // Load Edit
+            $(document).on('click', '.btnEdit', function () {
+                var id = $(this).data('id');
+                $('#roleModalLabel').text('Edit Role Details');
+                $('#roleModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading settings...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Edit")/' + id, function (html) {
+                    $('#roleModalBody').html(html);
+                    $.validator.unobtrusive.parse('#roleModalBody');
+                });
+            });
+
+            // Form Submit via AJAX
+            $(document).on('submit', '#roleModalBody form', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                if (!form.valid()) return false;
+
+                var btnSubmit = form.find('button[type="submit"]');
+                var originalHtml = btnSubmit.html();
+                btnSubmit.html('<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: res.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btnSubmit.html(originalHtml).prop('disabled', false);
+                            var errorMsg = res.message;
+                            if (res.errors && res.errors.length > 0) {
+                                errorMsg += '\n' + res.errors.join('\n');
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: errorMsg
+                            });
+                        }
+                    },
+                    error: function () {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'An unexpected system error occurred.'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,245 @@
+@model Pharma_Script.Models.CMSSetting
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Website Settings";
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Website Settings</h4>
+        <p class="text-muted small mb-0 font-medium">Configure your public clinic website's identity, branding, and contact details.</p>
+    </div>
+</div>
+
+<div class="table-card">
+    <ul class="nav nav-tabs px-3 pt-3" id="settingsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general" type="button">General</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-branding" type="button">Branding</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-about" type="button">About</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-contact" type="button">Contact</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-social" type="button">Social Media</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-footer" type="button">Footer</button>
+        </li>
+    </ul>
+
+    <div class="tab-content p-4">
+        <!-- General -->
+        <div class="tab-pane fade show active" id="tab-general">
+            <form class="cms-settings-form" asp-action="SaveGeneral" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Website Title</label>
+                        <input name="WebsiteTitle" class="form-control" value="@Model.WebsiteTitle" placeholder="ABC Hospital" />
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save General Settings</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Branding -->
+        <div class="tab-pane fade" id="tab-branding">
+            <form class="cms-settings-form" asp-action="SaveBranding" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Primary Color</label>
+                        <div class="input-group">
+                            <input type="color" class="form-control form-control-color" id="primaryColorPicker" value="@(Model.PrimaryColor ?? "#2563EB")">
+                            <input name="PrimaryColor" id="primaryColorText" class="form-control" value="@(Model.PrimaryColor ?? "#2563EB")" placeholder="#2563EB" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Secondary Color</label>
+                        <div class="input-group">
+                            <input type="color" class="form-control form-control-color" id="secondaryColorPicker" value="@(Model.SecondaryColor ?? "#059669")">
+                            <input name="SecondaryColor" id="secondaryColorText" class="form-control" value="@(Model.SecondaryColor ?? "#059669")" placeholder="#059669" />
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Website Logo</label>
+                        @if (!string.IsNullOrEmpty(Model.WebsiteLogo))
+                        {
+                            <div class="mb-2"><img src="@Model.WebsiteLogo" alt="Current logo" style="height:48px;border-radius:6px;" /></div>
+                        }
+                        <input type="file" name="Logo" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                        <span class="form-text small">JPG, PNG, or WEBP. Max 2MB.</span>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Favicon</label>
+                        @if (!string.IsNullOrEmpty(Model.Favicon))
+                        {
+                            <div class="mb-2"><img src="@Model.Favicon" alt="Current favicon" style="height:32px;" /></div>
+                        }
+                        <input type="file" name="Favicon" class="form-control" accept=".png,.ico" />
+                        <span class="form-text small">PNG or ICO. Max 512KB.</span>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save Branding</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- About -->
+        <div class="tab-pane fade" id="tab-about">
+            <form class="cms-settings-form" asp-action="SaveAbout" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold text-secondary">About Us</label>
+                        <textarea name="AboutUs" class="form-control" rows="4">@Model.AboutUs</textarea>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Mission</label>
+                        <textarea name="Mission" class="form-control" rows="3">@Model.Mission</textarea>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Vision</label>
+                        <textarea name="Vision" class="form-control" rows="3">@Model.Vision</textarea>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save About Section</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Contact -->
+        <div class="tab-pane fade" id="tab-contact">
+            <form class="cms-settings-form" asp-action="SaveContact" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Contact Email</label>
+                        <input name="ContactEmail" class="form-control" value="@Model.ContactEmail" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Contact Phone</label>
+                        <input name="ContactPhone" class="form-control" value="@Model.ContactPhone" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Emergency Phone</label>
+                        <input name="EmergencyPhone" class="form-control" value="@Model.EmergencyPhone" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold text-secondary">Address</label>
+                        <textarea name="Address" class="form-control" rows="2">@Model.Address</textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold text-secondary">Google Map Embed URL</label>
+                        <input name="GoogleMapEmbed" class="form-control" value="@Model.GoogleMapEmbed" placeholder="Paste the Google Maps embed URL or <iframe> snippet" />
+                        <span class="form-text small">Only a valid Google Maps link is accepted &mdash; any other markup is rejected.</span>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save Contact Info</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Social -->
+        <div class="tab-pane fade" id="tab-social">
+            <form class="cms-settings-form" asp-action="SaveSocial" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Facebook URL</label>
+                        <input name="FacebookURL" class="form-control" value="@Model.FacebookURL" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Instagram URL</label>
+                        <input name="InstagramURL" class="form-control" value="@Model.InstagramURL" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">LinkedIn URL</label>
+                        <input name="LinkedInURL" class="form-control" value="@Model.LinkedInURL" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Twitter / X URL</label>
+                        <input name="TwitterURL" class="form-control" value="@Model.TwitterURL" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">YouTube URL</label>
+                        <input name="YouTubeURL" class="form-control" value="@Model.YouTubeURL" />
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save Social Links</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="tab-pane fade" id="tab-footer">
+            <form class="cms-settings-form" asp-action="SaveFooter" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold text-secondary">Footer Text</label>
+                        <textarea name="FooterText" class="form-control" rows="2">@Model.FooterText</textarea>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Save Footer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Keep color text + swatch in sync
+            $('#primaryColorPicker').on('input', function () { $('#primaryColorText').val($(this).val()); });
+            $('#secondaryColorPicker').on('input', function () { $('#secondaryColorText').val($(this).val()); });
+            $('#primaryColorText').on('input', function () { if (/^#([0-9a-fA-F]{6})$/.test($(this).val())) $('#primaryColorPicker').val($(this).val()); });
+            $('#secondaryColorText').on('input', function () { if (/^#([0-9a-fA-F]{6})$/.test($(this).val())) $('#secondaryColorPicker').val($(this).val()); });
+
+            $('.cms-settings-form').on('submit', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                var btnSubmit = form.find('button[type="submit"]');
+                var originalHtml = btnSubmit.html();
+                btnSubmit.html('<span class="spinner-border spinner-border-sm me-1.5"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: new FormData(form[0]),
+                    processData: false,
+                    contentType: false,
+                    success: function (res) {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        if (res.success) {
+                            Swal.fire({ icon: 'success', title: 'Saved', text: res.message, timer: 1500, showConfirmButton: false })
+                                .then(function () { location.reload(); });
+                        } else {
+                            var errorMsg = res.message;
+                            if (res.errors && res.errors.length > 0) errorMsg += '\n' + res.errors.join('\n');
+                            Swal.fire({ icon: 'error', title: 'Validation Error', text: errorMsg });
+                        }
+                    },
+                    error: function () {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        Swal.fire({ icon: 'error', title: 'System Error', text: 'An unexpected system error occurred.' });
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,325 @@
+@model IEnumerable<Pharma_Script.Models.Receptionist>
+@using Pharma_Script.Helpers
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Receptionist Staff";
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Receptionists</h4>
+        <p class="text-muted small mb-0 font-medium">Manage front-desk staff accounts and branch mapping scope.</p>
+    </div>
+    <div>
+        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreateRecep">
+            <i class="bi bi-plus-lg me-1.5"></i>Add Receptionist
+        </button>
+    </div>
+</div>
+
+<div class="table-card mb-4">
+    <div class="table-card-header flex-column flex-md-row gap-3">
+        <h5 class="table-card-title mb-0">Front-desk accounts</h5>
+        
+        <!-- Filters Form -->
+        <form method="get" action="@Url.Action("Index")" class="d-flex gap-2">
+            <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Search staff..." value="@ViewBag.SearchTerm" style="width: 200px;" />
+            <select name="branchId" class="form-select form-select-sm" asp-items="@ViewBag.Branches" style="width: 180px;">
+                <option value="">All Branches</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm px-2.5"><i class="bi bi-search"></i></button>
+            <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-2.5"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Staff Name</th>
+                    <th>Email / Phone</th>
+                    <th>Branch scope</th>
+                    <th class="text-center" style="width: 100px;">Status</th>
+                    <th class="text-end" style="width: 200px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.ReceptionistID</td>
+                            <td class="fw-semibold text-dark">@item.FirstName @item.LastName</td>
+                            <td class="small text-secondary">
+                                <div><i class="bi bi-envelope text-muted me-1.5"></i>@item.Email</div>
+                                <div><i class="bi bi-telephone text-muted me-1.5"></i>@item.Phone</div>
+                            </td>
+                            <td class="small">
+                                <span class="badge bg-light text-secondary border rounded px-2.5 py-1">@(item.BranchName ?? "All Branches")</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input status-toggle" type="checkbox" data-id="@item.ReceptionistID" @(item.IsActive ? "checked" : "") style="cursor: pointer;" />
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn-action btnView" data-id="@item.ReceptionistID" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn-action btn-action-edit btnEdit" data-id="@item.ReceptionistID" title="Edit">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn-action btn-action-delete btnDelete" data-id="@item.ReceptionistID" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted small">No receptionists found matching the filters.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems records)
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = i, pageSize = ViewBag.PageSize })">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="recepModal" tabindex="-1" aria-labelledby="recepModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="recepModalLabel">Receptionist Details</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="recepModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('recepModal'));
+
+            // Load Create
+            $('#btnCreateRecep').on('click', function () {
+                $('#recepModalLabel').text('Create Receptionist Staff Account');
+                $('#recepModalBody').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+
+                $.get('@Url.Action("Create")', function (html) {
+                    $('#recepModalBody').html(html);
+                    $.validator.unobtrusive.parse('#recepModalBody');
+                });
+            });
+
+            // Load Edit
+            $(document).on('click', '.btnEdit', function () {
+                var id = $(this).data('id');
+                $('#recepModalLabel').text('Edit Receptionist Settings');
+                $('#recepModalBody').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+
+                $.get('@Url.Action("Edit")/' + id, function (html) {
+                    $('#recepModalBody').html(html);
+                    $.validator.unobtrusive.parse('#recepModalBody');
+                });
+            });
+
+            // Load Details
+            $(document).on('click', '.btnView', function () {
+                var id = $(this).data('id');
+                $('#recepModalLabel').text('Receptionist Profile Details');
+                $('#recepModalBody').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+
+                $.get('@Url.Action("Details")/' + id, function (html) {
+                    $('#recepModalBody').html(html);
+                });
+            });
+
+            // Form Submit via AJAX
+            $(document).on('submit', '#recepModalBody form', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                if (!form.valid()) return false;
+
+                var btnSubmit = form.find('button[type="submit"]');
+                var originalHtml = btnSubmit.html();
+                btnSubmit.html('<span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: res.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btnSubmit.html(originalHtml).prop('disabled', false);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'An unexpected system error occurred.'
+                        });
+                    }
+                });
+            });
+
+            // Toggle active status
+            $('.status-toggle').on('change', function () {
+                var toggle = $(this);
+                var id = toggle.data('id');
+                var isActive = toggle.is(':checked');
+
+                $.ajax({
+                    url: '@Url.Action("ToggleStatus")',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        isActive: isActive,
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (res) {
+                        if (res.success) {
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                            Toast.fire({
+                                icon: 'success',
+                                title: res.message
+                            });
+                        } else {
+                            toggle.prop('checked', !isActive);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Action Failed',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        toggle.prop('checked', !isActive);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Connection Error',
+                            text: 'Failed to update receptionist status.'
+                        });
+                    }
+                });
+            });
+
+            // Delete receptionist
+            $(document).on('click', '.btnDelete', function () {
+                var id = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Delete Receptionist Account?',
+                    text: "This staff will lose front desk panel access immediately. This cannot be undone.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Delete',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("Delete")/' + id,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted',
+                                        text: res.message,
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Action Failed',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Connection Error',
+                                    text: 'Failed to delete receptionist.'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

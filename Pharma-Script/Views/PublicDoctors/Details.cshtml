@@ -1,0 +1,106 @@
+@model Pharma_Script.ViewModels.Public.PublicDoctorProfileViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var doc = Model.Doctor;
+    var slug = Model.Tenant.Organization.OrganizationSlug;
+    string PubUrl(string path) => $"/{slug}/{path}".TrimEnd('/');
+}
+
+<section class="pub-section-tight">
+    <div class="container">
+        <div class="row g-5">
+            <div class="col-lg-4">
+                <div class="pub-doctor-card">
+                    @if (!string.IsNullOrEmpty(doc.ProfileImage))
+                    {
+                        <img src="@doc.ProfileImage" alt="Dr. @doc.FirstName @doc.LastName" class="pub-doctor-photo" style="height:300px;" loading="eager" />
+                    }
+                    else
+                    {
+                        <div class="pub-doctor-photo d-flex align-items-center justify-content-center" style="height:300px;">
+                            <i class="bi bi-person-badge" style="font-size:4rem;color:var(--ink-muted);"></i>
+                        </div>
+                    }
+                    <div class="pub-doctor-body">
+                        <div class="pub-doctor-name fs-4">Dr. @doc.FirstName @doc.LastName</div>
+                        <div class="pub-doctor-meta mb-1">@doc.Qualification</div>
+                        <div class="pub-doctor-meta mb-3">@doc.DepartmentName &middot; @doc.ExperienceYears yrs experience</div>
+                        <a href="@PubUrl($"doctors/{doc.DoctorID}/book")" class="pub-btn-cta w-100 text-center d-block">
+                            <i class="bi bi-calendar-check me-1"></i>Book Appointment
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                @if (doc.SpecializationNames.Any())
+                {
+                    <div class="mb-3">
+                        @foreach (var spec in doc.SpecializationNames)
+                        {
+                            <span class="badge rounded-pill text-bg-light border me-1 mb-1">@spec</span>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(doc.Biography))
+                {
+                    <h5 class="fw-bold">About</h5>
+                    <p class="text-muted">@doc.Biography</p>
+                }
+
+                <h5 class="fw-bold mt-4">Consultation Fees</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded-3 p-3 text-center">
+                            <div class="small text-muted">Clinic Visit</div>
+                            <div class="fw-bold">₹@doc.ConsultationFee</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded-3 p-3 text-center">
+                            <div class="small text-muted">Video Call</div>
+                            <div class="fw-bold">₹@doc.VideoConsultationFee</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded-3 p-3 text-center">
+                            <div class="small text-muted">Voice Call</div>
+                            <div class="fw-bold">₹@doc.VoiceConsultationFee</div>
+                        </div>
+                    </div>
+                    @if (doc.IsPriorityAvailable)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="border rounded-3 p-3 text-center" style="border-color:var(--tenant-primary) !important;">
+                                <div class="small text-muted">Priority</div>
+                                <div class="fw-bold">₹@doc.PriorityConsultationFee</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (Model.AvailabilityByDay.Any())
+                {
+                    <h5 class="fw-bold">Weekly Availability</h5>
+                    <div class="row g-2">
+                        @foreach (var group in Model.AvailabilityByDay)
+                        {
+                            <div class="col-12 col-md-6">
+                                <div class="border rounded-3 p-3">
+                                    <div class="fw-semibold mb-1">@group.Key</div>
+                                    @foreach (var slotRange in group)
+                                    {
+                                        <div class="small text-muted">
+                                            @DateTime.Today.Add(slotRange.StartTime).ToString("h:mm tt") - @DateTime.Today.Add(slotRange.EndTime).ToString("h:mm tt")
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>

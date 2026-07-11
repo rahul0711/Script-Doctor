@@ -1,0 +1,267 @@
+@{
+    Layout = "_Layout";
+    var doctor = (Pharma_Script.Models.Doctor)ViewBag.Doctor;
+    ViewData["Title"] = $"Leave History — Dr. {doctor.FirstName}";
+    var upcoming = (IEnumerable<Pharma_Script.Models.DoctorLeave>)ViewBag.UpcomingLeaves;
+    var past = (IEnumerable<Pharma_Script.Models.DoctorLeave>)ViewBag.PastLeaves;
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Doctor Leave Management</h4>
+        <p class="text-muted small mb-0 font-medium">Dr. @doctor.FirstName @doctor.LastName — @(doctor.Qualification)</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="@Url.Action("Index", "Doctors")" class="btn btn-light fw-medium px-3.5 py-2">
+            <i class="bi bi-arrow-left me-1.5"></i>Back to Doctors
+        </a>
+        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnAddLeave">
+            <i class="bi bi-plus-lg me-1.5"></i>Add Leave Record
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Upcoming Leaves -->
+    <div class="col-12">
+        <div class="table-card shadow-sm">
+            <div class="table-card-header bg-light py-2 px-3 border-bottom">
+                <h6 class="table-card-title m-0 text-dark"><i class="bi bi-calendar-check me-2 text-primary"></i>Upcoming & Ongoing Leaves</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table custom-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Duration</th>
+                            <th>Reason</th>
+                            <th class="text-end" style="width: 150px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (upcoming != null && upcoming.Any())
+                        {
+                            foreach (var item in upcoming)
+                            {
+                                var duration = (item.LeaveEndDate.Date - item.LeaveStartDate.Date).Days + 1;
+                                <tr>
+                                    <td class="fw-semibold text-dark">@item.LeaveStartDate.ToString("dd MMM yyyy")</td>
+                                    <td class="fw-semibold text-dark">@item.LeaveEndDate.ToString("dd MMM yyyy")</td>
+                                    <td>
+                                        <span class="badge bg-light text-primary border rounded px-2.5 py-1">@duration @(duration == 1 ? "Day" : "Days")</span>
+                                    </td>
+                                    <td class="text-secondary small">@(string.IsNullOrEmpty(item.Reason) ? "No reason specified" : item.Reason)</td>
+                                    <td class="text-end">
+                                        <button class="btn-action btnEditLeave" data-id="@item.LeaveID" title="Edit Leave">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button class="btn-action btn-action-delete btnDeleteLeave" data-id="@item.LeaveID" title="Delete Leave">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">No upcoming leave records found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Past Leaves -->
+    <div class="col-12">
+        <div class="table-card shadow-sm opacity-80">
+            <div class="table-card-header bg-light py-2 px-3 border-bottom">
+                <h6 class="table-card-title m-0 text-dark"><i class="bi bi-calendar-x me-2 text-secondary"></i>Past Leaves Archive</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table custom-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Duration</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (past != null && past.Any())
+                        {
+                            foreach (var item in past)
+                            {
+                                var duration = (item.LeaveEndDate.Date - item.LeaveStartDate.Date).Days + 1;
+                                <tr>
+                                    <td class="text-secondary">@item.LeaveStartDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-secondary">@item.LeaveEndDate.ToString("dd MMM yyyy")</td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border rounded px-2 py-0.5" style="font-size:0.75rem;">@duration @(duration == 1 ? "Day" : "Days")</span>
+                                    </td>
+                                    <td class="text-muted small">@(string.IsNullOrEmpty(item.Reason) ? "N/A" : item.Reason)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted small">No historical leave records found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="leaveModal" tabindex="-1" aria-labelledby="leaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="leaveModalLabel">Leave Details</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="leaveModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('leaveModal'));
+
+            // Load Create
+            $('#btnAddLeave').on('click', function () {
+                $('#leaveModalLabel').text('Apply Doctor Leave');
+                $('#leaveModalBody').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+
+                $.get('@Url.Action("Create", "DoctorLeave")?doctorId=@doctor.DoctorID', function (html) {
+                    $('#leaveModalBody').html(html);
+                    $.validator.unobtrusive.parse('#leaveModalBody');
+                });
+            });
+
+            // Load Edit
+            $(document).on('click', '.btnEditLeave', function () {
+                var id = $(this).data('id');
+                $('#leaveModalLabel').text('Edit Leave Record');
+                $('#leaveModalBody').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+
+                $.get('@Url.Action("Edit", "DoctorLeave")/' + id, function (html) {
+                    $('#leaveModalBody').html(html);
+                    $.validator.unobtrusive.parse('#leaveModalBody');
+                });
+            });
+
+            // Form Submit via AJAX
+            $(document).on('submit', '#leaveModalBody form', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                if (!form.valid()) return false;
+
+                var btnSubmit = form.find('button[type="submit"]');
+                var originalHtml = btnSubmit.html();
+                btnSubmit.html('<span class="spinner-border spinner-border-sm me-1" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Saved',
+                                text: res.message,
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btnSubmit.html(originalHtml).prop('disabled', false);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'Failed to process request.'
+                        });
+                    }
+                });
+            });
+
+            // Delete Leave
+            $(document).on('click', '.btnDeleteLeave', function () {
+                var id = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Cancel this leave?',
+                    text: "The doctor will be marked as active/available on these dates. This cannot be undone.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Cancel Leave',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("Delete", "DoctorLeave")/' + id,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted',
+                                        text: res.message,
+                                        timer: 1200,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Failed',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Connection error while cancelling.'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

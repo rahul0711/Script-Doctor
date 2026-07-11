@@ -1,0 +1,62 @@
+@model Pharma_Script.Models.User
+
+<div class="container-fluid px-0">
+    <div class="row g-4">
+        <!-- Header Section -->
+        <div class="col-12 d-flex align-items-center gap-3 pb-3 border-bottom mb-2">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle" style="width: 56px; height: 56px;">
+                <i class="bi bi-people fs-3"></i>
+            </div>
+            <div>
+                <h5 class="fw-bold text-dark mb-0">@Model.FirstName @Model.LastName</h5>
+                <span class="badge bg-light text-secondary border px-2.5 py-1 small">@Model.RoleName</span>
+                @if (Model.IsActive)
+                {
+                    <span class="badge-active ms-1.5">Active Account</span>
+                }
+                else
+                {
+                    <span class="badge-inactive ms-1.5">Disabled Account</span>
+                }
+            </div>
+        </div>
+
+        <!-- Details Info -->
+        <div class="col-12 col-md-6">
+            <h6 class="fw-bold text-dark small uppercase mb-3" style="letter-spacing: 0.5px; color: var(--text-muted) !important;">Identity Scope</h6>
+            <div class="d-flex flex-column gap-2.5">
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Associated Organization</small>
+                    <span class="text-dark small fw-medium">@(string.IsNullOrEmpty(Model.OrganizationName) ? "Platform Owner (Global)" : Model.OrganizationName)</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Access Permission Role</small>
+                    <span class="text-dark small fw-medium">@Model.RoleName</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Account Created</small>
+                    <span class="text-dark small fw-medium">@Model.CreatedAt.ToString("g")</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="col-12 col-md-6">
+            <h6 class="fw-bold text-dark small uppercase mb-3" style="letter-spacing: 0.5px; color: var(--text-muted) !important;">Contact info</h6>
+            <div class="d-flex flex-column gap-2.5">
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Email Address</small>
+                    <span class="text-dark small fw-medium">@Model.Email</span>
+                </div>
+                <div>
+                    <small class="text-muted d-block" style="font-size: 0.75rem;">Phone Number</small>
+                    <span class="text-dark small fw-medium">@(string.IsNullOrEmpty(Model.Phone) ? "N/A" : Model.Phone)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+    </div>
+</div>

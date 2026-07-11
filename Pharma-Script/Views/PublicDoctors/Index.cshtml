@@ -1,0 +1,122 @@
+@model Pharma_Script.ViewModels.Public.PublicDoctorListViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var slug = Model.Tenant.Organization.OrganizationSlug;
+    string PubUrl(string path) => $"/{slug}/{path}".TrimEnd('/');
+}
+
+<section class="pub-section-tight pub-section-soft">
+    <div class="container">
+        <div class="text-center mb-4">
+            <span class="pub-eyebrow">Find Your Doctor</span>
+            <h1 class="pub-heading mt-2">Our Doctors</h1>
+            <p class="pub-subheading mx-auto">Search and filter by department, specialization, or branch to find the right doctor for you.</p>
+        </div>
+
+        <form method="get" class="row g-2 justify-content-center">
+            <div class="col-12 col-md-4">
+                <input type="text" name="searchTerm" class="form-control" placeholder="Search by name..." value="@Model.SearchTerm" />
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="departmentId" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Departments</option>
+                    @foreach (var dept in Model.Departments)
+                    {
+                        <option value="@dept.DepartmentID" selected="@(Model.DepartmentId == dept.DepartmentID)">@dept.DepartmentName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="specializationId" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Specializations</option>
+                    @foreach (var spec in Model.Specializations)
+                    {
+                        <option value="@spec.SpecializationID" selected="@(Model.SpecializationId == spec.SpecializationID)">@spec.SpecializationName</option>
+                    }
+                </select>
+            </div>
+            @if (Model.Branches.Count > 1)
+            {
+                <div class="col-6 col-md-2">
+                    <select name="branchId" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Branches</option>
+                        @foreach (var branch in Model.Branches)
+                        {
+                            <option value="@branch.BranchID" selected="@(Model.BranchId == branch.BranchID)">@branch.BranchName</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-6 col-md-2">
+                <button type="submit" class="pub-btn-cta w-100"><i class="bi bi-search me-1"></i>Search</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="pub-section">
+    <div class="container">
+        @if (Model.Doctors.Any())
+        {
+            <div class="row g-4">
+                @foreach (var doc in Model.Doctors)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="pub-doctor-card">
+                            @if (!string.IsNullOrEmpty(doc.ProfileImage))
+                            {
+                                <img src="@doc.ProfileImage" alt="Dr. @doc.FirstName @doc.LastName" class="pub-doctor-photo" loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="pub-doctor-photo d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-person-badge" style="font-size:3rem;color:var(--ink-muted);"></i>
+                                </div>
+                            }
+                            <div class="pub-doctor-body">
+                                <div class="pub-doctor-name">Dr. @doc.FirstName @doc.LastName</div>
+                                <div class="pub-doctor-meta">@doc.Qualification</div>
+                                <div class="pub-doctor-meta mb-1">@doc.DepartmentName &middot; @doc.ExperienceYears yrs experience</div>
+                                @if (doc.SpecializationNames.Any())
+                                {
+                                    <div class="mb-2">
+                                        @foreach (var spec in doc.SpecializationNames.Take(2))
+                                        {
+                                            <span class="badge rounded-pill text-bg-light border me-1">@spec</span>
+                                        }
+                                    </div>
+                                }
+                                <span class="pub-fee-badge">₹@doc.ConsultationFee onwards</span>
+                                <div class="d-flex gap-2 mt-3">
+                                    <a href="@PubUrl($"doctors/{doc.DoctorID}")" class="pub-btn-outline btn-sm flex-fill text-center">View Profile</a>
+                                    <a href="@PubUrl($"doctors/{doc.DoctorID}/book")" class="pub-btn-cta btn-sm flex-fill text-center">Book</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(Model.CurrentPage == i ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { searchTerm = Model.SearchTerm, departmentId = Model.DepartmentId, branchId = Model.BranchId, specializationId = Model.SpecializationId, page = i })">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-person-x" style="font-size:3rem;color:var(--ink-muted);"></i>
+                <p class="text-muted mt-3">No doctors match your search. Try adjusting the filters.</p>
+            </div>
+        }
+    </div>
+</section>

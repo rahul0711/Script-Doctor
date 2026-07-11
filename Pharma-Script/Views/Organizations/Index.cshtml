@@ -1,0 +1,328 @@
+@model IEnumerable<Pharma_Script.Models.Organization>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Organizations";
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Organizations</h4>
+        <p class="text-muted small mb-0 font-medium">Manage clinical, hospital, and diagnostic center records.</p>
+    </div>
+    <div>
+        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreateOrg">
+            <i class="bi bi-plus-lg me-1.5"></i>Add Organization
+        </button>
+    </div>
+</div>
+
+<div class="table-card">
+    <div class="table-card-header flex-column flex-md-row gap-3">
+        <h5 class="table-card-title mb-0">Platform tenants</h5>
+        
+        <!-- Search bar -->
+        <form method="get" action="@Url.Action("Index")" class="d-flex gap-2">
+            <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Search by name, type, city..." value="@ViewBag.SearchTerm" style="width: 250px;" />
+            <button type="submit" class="btn btn-primary btn-sm px-2.5"><i class="bi bi-search"></i></button>
+            @if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
+            {
+                <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-2.5"><i class="bi bi-x-lg"></i></a>
+            }
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Contact Info</th>
+                    <th>Location</th>
+                    <th class="text-center" style="width: 100px;">Status</th>
+                    <th class="text-end" style="width: 160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.OrganizationID</td>
+                            <td class="fw-semibold text-dark">@item.OrganizationName</td>
+                            <td><span class="badge bg-light text-secondary border rounded px-2.5 py-1 small">@item.OrganizationType</span></td>
+                            <td>
+                                <div class="small"><i class="bi bi-envelope text-muted me-1.5"></i>@item.Email</div>
+                                <div class="small"><i class="bi bi-telephone text-muted me-1.5"></i>@item.Phone</div>
+                            </td>
+                            <td>@item.City, @item.State</td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input status-toggle" type="checkbox" data-id="@item.OrganizationID" @(item.IsActive ? "checked" : "") style="cursor: pointer;" />
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn-action btnView" data-id="@item.OrganizationID" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn-action btn-action-edit btnEdit" data-id="@item.OrganizationID" title="Edit">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn-action btn-action-delete btnDelete" data-id="@item.OrganizationID" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted small">No organizations found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems records)
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, page = i, pageSize = ViewBag.PageSize })">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+<!-- Modal Dialog -->
+<div class="modal fade" id="commonModal" tabindex="-1" aria-labelledby="commonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="commonModalLabel">Organization Modal</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="commonModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('commonModal'));
+
+            // Load Create View
+            $('#btnCreateOrg').on('click', function () {
+                $('#commonModalLabel').text('Add New Organization');
+                $('#commonModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading form...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Create")', function (html) {
+                    $('#commonModalBody').html(html);
+                    $.validator.unobtrusive.parse('#commonModalBody');
+                });
+            });
+
+            // Load Edit View
+            $(document).on('click', '.btnEdit', function () {
+                var id = $(this).data('id');
+                $('#commonModalLabel').text('Edit Organization Settings');
+                $('#commonModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading settings...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Edit")/' + id, function (html) {
+                    $('#commonModalBody').html(html);
+                    $.validator.unobtrusive.parse('#commonModalBody');
+                });
+            });
+
+            // Load Details View
+            $(document).on('click', '.btnView', function () {
+                var id = $(this).data('id');
+                $('#commonModalLabel').text('Organization Profile');
+                $('#commonModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading details...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Details")/' + id, function (html) {
+                    $('#commonModalBody').html(html);
+                });
+            });
+
+            // Handle Form Submissions via AJAX
+            $(document).on('submit', '#commonModalBody form', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                if (!form.valid()) return false;
+
+                var btnSubmit = form.find('button[type="submit"]');
+                var originalHtml = btnSubmit.html();
+                btnSubmit.html('<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: res.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btnSubmit.html(originalHtml).prop('disabled', false);
+                            var errorMsg = res.message;
+                            if (res.errors && res.errors.length > 0) {
+                                errorMsg += '\n' + res.errors.join('\n');
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: errorMsg
+                            });
+                        }
+                    },
+                    error: function () {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'An unexpected system error occurred.'
+                        });
+                    }
+                });
+            });
+
+            // Toggle Status Switch
+            $('.status-toggle').on('change', function () {
+                var toggle = $(this);
+                var id = toggle.data('id');
+                var isActive = toggle.is(':checked');
+
+                $.ajax({
+                    url: '@Url.Action("ToggleStatus")',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        isActive: isActive,
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (res) {
+                        if (res.success) {
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                            Toast.fire({
+                                icon: 'success',
+                                title: res.message
+                            });
+                        } else {
+                            toggle.prop('checked', !isActive);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Action Failed',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        toggle.prop('checked', !isActive);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Connection Error',
+                            text: 'Failed to update organization status.'
+                        });
+                    }
+                });
+            });
+
+            // Delete prompt
+            $(document).on('click', '.btnDelete', function () {
+                var id = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Delete Organization?',
+                    text: "Associated branches, departments, and users will be affected. This cannot be undone.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Delete',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("Delete")/' + id,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted',
+                                        text: res.message,
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Action Failed',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Connection Error',
+                                    text: 'Failed to delete organization.'
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

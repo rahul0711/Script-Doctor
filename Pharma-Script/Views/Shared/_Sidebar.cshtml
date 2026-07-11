@@ -1,0 +1,130 @@
+@using Pharma_Script.Helpers
+@using Pharma_Script.Repositories.Interfaces
+@inject IUnitOfWork Uow
+
+<div class="sidebar-wrapper" id="sidebar">
+    <div class="sidebar-header">
+        <a href="@Url.Action("Index", "Dashboard")" class="sidebar-logo">
+            <i class="bi bi-heart-pulse-fill"></i>Script<span>India</span>
+        </a>
+    </div>
+    <ul class="sidebar-menu">
+        <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+            <a href="@Url.Action("Index", "Dashboard")">
+                <i class="bi bi-columns-gap"></i>Dashboard
+            </a>
+        </li>
+
+        @if (User.IsPlatformOwner())
+        {
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Organizations" ? "active" : "")">
+                <a href="@Url.Action("Index", "Organizations")">
+                    <i class="bi bi-building"></i>Organizations
+                </a>
+            </li>
+        }
+
+        @if (User.IsPlatformOwner() || User.IsOrganizationAdmin())
+        {
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Branches" ? "active" : "")">
+                <a href="@Url.Action("Index", "Branches")">
+                    <i class="bi bi-diagram-3"></i>Branches
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Departments" ? "active" : "")">
+                <a href="@Url.Action("Index", "Departments")">
+                    <i class="bi bi-layers"></i>Departments
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Roles" ? "active" : "")">
+                <a href="@Url.Action("Index", "Roles")">
+                    <i class="bi bi-shield-check"></i>Roles
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")">
+                <a href="@Url.Action("Index", "Users")">
+                    <i class="bi bi-people"></i>Users
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Doctors" ? "active" : "")">
+                <a href="@Url.Action("Index", "Doctors")">
+                    <i class="bi bi-person-badge-fill"></i>Doctors
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Receptionists" ? "active" : "")">
+                <a href="@Url.Action("Index", "Receptionists")">
+                    <i class="bi bi-person-workspace"></i>Receptionists
+                </a>
+            </li>
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Specializations" ? "active" : "")">
+                <a href="@Url.Action("Index", "Specializations")">
+                    <i class="bi bi-stethoscope"></i>Specializations
+                </a>
+            </li>
+        }
+
+        @if (User.IsPlatformOwner() || User.IsOrganizationAdmin() || User.GetRoleName().Equals("Doctor", StringComparison.OrdinalIgnoreCase) || User.GetRoleName().Equals("Receptionist", StringComparison.OrdinalIgnoreCase))
+        {
+            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? "active" : "")">
+                <a href="@Url.Action("Index", "Patients")">
+                    <i class="bi bi-heart-pulse"></i>Patients
+                </a>
+            </li>
+        }
+
+        @{
+            var websiteControllers = new[] { "WebsiteSettings", "HeroSections", "Services", "Gallery", "FAQs", "ContactMessages" };
+            var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+            var isWebsiteSection = websiteControllers.Contains(currentController);
+        }
+        @if (User.IsOrganizationAdmin())
+        {
+            <li class="@(isWebsiteSection ? "active" : "")">
+                <a href="#websiteSubmenu" data-bs-toggle="collapse" aria-expanded="@(isWebsiteSection ? "true" : "false")" class="d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-globe2"></i>Website</span>
+                    <i class="bi bi-chevron-down small"></i>
+                </a>
+                <div class="collapse @(isWebsiteSection ? "show" : "")" id="websiteSubmenu">
+                    <ul class="sidebar-submenu list-unstyled ps-4 mb-0">
+                        <li class="@(currentController == "WebsiteSettings" ? "active" : "")">
+                            <a href="@Url.Action("Index", "WebsiteSettings")">Website Settings</a>
+                        </li>
+                        <li class="@(currentController == "HeroSections" ? "active" : "")">
+                            <a href="@Url.Action("Index", "HeroSections")">Hero Section</a>
+                        </li>
+                        <li class="@(currentController == "Services" ? "active" : "")">
+                            <a href="@Url.Action("Index", "Services")">Services</a>
+                        </li>
+                        <li class="@(currentController == "Gallery" ? "active" : "")">
+                            <a href="@Url.Action("Index", "Gallery")">Gallery</a>
+                        </li>
+                        <li class="@(currentController == "FAQs" ? "active" : "")">
+                            <a href="@Url.Action("Index", "FAQs")">FAQs</a>
+                        </li>
+                        <li class="@(currentController == "ContactMessages" ? "active" : "")">
+                            <a href="@Url.Action("Index", "ContactMessages")">Contact Messages</a>
+                        </li>
+                        @{
+                            var currentOrgId = User.GetOrganizationId();
+                            var currentOrg = currentOrgId.HasValue ? await Uow.Organizations.GetByIdAsync(currentOrgId.Value) : null;
+                            var currentOrgSlug = currentOrg?.OrganizationSlug;
+                        }
+                        @if (!string.IsNullOrEmpty(currentOrgSlug))
+                        {
+                            <li>
+                                <a href="/@currentOrgSlug" target="_blank">View Website <i class="bi bi-box-arrow-up-right small"></i></a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </li>
+        }
+    </ul>
+    
+    <div class="sidebar-user-section">
+        <small class="text-muted d-block uppercase fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">Account Scope</small>
+        <span class="badge bg-light text-dark border py-1.5 px-2.5 rounded text-truncate w-100 text-start d-block" style="font-size: 0.75rem; font-weight: 500;">
+            <i class="bi bi-shield-lock me-1.5 text-primary"></i>@User.GetRoleName()
+        </span>
+    </div>
+</div>

@@ -1,0 +1,135 @@
+@model Pharma_Script.Models.Doctor
+
+<div class="row g-4">
+    <div class="col-12 col-md-4 text-center border-end">
+        <div class="mb-3">
+            @if (!string.IsNullOrEmpty(Model.ProfileImage))
+            {
+                <img src="@Model.ProfileImage" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;" alt="Profile Image" />
+            }
+            else
+            {
+                <div class="rounded-circle bg-light text-primary d-inline-flex align-items-center justify-content-center border" style="width: 120px; height: 120px; font-size: 3rem; font-weight: bold;">
+                    @Model.FirstName[0]
+                </div>
+            }
+        </div>
+        <h5 class="mb-1 text-dark fw-bold">@Model.FirstName @Model.LastName</h5>
+        <span class="badge bg-light text-secondary border rounded-pill px-3 py-1.5 mb-3 font-semibold">Doctor</span>
+
+        <div class="text-start mt-4 px-2">
+            <div class="mb-2">
+                <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.65rem;">Email</small>
+                <span class="small fw-semibold text-dark"><i class="bi bi-envelope me-1.5 text-primary"></i>@Model.Email</span>
+            </div>
+            <div class="mb-2">
+                <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.65rem;">Phone</small>
+                <span class="small fw-semibold text-dark"><i class="bi bi-telephone me-1.5 text-primary"></i>@Model.Phone</span>
+            </div>
+            <div class="mb-2">
+                <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.65rem;">Reg. Number</small>
+                <span class="small fw-semibold text-dark"><i class="bi bi-card-checklist me-1.5 text-primary"></i>@Model.MedicalRegistrationNumber</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-md-8">
+        <div class="row g-3">
+            <div class="col-12">
+                <h6 class="text-primary fw-bold uppercase mb-2"><i class="bi bi-person-workspace me-2"></i>Professional Summary</h6>
+                <div class="p-3 bg-light rounded border">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <span class="text-muted d-block small">Qualification</span>
+                            <strong class="text-dark small">@Model.Qualification</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted d-block small">Experience</span>
+                            <strong class="text-dark small">@Model.ExperienceYears Years</strong>
+                        </div>
+                        <div class="col-6 mt-2">
+                            <span class="text-muted d-block small">Branch</span>
+                            <strong class="text-dark small">@(Model.BranchName ?? "N/A")</strong>
+                        </div>
+                        <div class="col-6 mt-2">
+                            <span class="text-muted d-block small">Department</span>
+                            <strong class="text-dark small">@(Model.DepartmentName ?? "N/A")</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <span class="text-muted d-block small fw-semibold">Specializations</span>
+                <div class="d-flex flex-wrap gap-1.5 mt-1">
+                    @if (Model.SpecializationNames != null && Model.SpecializationNames.Any())
+                    {
+                        foreach (var spec in Model.SpecializationNames)
+                        {
+                            <span class="badge bg-light text-primary border rounded-pill px-3 py-1.5 font-medium" style="font-size: 0.75rem;">@spec</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="text-muted small">No specializations assigned.</span>
+                    }
+                </div>
+            </div>
+
+            <div class="col-12">
+                <h6 class="text-primary fw-bold uppercase mb-2"><i class="bi bi-wallet2 me-2"></i>Consultation Fees</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm custom-table small mb-0">
+                        <thead>
+                            <tr class="bg-light">
+                                <th>Channel</th>
+                                <th class="text-end">Fee (INR)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Regular In-Clinic Consultation</td>
+                                <td class="text-end fw-semibold text-dark">₹@Model.ConsultationFee.ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <td>Video Consultation</td>
+                                <td class="text-end fw-semibold text-dark">₹@Model.VideoConsultationFee.ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <td>Voice Consultation</td>
+                                <td class="text-end fw-semibold text-dark">₹@Model.VoiceConsultationFee.ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <td>Priority (Urgent) Consultation</td>
+                                <td class="text-end fw-semibold text-dark">₹@Model.PriorityConsultationFee.ToString("F2")</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @if (Model.IsPriorityAvailable)
+            {
+                <div class="col-12">
+                    <div class="alert alert-info py-2 px-3 mb-0 small rounded d-flex align-items-center">
+                        <i class="bi bi-lightning-charge-fill text-warning me-2" style="font-size: 1.1rem;"></i>
+                        <div>
+                            Priority consulting is active from 
+                            <strong>@(Model.PriorityStartTime?.ToString("dd MMM yyyy, hh:mm tt") ?? "N/A")</strong> to 
+                            <strong>@(Model.PriorityEndTime?.ToString("dd MMM yyyy, hh:mm tt") ?? "N/A")</strong>.
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="col-12">
+                <span class="text-muted d-block small fw-semibold">Biography</span>
+                <p class="small text-secondary mb-0 bg-light p-2 rounded border" style="white-space: pre-wrap;">@(string.IsNullOrWhiteSpace(Model.Biography) ? "No biography details available." : Model.Biography)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-footer px-0 pb-0 mt-4 border-0">
+    <button type="button" class="btn btn-secondary px-3.5" data-bs-dismiss="modal">Close</button>
+</div>

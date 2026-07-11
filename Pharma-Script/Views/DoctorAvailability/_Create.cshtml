@@ -1,0 +1,74 @@
+@model Pharma_Script.ViewModels.Doctor.DoctorAvailabilityViewModel
+
+<form asp-action="Create" asp-controller="DoctorAvailability" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DoctorID" />
+
+    <div class="row g-3">
+        <div class="col-12">
+            <label asp-for="DayOfWeek" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="DayOfWeek" class="form-select" required>
+                <option value="">-- Select Day of Week --</option>
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+            <span asp-validation-for="DayOfWeek" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6">
+            <label asp-for="StartTime" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="StartTime" type="time" class="form-control" required />
+            <span asp-validation-for="StartTime" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6">
+            <label asp-for="EndTime" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="EndTime" type="time" class="form-control" required />
+            <span asp-validation-for="EndTime" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="SlotDuration" class="form-label small fw-semibold text-secondary"></label>
+            <select asp-for="SlotDuration" class="form-select" required>
+                <option value="10">10 Minutes</option>
+                <option value="15" selected>15 Minutes</option>
+                <option value="20">20 Minutes</option>
+                <option value="30">30 Minutes</option>
+                <option value="45">45 Minutes</option>
+                <option value="60">1 Hour</option>
+            </select>
+            <span asp-validation-for="SlotDuration" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <h6 class="text-warning border-bottom pb-1.5 mb-1 mt-3 small fw-bold"><i class="bi bi-cup-hot me-1.5"></i>Break Hour (Optional)</h6>
+
+        <div class="col-6">
+            <label asp-for="BreakStart" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="BreakStart" type="time" class="form-control" />
+            <span asp-validation-for="BreakStart" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-6">
+            <label asp-for="BreakEnd" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="BreakEnd" type="time" class="form-control" />
+            <span asp-validation-for="BreakEnd" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12 mt-2">
+            <div class="form-check form-switch">
+                <input asp-for="IsAvailable" class="form-check-input" type="checkbox" />
+                <label asp-for="IsAvailable" class="form-check-label small fw-semibold text-secondary">Active Status</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Slot</button>
+    </div>
+</form>

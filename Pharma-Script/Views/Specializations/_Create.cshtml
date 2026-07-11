@@ -1,0 +1,31 @@
+@model Pharma_Script.ViewModels.Specialization.SpecializationViewModel
+
+<form asp-action="Create" asp-controller="Specializations" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="row g-3">
+        <div class="col-12">
+            <label asp-for="SpecializationName" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="SpecializationName" class="form-control" placeholder="Cardiology" required />
+            <span asp-validation-for="SpecializationName" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <label asp-for="Description" class="form-label small fw-semibold text-secondary"></label>
+            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Cardiovascular medicine, heart disease diagnostic, and therapy services..."></textarea>
+            <span asp-validation-for="Description" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
+
+        <div class="col-12">
+            <div class="form-check mb-1">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Status</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Specialization</button>
+    </div>
+</form>

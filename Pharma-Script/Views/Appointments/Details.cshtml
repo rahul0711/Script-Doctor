@@ -1,0 +1,457 @@
+@model Pharma_Script.Models.Appointment
+@using Pharma_Script.Helpers
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Appointment Details";
+    var payment = (Pharma_Script.Models.Payment?)ViewBag.Payment;
+    var notes = (Pharma_Script.Models.DoctorNote?)ViewBag.DoctorNote;
+    var prescription = (Pharma_Script.Models.Prescription?)ViewBag.Prescription;
+    var history = (IEnumerable<Pharma_Script.Models.AppointmentStatusHistory>?)ViewBag.History;
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Appointment Details</h4>
+        <p class="text-muted small mb-0 font-medium">Detailed audit report, clinical status transitions, and payments ledger.</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Index")" class="btn btn-outline-primary fw-medium px-3.5 py-2">
+            <i class="bi bi-arrow-left me-1.5"></i>Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Core Info & Workspaces links -->
+    <div class="col-12 col-lg-8">
+        <!-- Appointment Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <h5 class="card-title text-dark mb-0"><i class="bi bi-calendar-event text-primary me-2"></i>Schedule Info</h5>
+                    <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1.5 fw-semibold fs-7">
+                        @Model.AppointmentType
+                    </span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6 col-md-4">
+                        <div class="text-secondary small fw-medium">Appointment ID</div>
+                        <div class="fw-semibold text-dark">APT-@Model.AppointmentID</div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="text-secondary small fw-medium">Appointment Date</div>
+                        <div class="fw-semibold text-dark">@Model.AppointmentDate.ToString("dd-MMM-yyyy")</div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="text-secondary small fw-medium">Time Slot</div>
+                        <div class="fw-semibold text-dark">
+                            @DateTime.Today.Add(Model.StartTime).ToString("hh:mm tt") - @DateTime.Today.Add(Model.EndTime).ToString("hh:mm tt")
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="text-secondary small fw-medium">Consultation Fee</div>
+                        <div class="fw-semibold text-success">₹@Model.ConsultationFee.ToString("N2")</div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="text-secondary small fw-medium">Priority Consultation</div>
+                        <div>
+                            @if (Model.PriorityConsultation)
+                            {
+                                <span class="badge bg-danger text-white rounded-pill px-2.5">Priority</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-secondary rounded-pill px-2.5">Normal</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <div class="text-secondary small fw-medium">Current Status</div>
+                        <div>
+                            <span class="badge bg-primary rounded-pill px-2.5">@Model.Status</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Symptoms))
+                {
+                    <div class="mt-4 border-top pt-3">
+                        <h6 class="text-dark fw-semibold small mb-1">Symptoms Description</h6>
+                        <p class="text-secondary small mb-0 bg-light p-3 rounded-3" style="white-space: pre-line;">@Model.Symptoms</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.AppointmentReason))
+                {
+                    <div class="mt-3">
+                        <h6 class="text-dark fw-semibold small mb-1">Reason for Visit</h6>
+                        <p class="text-secondary small mb-0 bg-light p-3 rounded-3" style="white-space: pre-line;">@Model.AppointmentReason</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Participants Info -->
+        <div class="row g-4">
+            <div class="col-12 col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="bi bi-person me-2"></i>Patient Profile</h6>
+                        <h5 class="text-dark mb-1">@Model.PatientName</h5>
+                        <p class="text-muted small mb-3">ID: PAT-@Model.PatientID</p>
+                        <div class="row g-2 small">
+                            <div class="col-4 text-secondary font-medium">Gender:</div>
+                            <div class="col-8 text-dark fw-semibold">@(Model.PatientGender ?? "N/A")</div>
+                            
+                            <div class="col-4 text-secondary font-medium">Blood Group:</div>
+                            <div class="col-8 text-dark fw-semibold">@(Model.PatientBloodGroup ?? "N/A")</div>
+                            
+                            <div class="col-4 text-secondary font-medium">Age:</div>
+                            <div class="col-8 text-dark fw-semibold">
+                                @(Model.PatientDOB.HasValue ? (DateTime.Today.Year - Model.PatientDOB.Value.Year).ToString() + " years" : "N/A")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="bi bi-person-badge me-2"></i>Doctor Details</h6>
+                        <h5 class="text-dark mb-1">@Model.DoctorName</h5>
+                        <p class="text-muted small mb-3">Branch: @(Model.BranchName ?? "Main Organization")</p>
+                        
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            @if (!string.IsNullOrEmpty(Model.DoctorEmail))
+                            {
+                                <a href="mailto:@Model.DoctorEmail" class="btn btn-sm btn-light text-secondary"><i class="bi bi-envelope me-1"></i>Email</a>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.DoctorPhone))
+                            {
+                                <a href="tel:@Model.DoctorPhone" class="btn btn-sm btn-light text-secondary"><i class="bi bi-telephone me-1"></i>Call</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Module -->
+        <div class="card border-0 shadow-sm rounded-4 mt-4">
+            <div class="card-body p-4">
+                <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-credit-card text-primary me-2"></i>Payments Ledger</h5>
+                
+                @if (payment != null)
+                {
+                    <div class="alert alert-success d-flex align-items-center rounded-3 mb-0" role="alert">
+                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                        <div>
+                            <strong>Paid ₹@payment.Amount.ToString("N2")</strong> via <strong>@payment.PaymentMethod</strong> on @(payment.PaidAt?.ToString("dd-MMM-yyyy hh:mm tt") ?? "N/A"). 
+                            <br/><span class="small text-secondary">Transaction Reference: @payment.TransactionReference</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex justify-content-between align-items-center flex-column flex-md-row bg-warning bg-opacity-10 p-3.5 rounded-3">
+                        <div class="mb-3 mb-md-0">
+                            <h6 class="text-warning-emphasis mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Payment Outstanding</h6>
+                            <p class="text-secondary small mb-0">No payment transaction has been captured for this appointment yet.</p>
+                        </div>
+                        
+                        @if (User.IsInRole("Organization Admin") || User.IsInRole("Receptionist"))
+                        {
+                            <button class="btn btn-warning btn-sm fw-semibold" data-bs-toggle="collapse" data-bs-target="#paymentFormCollapse">
+                                <i class="bi bi-cash-coin me-1.5"></i>Log Payment
+                            </button>
+                        }
+                    </div>
+
+                    <div class="collapse mt-3" id="paymentFormCollapse">
+                        <div class="card card-body border p-3.5 rounded-3">
+                            <h6 class="text-dark mb-3">Record Payment Transaction</h6>
+                            <form method="post" action="@Url.Action("AddPayment")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="appointmentId" value="@Model.AppointmentID" />
+                                
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label small fw-semibold">Payment Method</label>
+                                        <select name="paymentMethod" class="form-select form-select-sm" required>
+                                            <option value="Cash">Cash</option>
+                                            <option value="UPI">UPI</option>
+                                            <option value="Credit Card">Credit Card</option>
+                                            <option value="Debit Card">Debit Card</option>
+                                            <option value="Net Banking">Net Banking</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label small fw-semibold">Transaction Reference / Receipt #</label>
+                                        <input type="text" name="transactionReference" class="form-control form-control-sm" placeholder="e.g. TXN98765432" required />
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Submit Payment Details</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Prescription & Notes summary if completed -->
+        @if (Model.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            <div class="card border-0 shadow-sm rounded-4 mt-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-file-earmark-medical text-primary me-2"></i>Consultation Output</h5>
+                    
+                    @if (notes != null)
+                    {
+                        <div class="row g-3 mb-3 text-dark">
+                            <div class="col-12">
+                                <h6 class="small fw-bold text-secondary mb-1">Diagnosis:</h6>
+                                <div>@notes.Diagnosis</div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(notes.ClinicalNotes))
+                            {
+                                <div class="col-12 border-top pt-2">
+                                    <h6 class="small fw-bold text-secondary mb-1">Clinical Notes:</h6>
+                                    <p class="small text-secondary mb-0">@notes.ClinicalNotes</p>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(notes.Advice))
+                            {
+                                <div class="col-12 border-top pt-2">
+                                    <h6 class="small fw-bold text-secondary mb-1">Advice & Remarks:</h6>
+                                    <p class="small text-secondary mb-0">@notes.Advice</p>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (prescription != null)
+                    {
+                        <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-3 mt-3">
+                            <div>
+                                <h6 class="mb-1 text-dark">Rx: @prescription.PrescriptionNumber</h6>
+                                <p class="text-secondary small mb-0">Instructions: @(prescription.GeneralInstructions ?? "None")</p>
+                            </div>
+                            <a href="@Url.Action("PrintPrescription", "Consultation", new { id = Model.AppointmentID })" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-printer me-1"></i>Print Prescription
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Right Column: Status Actions & Audit Log Timeline -->
+    <div class="col-12 col-lg-4">
+        <!-- Actions Card -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-gear text-primary me-2"></i>Workflow Actions</h5>
+                
+                <div class="d-grid gap-2">
+                    @if (User.IsInRole("Doctor"))
+                    {
+                        if (Model.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <!-- Approve button -->
+                            <form method="post" action="@Url.Action("UpdateStatus")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+                                <input type="hidden" name="NewStatus" value="Approved" />
+                                <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-circle me-1.5"></i>Approve Appointment</button>
+                            </form>
+
+                            <!-- Reject button -->
+                            <button class="btn btn-outline-danger w-100" data-bs-toggle="collapse" data-bs-target="#rejectReasonCollapse"><i class="bi bi-x-circle me-1.5"></i>Reject Appointment</button>
+                            <div class="collapse mt-2" id="rejectReasonCollapse">
+                                <form method="post" action="@Url.Action("UpdateStatus")" class="card card-body p-3">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+                                    <input type="hidden" name="NewStatus" value="Rejected" />
+                                    <textarea name="remarks" class="form-control form-control-sm mb-2" rows="2" placeholder="State rejection reason..." required></textarea>
+                                    <button type="submit" class="btn btn-danger btn-sm">Confirm Rejection</button>
+                                </form>
+                            </div>
+                        }
+
+                        if (Model.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <!-- Start Consultation -->
+                            <a href="@Url.Action("Workspace", "Consultation", new { id = Model.AppointmentID })" class="btn btn-success w-100 py-2"><i class="bi bi-stethoscope me-1.5"></i>Open Consultation Workspace</a>
+                            
+                            <!-- Mark No Show -->
+                            <form method="post" action="@Url.Action("UpdateStatus")" class="mt-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+                                <input type="hidden" name="NewStatus" value="No Show" />
+                                <input type="hidden" name="remarks" value="Patient did not show up." />
+                                <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-person-x me-1.5"></i>Mark as No-Show</button>
+                            </form>
+                        }
+
+                        if (Model.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <!-- Reschedule option -->
+                            <button class="btn btn-outline-primary w-100 mt-2" id="btnOpenRescheduleModal" data-bs-toggle="modal" data-bs-target="#rescheduleModal"><i class="bi bi-clock-history me-1.5"></i>Reschedule Slot</button>
+                        }
+                    }
+
+                    <!-- Cancel button (Patients or staff) -->
+                    @if (Model.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Rescheduled", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (User.IsInRole("Patient") || User.IsInRole("Receptionist") || User.IsInRole("Organization Admin"))
+                        {
+                            <form method="post" action="@Url.Action("UpdateStatus")" class="mt-3 border-top pt-3">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+                                <input type="hidden" name="NewStatus" value="Cancelled" />
+                                <input type="hidden" name="remarks" value="Cancelled by requester." />
+                                <button type="submit" class="btn btn-dark w-100"><i class="bi bi-slash-circle me-1.5"></i>Cancel Appointment</button>
+                            </form>
+                        }
+                    }
+                    
+                    @if (Model.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Rejected", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("No Show", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <div class="alert alert-light text-center rounded-3 py-3 small text-secondary mb-0">
+                            <i class="bi bi-lock me-1"></i>Workflow completed. No further transitions allowed.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Status History Timeline -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-activity text-primary me-2"></i>Status History Log</h5>
+                
+                @if (history != null && history.Any())
+                {
+                    <div class="position-relative ps-3 border-start border-2 border-primary-subtle" style="margin-left: 8px;">
+                        @foreach (var log in history)
+                        {
+                            <div class="position-relative mb-4">
+                                <!-- Marker -->
+                                <div class="position-absolute rounded-circle bg-primary" style="width: 10px; height: 10px; left: -19px; top: 6px;"></div>
+                                
+                                <div class="small fw-semibold text-dark">@log.OldStatus ➜ @log.NewStatus</div>
+                                <div class="text-secondary small mb-1" style="font-size: 0.75rem;">@log.ChangedAt.ToString("dd-MMM-yyyy hh:mm tt")</div>
+                                <div class="text-secondary small font-medium">By: @(log.ChangedByUserName ?? "User ID: " + log.ChangedByUserID)</div>
+                                @if (!string.IsNullOrEmpty(log.Remarks))
+                                {
+                                    <div class="text-muted small mt-1 bg-light p-2 rounded-2">Remarks: @log.Remarks</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted small text-center py-3">No history logs captured.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="post" action="@Url.Action("Reschedule")" class="modal-content border-0 rounded-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title text-dark fw-bold" id="rescheduleModalLabel"><i class="bi bi-clock text-primary me-2"></i>Reschedule Slot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4 text-dark">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">New Reschedule Date</label>
+                    <input type="date" id="txtRescheduleDate" name="NewDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Available Time Slots</label>
+                    <select id="ddlRescheduleSlots" name="NewSlot" class="form-select" required disabled>
+                        <option value="">-- Choose Date First --</option>
+                    </select>
+                    <div id="slotsLoader" class="spinner-border spinner-border-sm text-primary d-none mt-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label small fw-semibold text-secondary">Reason / Remarks</label>
+                    <textarea name="Remarks" class="form-control" rows="3" placeholder="Provide reason for rescheduling..." required></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer border-top bg-light">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnSubmitReschedule" disabled>Reschedule Appointment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            var doctorId = @Model.DoctorID;
+
+            $('#txtRescheduleDate').on('change', function() {
+                var selectedDate = $(this).val();
+                if (!selectedDate) {
+                    $('#ddlRescheduleSlots').html('<option value="">-- Choose Date First --</option>').prop('disabled', true);
+                    $('#btnSubmitReschedule').prop('disabled', true);
+                    return;
+                }
+
+                $('#slotsLoader').removeClass('d-none');
+                $('#ddlRescheduleSlots').prop('disabled', true).html('<option value="">Loading slots...</option>');
+
+                $.ajax({
+                    url: '@Url.Action("GetAvailableSlots", "Appointments")',
+                    type: 'GET',
+                    data: { doctorId: doctorId, date: selectedDate },
+                    success: function(response) {
+                        $('#slotsLoader').addClass('d-none');
+                        if (response.success) {
+                            var options = '<option value="">-- Choose Time Slot --</option>';
+                            if (response.slots && response.slots.length > 0) {
+                                $.each(response.slots, function(idx, val) {
+                                    options += '<option value="' + val + '">' + val + '</option>';
+                                });
+                                $('#ddlRescheduleSlots').html(options).prop('disabled', false);
+                                $('#btnSubmitReschedule').prop('disabled', false);
+                            } else {
+                                $('#ddlRescheduleSlots').html('<option value="">No slots available for this date</option>').prop('disabled', true);
+                                $('#btnSubmitReschedule').prop('disabled', true);
+                            }
+                        } else {
+                            $('#ddlRescheduleSlots').html('<option value="">Error loading slots</option>').prop('disabled', true);
+                            $('#btnSubmitReschedule').prop('disabled', true);
+                        }
+                    },
+                    error: function() {
+                        $('#slotsLoader').addClass('d-none');
+                        $('#ddlRescheduleSlots').html('<option value="">Error connecting to server</option>').prop('disabled', true);
+                        $('#btnSubmitReschedule').prop('disabled', true);
+                    }
+                });
+            });
+        });
+    </script>
+}

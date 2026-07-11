@@ -1,0 +1,128 @@
+@using Pharma_Script.Models
+@{
+    var tenant = (PublicTenant)ViewData["Tenant"]!;
+    var org = tenant.Organization;
+    var cms = tenant.CMSSettings;
+    var slug = org.OrganizationSlug;
+    var websiteTitle = !string.IsNullOrWhiteSpace(cms?.WebsiteTitle) ? cms!.WebsiteTitle : org.OrganizationName;
+    var primaryColor = string.IsNullOrWhiteSpace(cms?.PrimaryColor) ? "#2563eb" : cms!.PrimaryColor;
+    var secondaryColor = string.IsNullOrWhiteSpace(cms?.SecondaryColor) ? "#059669" : cms!.SecondaryColor;
+    string PubUrl(string path) => $"/{slug}/{path}".TrimEnd('/');
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] &mdash; @websiteTitle</title>
+    @if (!string.IsNullOrWhiteSpace(ViewData["MetaDescription"] as string))
+    {
+        <meta name="description" content="@ViewData["MetaDescription"]" />
+    }
+    <link rel="icon" href="@(string.IsNullOrEmpty(cms?.Favicon) ? "/favicon.ico" : cms!.Favicon)" />
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/public.css" asp-append-version="true" />
+    <style>
+        :root {
+            --tenant-primary: @primaryColor;
+            --tenant-secondary: @secondaryColor;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="pub-body">
+
+    <header class="pub-header">
+        <nav class="navbar navbar-expand-lg py-2">
+            <div class="container">
+                <a class="navbar-brand" href="@PubUrl("")">
+                    @if (!string.IsNullOrEmpty(cms?.WebsiteLogo))
+                    {
+                        <img src="@cms.WebsiteLogo" alt="@websiteTitle logo" />
+                    }
+                    else
+                    {
+                        <span class="pub-dept-icon" style="margin:0;"><i class="bi bi-heart-pulse-fill"></i></span>
+                    }
+                    <span>@websiteTitle</span>
+                </a>
+
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#pubNav">
+                    <i class="bi bi-list fs-2"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="pubNav">
+                    <ul class="navbar-nav mx-auto">
+                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")">Home</a></li>
+                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#about">About Us</a></li>
+                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("doctors")">Doctors</a></li>
+                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#services">Services</a></li>
+                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#gallery">Gallery</a></li>
+                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#contact">Contact</a></li>
+                    </ul>
+                    <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
+                        @if (!string.IsNullOrEmpty(cms?.ContactPhone))
+                        {
+                            <a href="tel:@cms.ContactPhone" class="pub-nav-link d-none d-md-flex align-items-center gap-1">
+                                <i class="bi bi-telephone-fill"></i>@cms.ContactPhone
+                            </a>
+                        }
+                        <a href="@PubUrl("doctors")" class="pub-btn-cta">Book Appointment</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        @RenderBody()
+    </main>
+
+    <footer class="pub-footer">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-12 col-md-4">
+                    <h6>@websiteTitle</h6>
+                    <p class="small">@(cms?.AboutUs != null && cms.AboutUs.Length > 140 ? cms.AboutUs.Substring(0, 140) + "…" : cms?.AboutUs)</p>
+                    @if (!string.IsNullOrEmpty(cms?.FacebookURL) || !string.IsNullOrEmpty(cms?.InstagramURL) || !string.IsNullOrEmpty(cms?.LinkedInURL) || !string.IsNullOrEmpty(cms?.TwitterURL) || !string.IsNullOrEmpty(cms?.YouTubeURL))
+                    {
+                        <div class="pub-footer-social mt-3">
+                            @if (!string.IsNullOrEmpty(cms?.FacebookURL)) { <a href="@cms.FacebookURL" target="_blank" rel="noopener"><i class="bi bi-facebook"></i></a> }
+                            @if (!string.IsNullOrEmpty(cms?.InstagramURL)) { <a href="@cms.InstagramURL" target="_blank" rel="noopener"><i class="bi bi-instagram"></i></a> }
+                            @if (!string.IsNullOrEmpty(cms?.LinkedInURL)) { <a href="@cms.LinkedInURL" target="_blank" rel="noopener"><i class="bi bi-linkedin"></i></a> }
+                            @if (!string.IsNullOrEmpty(cms?.TwitterURL)) { <a href="@cms.TwitterURL" target="_blank" rel="noopener"><i class="bi bi-twitter-x"></i></a> }
+                            @if (!string.IsNullOrEmpty(cms?.YouTubeURL)) { <a href="@cms.YouTubeURL" target="_blank" rel="noopener"><i class="bi bi-youtube"></i></a> }
+                        </div>
+                    }
+                </div>
+                <div class="col-6 col-md-2">
+                    <h6>Quick Links</h6>
+                    <a href="@PubUrl("")">Home</a>
+                    <a href="@PubUrl("doctors")">Find a Doctor</a>
+                    <a href="@PubUrl("")#services">Services</a>
+                    <a href="@PubUrl("")#contact">Contact</a>
+                </div>
+                <div class="col-6 col-md-3">
+                    <h6>Contact</h6>
+                    @if (!string.IsNullOrEmpty(cms?.ContactPhone)) { <a href="tel:@cms.ContactPhone"><i class="bi bi-telephone me-1"></i>@cms.ContactPhone</a> }
+                    @if (!string.IsNullOrEmpty(cms?.EmergencyPhone)) { <a href="tel:@cms.EmergencyPhone"><i class="bi bi-exclamation-triangle me-1"></i>@cms.EmergencyPhone (Emergency)</a> }
+                    @if (!string.IsNullOrEmpty(cms?.ContactEmail)) { <a href="mailto:@cms.ContactEmail"><i class="bi bi-envelope me-1"></i>@cms.ContactEmail</a> }
+                </div>
+                <div class="col-12 col-md-3">
+                    <h6>Address</h6>
+                    <p class="small">@(cms?.Address ?? $"{org.AddressLine1}, {org.City}, {org.State}")</p>
+                </div>
+            </div>
+            <div class="pub-footer-bottom text-center">
+                @(string.IsNullOrEmpty(cms?.FooterText) ? $"© {DateTime.Now.Year} {websiteTitle}. All rights reserved." : cms.FooterText)
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

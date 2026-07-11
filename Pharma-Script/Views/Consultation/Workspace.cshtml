@@ -1,0 +1,362 @@
+@model Pharma_Script.ViewModels.Consultation.ConsultationWorkspaceViewModel
+@using Pharma_Script.Helpers
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Consultation Workspace";
+    var appt = (Pharma_Script.Models.Appointment)ViewBag.Appointment;
+    var patient = (Pharma_Script.Models.Patient)ViewBag.Patient;
+    var vitals = (Pharma_Script.Models.PatientVitals?)ViewBag.Vitals;
+    var medicalHistory = (Pharma_Script.Models.PatientMedicalHistory?)ViewBag.MedicalHistory;
+    var medicalDocs = (IEnumerable<Pharma_Script.Models.MedicalDocument>?)ViewBag.MedicalDocs;
+    var pastPrescriptions = (IEnumerable<Pharma_Script.Models.Prescription>?)ViewBag.PastPrescriptions;
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Doctor Consultation Workspace</h4>
+        <p class="text-muted small mb-0 font-medium">Record diagnosis, capture clinical findings, and generate prescriptions.</p>
+    </div>
+    <div>
+        <a href="@Url.Action("Details", "Appointments", new { id = appt.AppointmentID })" class="btn btn-outline-primary fw-medium px-3.5 py-2">
+            <i class="bi bi-x-lg me-1.5"></i>Exit Workspace
+        </a>
+    </div>
+</div>
+
+<form method="post" action="@Url.Action("SaveWorkspace")" class="text-dark">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="AppointmentID" />
+
+    <div class="row g-4">
+        <!-- 1. LEFT PANEL: Patient Summary (col-xl-3) -->
+        <div class="col-12 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-person-circle me-2"></i>Patient Summary
+                    </h6>
+                    
+                    <h5 class="text-dark mb-1 fw-bold">@patient.FirstName @patient.LastName</h5>
+                    <p class="text-muted small mb-3">ID: PAT-@patient.PatientID</p>
+
+                    <div class="row g-2.5 small mb-4 border-bottom pb-3">
+                        <div class="col-5 text-secondary">Age / Gender:</div>
+                        <div class="col-7 text-dark fw-semibold">
+                            @(DateTime.Today.Year - patient.DateOfBirth.Year) Yrs / @patient.Gender
+                        </div>
+                        
+                        <div class="col-5 text-secondary">Blood Group:</div>
+                        <div class="col-7 text-dark fw-semibold">@(patient.BloodGroup ?? "Unknown")</div>
+                        
+                        <div class="col-5 text-secondary">Height / Weight:</div>
+                        <div class="col-7 text-dark fw-semibold">
+                            @(patient.Height.HasValue ? patient.Height.Value.ToString("F1") + " cm" : "N/A") / 
+                            @(patient.Weight.HasValue ? patient.Weight.Value.ToString("F1") + " kg" : "N/A")
+                        </div>
+                    </div>
+
+                    <!-- Latest Vitals -->
+                    <h6 class="text-dark fw-bold small mb-2"><i class="bi bi-activity text-danger me-2"></i>Latest Vitals</h6>
+                    @if (vitals != null)
+                    {
+                        <div class="row g-2 small border rounded-3 p-2.5 bg-light mb-4">
+                            <div class="col-6">
+                                <span class="text-secondary d-block" style="font-size: 0.7rem;">BP</span>
+                                <span class="text-dark fw-bold">@(vitals.BloodPressure ?? "N/A")</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-secondary d-block" style="font-size: 0.7rem;">Pulse (bpm)</span>
+                                <span class="text-dark fw-bold">@(vitals.HeartRate?.ToString() ?? "N/A")</span>
+                            </div>
+                            <div class="col-6 mt-2">
+                                <span class="text-secondary d-block" style="font-size: 0.7rem;">Temp (°F)</span>
+                                <span class="text-dark fw-bold">@(vitals.Temperature?.ToString("F1") ?? "N/A")°</span>
+                            </div>
+                            <div class="col-6 mt-2">
+                                <span class="text-secondary d-block" style="font-size: 0.7rem;">SpO2 (%)</span>
+                                <span class="text-dark fw-bold">@(vitals.OxygenLevel?.ToString() ?? "N/A")</span>
+                            </div>
+                            <div class="col-12 mt-2 pt-2.5 border-top" style="font-size: 0.7rem;">
+                                <span class="text-muted">Recorded: @vitals.RecordedAt.ToString("dd-MMM hh:mm tt")</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-light text-center small py-3.5 mb-4">
+                            No vitals captured recently.
+                        </div>
+                    }
+
+                    <!-- Medical Conditions & Allergies -->
+                    <h6 class="text-dark fw-bold small mb-2"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Critical Cautions</h6>
+                    @{
+                        var conditionsList = new List<string>();
+                        if (medicalHistory != null)
+                        {
+                            if (medicalHistory.Diabetes) conditionsList.Add("Diabetes");
+                            if (medicalHistory.BloodPressure) conditionsList.Add("High BP");
+                            if (medicalHistory.HeartDisease) conditionsList.Add("Heart Disease");
+                            if (medicalHistory.Asthma) conditionsList.Add("Asthma");
+                            if (medicalHistory.Thyroid) conditionsList.Add("Thyroid");
+                            if (!string.IsNullOrEmpty(medicalHistory.OtherMedicalConditions)) conditionsList.Add(medicalHistory.OtherMedicalConditions);
+                        }
+                        var chronicDiseasesStr = conditionsList.Any() ? string.Join(", ", conditionsList) : "None Reported";
+                    }
+                    <div class="small">
+                        <div class="mb-2">
+                            <span class="text-secondary d-block font-medium">Chronic Diseases:</span>
+                            <span class="text-danger-emphasis fw-semibold">
+                                @chronicDiseasesStr
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-secondary d-block font-medium">Allergies:</span>
+                            <span class="text-danger-emphasis fw-semibold">
+                                @(medicalHistory != null && !string.IsNullOrEmpty(medicalHistory.Allergies) ? medicalHistory.Allergies : "None Reported")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. CENTER PANEL: Consultation Workspace & Prescription Form (col-xl-6) -->
+        <div class="col-12 col-xl-6">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-dark border-bottom pb-3 mb-3">
+                        <i class="bi bi-journal-medical text-primary me-2"></i>Consultation Record
+                    </h5>
+
+                    <!-- Preloaded Symptoms reference -->
+                    <div class="row g-2 mb-4 bg-light p-3 rounded-3 small">
+                        <div class="col-12">
+                            <span class="text-secondary fw-semibold">Symptoms Captures:</span>
+                            <div class="text-dark pt-1">@(appt.Symptoms ?? "None reported.")</div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical Notes Form -->
+                    <div class="mb-3">
+                        <label asp-for="Diagnosis" class="form-label small fw-bold text-secondary">Diagnosis *</label>
+                        <input asp-for="Diagnosis" class="form-control" placeholder="Enter diagnosis (e.g. Acute Viral Gastroenteritis)..." required />
+                        <span asp-validation-for="Diagnosis" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ClinicalNotes" class="form-label small fw-semibold text-secondary">Clinical Findings & Notes</label>
+                        <textarea asp-for="ClinicalNotes" class="form-control" rows="3" placeholder="Symptoms details, examination notes..."></textarea>
+                        <span asp-validation-for="ClinicalNotes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Advice" class="form-label small fw-semibold text-secondary">General Advice</label>
+                        <textarea asp-for="Advice" class="form-control" rows="2" placeholder="Lifestyle advice, food restrictions, rest..."></textarea>
+                        <span asp-validation-for="Advice" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Prescription Header Toggler -->
+                    <div class="border-top pt-4 mb-3">
+                        <div class="form-check form-switch fs-6">
+                            <input class="form-check-input" type="checkbox" role="switch" asp-for="CreatePrescription" id="chkCreatePresc" onchange="togglePrescForm()" />
+                            <label class="form-check-label text-dark fw-bold" for="chkCreatePresc">Generate Prescription & Medicines</label>
+                        </div>
+                    </div>
+
+                    <!-- Prescription Form Collapse -->
+                    <div id="prescriptionForm" class="d-none">
+                        <div class="mb-3">
+                            <label asp-for="GeneralInstructions" class="form-label small fw-semibold text-secondary">Prescription Instructions</label>
+                            <textarea asp-for="GeneralInstructions" class="form-control" rows="2" placeholder="Instructions (e.g. Drink plenty of water, avoid cold foods)..."></textarea>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="NextVisitDate" class="form-label small fw-semibold text-secondary">Follow-Up Date (Optional)</label>
+                            <input type="date" asp-for="NextVisitDate" class="form-control" min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                        </div>
+
+                        <!-- Medicines Dynamic List -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-dark fw-bold mb-0">Medicines (Rx)</h6>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="addMedicineRow()">
+                                <i class="bi bi-plus-lg me-1"></i>Add Medicine
+                            </button>
+                        </div>
+
+                        <div id="medicinesContainer" class="d-flex flex-column gap-3 mb-4">
+                            <!-- Medicines lists rows injected dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Complete Consultation Submit Button -->
+                    <div class="border-top pt-3 text-end">
+                        <button type="submit" class="btn btn-success fw-bold px-4 py-2">
+                            <i class="bi bi-check-circle-fill me-1.5"></i>Complete & Save Consultation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. RIGHT PANEL: Medical Context & Historical Records (col-xl-3) -->
+        <div class="col-12 col-xl-3">
+            <!-- Uploaded medical records list -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Medical Documents
+                    </h6>
+                    @if (medicalDocs != null && medicalDocs.Any())
+                    {
+                        <div class="list-group list-group-flush small">
+                            @foreach (var doc in medicalDocs)
+                            {
+                                <a href="@doc.FilePath" target="_blank" class="list-group-item list-group-item-action border-0 px-0 d-flex align-items-center justify-content-between text-dark">
+                                    <div class="text-truncate" style="max-width: 180px;"><i class="bi bi-file-text text-danger me-2"></i>@doc.DocumentTitle</div>
+                                    <span class="text-muted" style="font-size: 0.7rem;">@doc.UploadDate.ToString("dd-MMM")</span>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted small text-center py-2">No uploaded reports found.</div>
+                    }
+                </div>
+            </div>
+
+            <!-- Historical Prescriptions list -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-clock-history me-2"></i>Prescription History
+                    </h6>
+                    @if (pastPrescriptions != null && pastPrescriptions.Any())
+                    {
+                        <div class="list-group list-group-flush small">
+                            @foreach (var rx in pastPrescriptions)
+                            {
+                                <div class="list-group-item border-0 px-0 py-2.5 text-dark">
+                                    <div class="d-flex justify-content-between align-items-center fw-semibold text-dark">
+                                        <span>@rx.PrescriptionNumber</span>
+                                        <a href="@Url.Action("PrintPrescription", "Consultation", new { id = rx.AppointmentID })" target="_blank" class="text-primary small" style="font-size: 0.75rem;"><i class="bi bi-printer"></i></a>
+                                    </div>
+                                    <div class="text-secondary small" style="font-size: 0.7rem;">Date: @rx.CreatedAt.ToString("dd-MMM-yyyy")</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted small text-center py-2">No past prescriptions logged.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        var medicineIndex = 0;
+
+        $(document).ready(function() {
+            // Apply toggler state on load
+            togglePrescForm();
+
+            // Populate initial row if enabled
+            if ($('#chkCreatePresc').is(':checked') && $('#medicinesContainer').children().length === 0) {
+                addMedicineRow();
+            }
+        });
+
+        function togglePrescForm() {
+            var active = $('#chkCreatePresc').is(':checked');
+            if (active) {
+                $('#prescriptionForm').removeClass('d-none');
+                if ($('#medicinesContainer').children().length === 0) {
+                    addMedicineRow();
+                }
+            } else {
+                $('#prescriptionForm').addClass('d-none');
+            }
+        }
+
+        // Add dynamically a medicine form section row
+        function addMedicineRow() {
+            var idx = medicineIndex;
+            medicineIndex++;
+
+            var rowHtml = `
+            <div class="card border rounded-3 p-3 position-relative medicine-item-form shadow-sm" id="medRow_${idx}">
+                <button type="button" class="btn-close position-absolute" style="top: 10px; right: 10px;" onclick="removeMedicineRow(${idx})"></button>
+                
+                <div class="row g-2.5 text-dark small">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label font-semibold text-secondary mb-1">Medicine Name *</label>
+                        <input type="text" name="Medicines[${idx}].MedicineName" class="form-control form-control-sm" placeholder="e.g. Paracetamol" required />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label font-semibold text-secondary mb-1">Strength</label>
+                        <input type="text" name="Medicines[${idx}].Strength" class="form-control form-control-sm" placeholder="e.g. 500mg" />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label font-semibold text-secondary mb-1">Dosage Format</label>
+                        <input type="text" name="Medicines[${idx}].Dosage" class="form-control form-control-sm" placeholder="e.g. 1-0-1" />
+                    </div>
+
+                    <div class="col-12 col-md-6 d-flex flex-wrap gap-3 py-1 bg-light rounded px-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="Medicines[${idx}].Morning" id="chkM_${idx}" value="true" />
+                            <label class="form-check-label font-semibold text-secondary" for="chkM_${idx}">Morning</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="Medicines[${idx}].Afternoon" id="chkA_${idx}" value="true" />
+                            <label class="form-check-label font-semibold text-secondary" for="chkA_${idx}">Afternoon</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="Medicines[${idx}].Night" id="chkN_${idx}" value="true" />
+                            <label class="form-check-label font-semibold text-secondary" for="chkN_${idx}">Night</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6 d-flex flex-wrap gap-3 py-1 bg-light rounded px-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="Medicines[${idx}].BeforeFood" id="radB_${idx}" value="true" />
+                            <label class="form-check-label font-semibold text-secondary" for="radB_${idx}">Before Food</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="Medicines[${idx}].BeforeFood" id="radA_${idx}" value="false" />
+                            <label class="form-check-label font-semibold text-secondary" for="radA_${idx}">After Food</label>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-md-3">
+                        <label class="form-label font-semibold text-secondary mb-1">Duration (Days) *</label>
+                        <input type="number" name="Medicines[${idx}].DurationDays" class="form-control form-control-sm" min="1" value="5" required />
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label font-semibold text-secondary mb-1">Qty (Optional)</label>
+                        <input type="number" name="Medicines[${idx}].Quantity" class="form-control form-control-sm" min="1" />
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label font-semibold text-secondary mb-1">Remarks</label>
+                        <input type="text" name="Medicines[${idx}].Remarks" class="form-control form-control-sm" placeholder="Remarks..." />
+                    </div>
+                </div>
+            </div>`;
+
+            $('#medicinesContainer').append(rowHtml);
+        }
+
+        function removeMedicineRow(idx) {
+            $('#medRow_' + idx).remove();
+            
+            // Check if no rows exist, add one default row
+            if ($('#medicinesContainer').children().length === 0) {
+                addMedicineRow();
+            }
+        }
+    </script>
+}

@@ -1,0 +1,178 @@
+@model Pharma_Script.ViewModels.Public.PublicBookingViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var doc = Model.Doctor;
+    var booking = Model.Booking;
+}
+
+<section class="pub-section-tight pub-section-soft">
+    <div class="container">
+        <div class="d-flex align-items-center gap-3">
+            @if (!string.IsNullOrEmpty(doc.ProfileImage))
+            {
+                <img src="@doc.ProfileImage" class="rounded-circle" style="width:56px;height:56px;object-fit:cover;" />
+            }
+            else
+            {
+                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+                    <i class="bi bi-person-badge" style="font-size:1.5rem;color:var(--ink-muted);"></i>
+                </div>
+            }
+            <div>
+                <h5 class="mb-0 fw-bold">Book Appointment with Dr. @doc.FirstName @doc.LastName</h5>
+                <div class="small text-muted">@doc.DepartmentName &middot; @doc.Qualification</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="pub-section">
+    <div class="container" style="max-width:760px;">
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+
+        <form id="pubBookingForm" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Booking.DoctorID" id="hfDoctorID" value="@doc.DoctorID" />
+            <input type="hidden" asp-for="Booking.AppointmentType" id="hfApptType" value="Clinic" />
+            <input type="hidden" asp-for="Booking.SelectedSlot" id="hfSelectedSlot" />
+
+            <div class="pub-service-card mb-4">
+                <h6 class="fw-bold mb-3">1. Consultation Type</h6>
+                <div class="row g-3">
+                    <div class="col-4">
+                        <div class="border rounded-3 p-3 text-center wizard-card" id="cardClinic" onclick="selectConsultType('Clinic')" style="cursor:pointer;">
+                            <i class="bi bi-hospital fs-3 mb-1" style="color:var(--tenant-primary);"></i>
+                            <div class="fw-semibold small">Clinic Visit</div>
+                            <div class="small text-muted">₹@doc.ConsultationFee</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded-3 p-3 text-center wizard-card" id="cardVideo" onclick="selectConsultType('Video')" style="cursor:pointer;">
+                            <i class="bi bi-camera-video fs-3 mb-1" style="color:var(--tenant-secondary);"></i>
+                            <div class="fw-semibold small">Video Call</div>
+                            <div class="small text-muted">₹@doc.VideoConsultationFee</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded-3 p-3 text-center wizard-card" id="cardVoice" onclick="selectConsultType('Voice')" style="cursor:pointer;">
+                            <i class="bi bi-telephone fs-3 mb-1" style="color:var(--tenant-secondary);"></i>
+                            <div class="fw-semibold small">Voice Call</div>
+                            <div class="small text-muted">₹@doc.VoiceConsultationFee</div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (doc.IsPriorityAvailable)
+                {
+                    <div class="bg-danger bg-opacity-10 rounded-3 p-3 mt-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-semibold small text-danger">Priority Consultation</div>
+                            <div class="small text-muted">Higher fee, faster attention: ₹@doc.PriorityConsultationFee</div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" asp-for="Booking.PriorityConsultation" id="chkPriority" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="pub-service-card mb-4">
+                <h6 class="fw-bold mb-3">2. Date &amp; Time</h6>
+                <div class="row g-3">
+                    <div class="col-12 col-md-5">
+                        <label class="form-label small fw-semibold text-secondary">Appointment Date</label>
+                        <input type="date" asp-for="Booking.AppointmentDate" id="txtDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="col-12 col-md-7">
+                        <label class="form-label small fw-semibold text-secondary d-block">Available Slots</label>
+                        <div id="slotsLoader" class="spinner-border spinner-border-sm d-none"></div>
+                        <div id="slotsAlert" class="small text-muted">Select a date to see available slots.</div>
+                        <div id="slotsContainer" class="d-flex flex-wrap gap-2 mt-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pub-service-card mb-4">
+                <h6 class="fw-bold mb-3">3. Symptoms &amp; Reason</h6>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Symptoms</label>
+                    <textarea asp-for="Booking.Symptoms" class="form-control" rows="3" placeholder="e.g. fever, headache since 2 days"></textarea>
+                </div>
+                <div>
+                    <label class="form-label small fw-semibold text-secondary">Reason for Visit</label>
+                    <textarea asp-for="Booking.AppointmentReason" class="form-control" rows="2" placeholder="e.g. routine checkup"></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="pub-btn-cta w-100 py-3" id="btnConfirm" disabled>
+                <i class="bi bi-calendar-check me-1"></i>Confirm Appointment
+            </button>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $('#cardClinic').addClass('border-primary');
+
+        function selectConsultType(type) {
+            $('#cardClinic, #cardVideo, #cardVoice').removeClass('border-primary').css('border-color', '');
+            $('#hfApptType').val(type);
+            $('#card' + type).css('border-color', 'var(--tenant-primary)');
+        }
+        selectConsultType('Clinic');
+
+        $('#txtDate').on('change', function () {
+            var date = $(this).val();
+            var doctorId = $('#hfDoctorID').val();
+            $('#hfSelectedSlot').val('');
+            $('#btnConfirm').prop('disabled', true);
+
+            if (!date) return;
+
+            $('#slotsLoader').removeClass('d-none');
+            $('#slotsAlert').text('');
+            $('#slotsContainer').empty();
+
+            $.ajax({
+                url: '@Url.Action("GetAvailableSlots", "Appointments")',
+                type: 'GET',
+                data: { doctorId: doctorId, date: date },
+                success: function (res) {
+                    $('#slotsLoader').addClass('d-none');
+                    if (res.success && res.slots && res.slots.length > 0) {
+                        var html = '';
+                        $.each(res.slots, function (i, slot) {
+                            html += '<button type="button" class="btn btn-outline-secondary btn-sm slot-btn" onclick="selectSlot(this, \'' + slot + '\')">' + slot + '</button>';
+                        });
+                        $('#slotsContainer').html(html);
+                    } else {
+                        $('#slotsAlert').text(res.message || 'No slots available for this date.');
+                    }
+                },
+                error: function () {
+                    $('#slotsLoader').addClass('d-none');
+                    $('#slotsAlert').text('Failed to load slots. Please try again.');
+                }
+            });
+        });
+
+        function selectSlot(btn, time) {
+            $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-secondary');
+            $(btn).removeClass('btn-outline-secondary').addClass('btn-primary');
+            $('#hfSelectedSlot').val(time);
+            $('#btnConfirm').prop('disabled', false);
+        }
+
+        $('#pubBookingForm').on('submit', function (e) {
+            if (!$('#hfSelectedSlot').val()) {
+                e.preventDefault();
+                Swal.fire({ icon: 'warning', title: 'Select a slot', text: 'Please choose an available time slot before confirming.' });
+            }
+        });
+    </script>
+}

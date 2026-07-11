@@ -1,0 +1,328 @@
+@model IEnumerable<Pharma_Script.Models.Doctor>
+@using Pharma_Script.Helpers
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Doctor Management";
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Doctor Management</h4>
+        <p class="text-muted small mb-0 font-medium">Manage clinical practitioners, specializations, schedules, and leaves.</p>
+    </div>
+    <div>
+        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreateDoctor">
+            <i class="bi bi-plus-lg me-1.5"></i>Add Doctor
+        </button>
+    </div>
+</div>
+
+<div class="table-card mb-4">
+    <div class="table-card-header flex-column gap-3">
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <h5 class="table-card-title mb-0">Doctors List</h5>
+        </div>
+        
+        <!-- Filters Form -->
+        <form method="get" action="@Url.Action("Index")" class="row g-2 w-100 m-0">
+            <div class="col-12 col-md-3">
+                <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Search doctor..." value="@ViewBag.SearchTerm" />
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="branchId" class="form-select form-select-sm" asp-items="@ViewBag.Branches">
+                    <option value="">All Branches</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="departmentId" class="form-select form-select-sm" asp-items="@ViewBag.Departments">
+                    <option value="">All Departments</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="specializationId" class="form-select form-select-sm" asp-items="@ViewBag.Specializations">
+                    <option value="">All Specializations</option>
+                </select>
+            </div>
+            <div class="col-6 col-md-2">
+                <select name="isActive" class="form-select form-select-sm" asp-items="@ViewBag.ActiveStatusList">
+                    <option value="">All Statuses</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-1 d-flex gap-1.5">
+                <button type="submit" class="btn btn-primary btn-sm px-2.5 w-100"><i class="bi bi-funnel"></i></button>
+                <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-2.5"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Doctor Name</th>
+                    <th>Qualification</th>
+                    <th>Branch / Department</th>
+                    <th>Specializations</th>
+                    <th class="text-end">Reg. Fee</th>
+                    <th class="text-center" style="width: 90px;">Status</th>
+                    <th class="text-end" style="width: 250px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.DoctorID</td>
+                            <td class="fw-semibold text-dark">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center border" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;">
+                                        @item.FirstName[0]
+                                    </div>
+                                    <div>
+                                        <div>Dr. @item.FirstName @item.LastName</div>
+                                        <div class="text-muted small" style="font-size: 0.75rem;">@item.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="small fw-semibold text-dark">
+                                @item.Qualification
+                                <div class="text-muted small fw-normal" style="font-size: 0.75rem;">@item.ExperienceYears Years Exp.</div>
+                            </td>
+                            <td class="small">
+                                <div class="fw-semibold text-secondary">@(item.BranchName ?? "N/A")</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">@(item.DepartmentName ?? "N/A")</div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @if (item.SpecializationNames != null)
+                                    {
+                                        foreach (var spec in item.SpecializationNames)
+                                        {
+                                            <span class="badge bg-light text-primary border rounded-pill px-2.5 py-0.5" style="font-size: 0.7rem; font-weight: 500;">@spec</span>
+                                        }
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-end fw-bold text-dark text-nowrap">₹@item.ConsultationFee.ToString("F2")</td>
+                            <td class="text-center">
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input status-toggle" type="checkbox" data-id="@item.DoctorID" @(item.IsActive ? "checked" : "") style="cursor: pointer;" />
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <a class="btn-action" href="@Url.Action("Schedule", "DoctorAvailability", new { doctorId = item.DoctorID })" title="Weekly Availability">
+                                    <i class="bi bi-clock"></i>
+                                </a>
+                                <a class="btn-action" href="@Url.Action("Index", "DoctorLeave", new { doctorId = item.DoctorID })" title="Leaves Schedule">
+                                    <i class="bi bi-calendar-event"></i>
+                                </a>
+                                <button class="btn-action btnView" data-id="@item.DoctorID" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn-action btn-action-edit btnEdit" data-id="@item.DoctorID" title="Edit">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted small">No doctors found matching filters.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems records)
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = i, pageSize = ViewBag.PageSize })">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="doctorModal" tabindex="-1" aria-labelledby="doctorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="doctorModalLabel">Doctor Settings</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="doctorModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('doctorModal'));
+
+            // Load Create
+            $('#btnCreateDoctor').on('click', function () {
+                $('#doctorModalLabel').text('Create Doctor Profile');
+                $('#doctorModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading form...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Create")', function (html) {
+                    $('#doctorModalBody').html(html);
+                    $.validator.unobtrusive.parse('#doctorModalBody');
+                });
+            });
+
+            // Load Edit
+            $(document).on('click', '.btnEdit', function () {
+                var id = $(this).data('id');
+                $('#doctorModalLabel').text('Edit Doctor Profile');
+                $('#doctorModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading settings...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Edit")/' + id, function (html) {
+                    $('#doctorModalBody').html(html);
+                    $.validator.unobtrusive.parse('#doctorModalBody');
+                });
+            });
+
+            // Load Details
+            $(document).on('click', '.btnView', function () {
+                var id = $(this).data('id');
+                $('#doctorModalLabel').text('Doctor Profile Details');
+                $('#doctorModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><p class="mt-2 text-muted small">Loading details...</p></div>');
+                modal.show();
+
+                $.get('@Url.Action("Details")/' + id, function (html) {
+                    $('#doctorModalBody').html(html);
+                });
+            });
+
+            // Form Submit via AJAX
+            $(document).on('submit', '#doctorModalBody form', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                if (!form.valid()) return false;
+
+                var btnSubmit = form.find('button[type="submit"]');
+                var originalHtml = btnSubmit.html();
+                btnSubmit.html('<span class="spinner-border spinner-border-sm me-1.5" role="status"></span>Saving...').prop('disabled', true);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (res) {
+                        if (res.success) {
+                            modal.hide();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: res.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(function () {
+                                location.reload();
+                            });
+                        } else {
+                            btnSubmit.html(originalHtml).prop('disabled', false);
+                            var errorMsg = res.message;
+                            if (res.errors && res.errors.length > 0) {
+                                errorMsg += '\n' + res.errors.join('\n');
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: errorMsg
+                            });
+                        }
+                    },
+                    error: function () {
+                        btnSubmit.html(originalHtml).prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'System Error',
+                            text: 'An unexpected system error occurred.'
+                        });
+                    }
+                });
+            });
+
+            // Toggle active status
+            $('.status-toggle').on('change', function () {
+                var toggle = $(this);
+                var id = toggle.data('id');
+                var isActive = toggle.is(':checked');
+
+                $.ajax({
+                    url: '@Url.Action("ToggleStatus")',
+                    type: 'POST',
+                    data: {
+                        id: id,
+                        isActive: isActive,
+                        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (res) {
+                        if (res.success) {
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2000,
+                                timerProgressBar: true
+                            });
+                            Toast.fire({
+                                icon: 'success',
+                                title: res.message
+                            });
+                        } else {
+                            toggle.prop('checked', !isActive);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Action Failed',
+                                text: res.message
+                            });
+                        }
+                    },
+                    error: function () {
+                        toggle.prop('checked', !isActive);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Connection Error',
+                            text: 'Failed to update doctor status.'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

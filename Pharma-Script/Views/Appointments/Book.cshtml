@@ -1,0 +1,594 @@
+@model Pharma_Script.ViewModels.Appointment.AppointmentBookingViewModel
+@using Pharma_Script.Helpers
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Book Appointment";
+    var doctors = (IEnumerable<Pharma_Script.Models.Doctor>)ViewBag.DoctorsList;
+    var patientId = (int)ViewBag.PatientID;
+}
+
+<style>
+    .step-indicator {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    .step-indicator::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background-color: #e9ecef;
+        z-index: 1;
+        transform: translateY(-50%);
+    }
+    .step-node {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background-color: #fff;
+        border: 3px solid #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+    .step-node.active {
+        border-color: var(--bs-primary);
+        color: var(--bs-primary);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+    }
+    .step-node.completed {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: #fff;
+    }
+    .wizard-card {
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+    .wizard-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
+    }
+    .wizard-card.selected {
+        border: 2px solid var(--bs-primary) !important;
+        background-color: rgba(13, 110, 253, 0.02);
+    }
+    .slot-btn {
+        transition: all 0.2s ease;
+    }
+    .slot-btn.selected {
+        background-color: var(--bs-primary) !important;
+        color: #fff !important;
+        border-color: var(--bs-primary) !important;
+    }
+</style>
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">Book Consultation Slot</h4>
+        <p class="text-muted small mb-0 font-medium">Capture clinic details, verify availabilities, and submit scheduling details.</p>
+    </div>
+</div>
+
+<div class="max-width-800 mx-auto mt-2">
+    <!-- Visual Stepper Progress Bar -->
+    <div class="step-indicator">
+        <div class="step-node active" id="node-1">1</div>
+        <div class="step-node" id="node-2">2</div>
+        <div class="step-node" id="node-3">3</div>
+        <div class="step-node" id="node-4">4</div>
+        <div class="step-node" id="node-5">5</div>
+    </div>
+
+    <!-- Stepper Labels -->
+    <div class="d-flex justify-content-between text-secondary small fw-semibold px-1 mb-4" style="margin-top: -15px; font-size: 0.75rem;">
+        <div>DOCTOR</div>
+        <div>CONSULTATION</div>
+        <div>DATE & TIME</div>
+        <div>DETAILS</div>
+        <div>CONFIRM</div>
+    </div>
+
+    <!-- Wizard Form Wrapper -->
+    <form id="appointmentWizardForm" method="post" action="@Url.Action("Book")" class="text-dark">
+        @Html.AntiForgeryToken()
+        
+        <!-- Hidden wizard tracking bindings -->
+        <input type="hidden" asp-for="DoctorID" id="hfDoctorID" />
+        <input type="hidden" asp-for="AppointmentType" id="hfApptType" value="Clinic" />
+        <input type="hidden" asp-for="SelectedSlot" id="hfSelectedSlot" />
+        
+        @if (User.IsInRole("Patient"))
+        {
+            <input type="hidden" asp-for="PatientID" value="@patientId" />
+        }
+
+        <!-- STEP 1: Select Doctor -->
+        <div id="step-1" class="wizard-step-section">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h5 class="text-dark border-bottom pb-3 mb-3"><i class="bi bi-person-heart text-primary me-2"></i>Step 1: Choose Doctor</h5>
+                
+                @if (!User.IsInRole("Patient"))
+                {
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Select Patient</label>
+                        <select asp-for="PatientID" class="form-select" asp-items="@ViewBag.Patients" required>
+                            <option value="">-- Choose Patient for Booking --</option>
+                        </select>
+                        <span asp-validation-for="PatientID" class="text-danger small"></span>
+                    </div>
+                }
+
+                <!-- Filters -->
+                <div class="row g-2.5 mb-4">
+                    <div class="col-12 col-md-3">
+                        <input type="text" id="txtDocSearch" class="form-control form-control-sm" placeholder="Search name..." />
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <select id="ddlBranchFilter" class="form-select form-select-sm" asp-items="@ViewBag.Branches">
+                            <option value="">-- All Branches --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <select id="ddlDeptFilter" class="form-select form-select-sm" asp-items="@ViewBag.Departments">
+                            <option value="">-- All Departments --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <select id="ddlSpecFilter" class="form-select form-select-sm" asp-items="@ViewBag.Specializations">
+                            <option value="">-- All Specializations --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Doctors grid list -->
+                <div class="row g-3" id="doctorsContainer">
+                    @if (doctors != null && doctors.Any())
+                    {
+                        foreach (var doc in doctors)
+                        {
+                            var specsJson = string.Join(",", doc.SpecializationNames);
+                            var specsLabel = string.Join(" | ", doc.SpecializationNames);
+                            var specsIDs = string.Join(",", doc.SpecializationIDs);
+
+                            <div class="col-12 col-md-6 doctor-item-card" 
+                                 data-name="@doc.FirstName @doc.LastName" 
+                                 data-branch="@doc.BranchID" 
+                                 data-dept="@doc.DepartmentID" 
+                                 data-specs="@specsIDs"
+                                 data-fees='{"Clinic": "@doc.ConsultationFee", "Video": "@doc.VideoConsultationFee", "Voice": "@doc.VoiceConsultationFee", "Priority": "@doc.PriorityConsultationFee", "PriorityAvailable": @(doc.IsPriorityAvailable ? "true" : "false")}'>
+                                
+                                <div class="card h-100 border rounded-3 p-3.5 wizard-card cursor-pointer" onclick="selectDoctorCard(this, @doc.DoctorID)">
+                                    <div class="d-flex align-items-start gap-3">
+                                        @if (!string.IsNullOrEmpty(doc.ProfileImage))
+                                        {
+                                            <img src="@doc.ProfileImage" class="rounded-circle" style="width: 54px; height: 54px; object-fit: cover;" alt="Doctor Profile" />
+                                        }
+                                        else
+                                        {
+                                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 54px; height: 54px; font-size: 1.25rem;">
+                                                @(doc.FirstName.Substring(0, 1))
+                                            </div>
+                                        }
+                                        <div class="flex-grow-1 min-width-0">
+                                            <h6 class="text-dark fw-bold mb-0 text-truncate">Dr. @doc.FirstName @doc.LastName</h6>
+                                            <p class="text-muted small mb-1 text-truncate">@doc.Qualification | @doc.ExperienceYears years exp.</p>
+                                            <span class="badge bg-light text-secondary rounded-pill px-2 py-1 mb-2 font-medium" style="font-size: 0.7rem;">@doc.DepartmentName</span>
+                                            <div class="text-primary small fw-semibold text-truncate" style="font-size: 0.75rem;">@specsLabel</div>
+                                        </div>
+                                    </div>
+                                    <div class="border-top mt-3 pt-2.5 d-flex justify-content-between align-items-center text-secondary small font-medium">
+                                        <div>Fee: <strong class="text-dark">₹@doc.ConsultationFee.ToString("N0")</strong></div>
+                                        @if (doc.IsPriorityAvailable)
+                                        {
+                                            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2">Priority Active</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="col-12 text-center py-4 text-secondary">
+                            <i class="bi bi-person-slash fs-2 mb-2"></i>
+                            <p>No active doctors found for this organization.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: Choose Consultation Type & Fees -->
+        <div id="step-2" class="wizard-step-section d-none">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h5 class="text-dark border-bottom pb-3 mb-3"><i class="bi bi-telephone-inbound text-primary me-2"></i>Step 2: Consultation Type</h5>
+                
+                <div class="row g-3 text-dark">
+                    <!-- Clinic Visit Card -->
+                    <div class="col-12 col-md-4">
+                        <div class="card border rounded-3 p-3.5 text-center wizard-card cursor-pointer" id="cardClinic" onclick="selectConsultType('Clinic')">
+                            <i class="bi bi-hospital fs-1 text-primary mb-2"></i>
+                            <h6 class="fw-bold mb-1">Clinic Visit</h6>
+                            <p class="text-muted small mb-3">Meet doctor physically at the clinic desk.</p>
+                            <h5 class="text-success fw-bold mb-0" id="lblFeeClinic">₹0.00</h5>
+                        </div>
+                    </div>
+
+                    <!-- Video Consult Card -->
+                    <div class="col-12 col-md-4">
+                        <div class="card border rounded-3 p-3.5 text-center wizard-card cursor-pointer" id="cardVideo" onclick="selectConsultType('Video')">
+                            <i class="bi bi-camera-video fs-1 text-success mb-2"></i>
+                            <h6 class="fw-bold mb-1">Video Call</h6>
+                            <p class="text-muted small mb-3">Online virtual appointment over high quality web connection.</p>
+                            <h5 class="text-success fw-bold mb-0" id="lblFeeVideo">₹0.00</h5>
+                        </div>
+                    </div>
+
+                    <!-- Voice Consult Card -->
+                    <div class="col-12 col-md-4">
+                        <div class="card border rounded-3 p-3.5 text-center wizard-card cursor-pointer" id="cardVoice" onclick="selectConsultType('Voice')">
+                            <i class="bi bi-telephone fs-1 text-info mb-2"></i>
+                            <h6 class="fw-bold mb-1">Voice Call</h6>
+                            <p class="text-muted small mb-3">Direct telephonic checkup calls with the assigned consultant.</p>
+                            <h5 class="text-success fw-bold mb-0" id="lblFeeVoice">₹0.00</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Priority Toggler Box -->
+                <div class="bg-danger bg-opacity-10 p-3.5 rounded-3 mt-4 text-dark d-none" id="priorityBox">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-danger fw-bold mb-1"><i class="bi bi-lightning-fill me-1.5"></i>Priority Consultation</h6>
+                            <p class="text-secondary small mb-0">Doctor has enabled priority slots for urgent matters. Higher fee rates apply.</p>
+                        </div>
+                        <div class="form-check form-switch fs-5">
+                            <input class="form-check-input" type="checkbox" role="switch" asp-for="PriorityConsultation" id="chkPriorityToggle" onchange="togglePriorityChecked()" />
+                        </div>
+                    </div>
+                    <div class="mt-2 border-top pt-2 text-secondary small fw-semibold">
+                        Priority Rate: <strong class="text-danger fs-6 ms-1" id="lblFeePriority">₹0.00</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: Select Date & Available Slots -->
+        <div id="step-3" class="wizard-step-section d-none">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 text-dark">
+                <h5 class="text-dark border-bottom pb-3 mb-3"><i class="bi bi-calendar-check text-primary me-2"></i>Step 3: Appointment Date & Time</h5>
+                
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label small fw-semibold text-secondary">Appointment Date</label>
+                        <input type="date" asp-for="AppointmentDate" id="txtBookingDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        <span asp-validation-for="AppointmentDate" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold text-secondary d-block">Available Slots</label>
+                        
+                        <div id="bookingSlotsLoader" class="spinner-border spinner-border-sm text-primary d-none mb-3" role="status">
+                            <span class="visually-hidden">Loading slots...</span>
+                        </div>
+                        
+                        <div id="slotsAlertBox" class="alert alert-warning small rounded-3 d-none">
+                            Please select a date to list slot timings.
+                        </div>
+
+                        <!-- Slots buttons list -->
+                        <div id="bookingSlotsContainer" class="d-flex flex-wrap gap-2 py-2">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: Symptoms & Reasons -->
+        <div id="step-4" class="wizard-step-section d-none">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 text-dark">
+                <h5 class="text-dark border-bottom pb-3 mb-3"><i class="bi bi-pencil-square text-primary me-2"></i>Step 4: Clinical Details</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-secondary">Symptoms Summary</label>
+                    <textarea asp-for="Symptoms" id="txtSymptoms" class="form-control" rows="3" placeholder="Explain symptoms in brief (e.g. fever, headache since 2 days)..."></textarea>
+                    <span asp-validation-for="Symptoms" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label small fw-semibold text-secondary">Reason for Booking</label>
+                    <textarea asp-for="AppointmentReason" id="txtReason" class="form-control" rows="2" placeholder="Specific reason (e.g. monthly routine cardiac checkup)..."></textarea>
+                    <span asp-validation-for="AppointmentReason" class="text-danger small"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 5: Review & Confirm -->
+        <div id="step-5" class="wizard-step-section d-none">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 text-dark">
+                <h5 class="text-dark border-bottom pb-3 mb-3"><i class="bi bi-shield-check text-primary me-2"></i>Step 5: Review & Submit</h5>
+                
+                <div class="alert alert-primary bg-opacity-10 text-primary-emphasis rounded-3 border-0 py-3 mb-4">
+                    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                    Please double-check all scheduling configurations before submitting your booking.
+                </div>
+
+                <div class="row g-3 text-dark small border p-3.5 rounded-4 bg-light mb-4">
+                    <div class="col-12 col-md-6 border-bottom pb-2">
+                        <div class="text-secondary fw-semibold">Consulting Doctor:</div>
+                        <div class="fw-bold fs-6 text-dark" id="revDoctor">N/A</div>
+                    </div>
+                    <div class="col-12 col-md-6 border-bottom pb-2">
+                        <div class="text-secondary fw-semibold">Consultation Channel:</div>
+                        <div class="fw-bold fs-6 text-dark" id="revChannel">N/A</div>
+                    </div>
+                    <div class="col-12 col-md-6 border-bottom pb-2">
+                        <div class="text-secondary fw-semibold">Appointment Date:</div>
+                        <div class="fw-bold fs-6 text-dark" id="revDate">N/A</div>
+                    </div>
+                    <div class="col-12 col-md-6 border-bottom pb-2">
+                        <div class="text-secondary fw-semibold">Time Slot Duration:</div>
+                        <div class="fw-bold fs-6 text-dark" id="revSlot">N/A</div>
+                    </div>
+                    <div class="col-12 col-md-6 border-bottom pb-2">
+                        <div class="text-secondary fw-semibold">Consultation Cost:</div>
+                        <div class="fw-bold fs-5 text-success" id="revCost">₹0.00</div>
+                    </div>
+                    <div class="col-12 col-md-6 border-bottom pb-2">
+                        <div class="text-secondary fw-semibold">Priority Status:</div>
+                        <div class="fw-bold text-dark" id="revPriority">Normal</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-secondary fw-semibold">Symptoms Captures:</div>
+                        <p class="text-secondary bg-white p-2 border.5 rounded mb-0 mt-1" id="revSymptoms" style="white-space: pre-line;">None</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wizard Navigation Actions Button -->
+        <div class="d-flex justify-content-between mb-5">
+            <button type="button" class="btn btn-light fw-medium px-4 py-2 d-none" id="btnWizardBack" onclick="wizardStepBack()"><i class="bi bi-chevron-left me-1"></i>Back</button>
+            <div class="ms-auto">
+                <button type="button" class="btn btn-primary fw-medium px-4 py-2" id="btnWizardNext" onclick="wizardStepNext()" disabled>Next<i class="bi bi-chevron-right ms-1"></i></button>
+                <button type="submit" class="btn btn-success fw-medium px-4 py-2 d-none" id="btnWizardConfirm">Confirm & Book<i class="bi bi-check-lg ms-1"></i></button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        var currentStep = 1;
+        var totalSteps = 5;
+        var selectedDoctorFees = null;
+
+        $(document).ready(function() {
+            // Apply step change listeners to filter inputs
+            $('#txtDocSearch, #ddlBranchFilter, #ddlDeptFilter, #ddlSpecFilter').on('change keyup', filterDoctorsList);
+
+            // Time slots listener
+            $('#txtBookingDate').on('change', fetchAvailableSlots);
+        });
+
+        // Search & filter doctor list client-side
+        function filterDoctorsList() {
+            var nameQuery = $('#txtDocSearch').val().toLowerCase();
+            var branchId = $('#ddlBranchFilter').val();
+            var deptId = $('#ddlDeptFilter').val();
+            var specId = $('#ddlSpecFilter').val();
+
+            $('.doctor-item-card').each(function() {
+                var card = $(this);
+                var docName = card.data('name').toLowerCase();
+                var docBranch = card.data('branch').toString();
+                var docDept = card.data('dept').toString();
+                var docSpecs = card.data('specs').toString().split(',');
+
+                var matchesName = docName.indexOf(nameQuery) > -1;
+                var matchesBranch = !branchId || docBranch === branchId;
+                var matchesDept = !deptId || docDept === deptId;
+                var matchesSpec = !specId || docSpecs.indexOf(specId) > -1;
+
+                if (matchesName && matchesBranch && matchesDept && matchesSpec) {
+                    card.removeClass('d-none');
+                } else {
+                    card.addClass('d-none');
+                }
+            });
+        }
+
+        // On select doctor card click
+        function selectDoctorCard(card, docId) {
+            $('.doctor-item-card .wizard-card').removeClass('selected');
+            $(card).addClass('selected');
+            $('#hfDoctorID').val(docId);
+            
+            // Extract resolved fees data
+            var docCardEl = $(card).closest('.doctor-item-card');
+            selectedDoctorFees = docCardEl.data('fees');
+
+            // Apply to Step 2 labels
+            $('#lblFeeClinic').text('₹' + parseFloat(selectedDoctorFees.Clinic).toFixed(2));
+            $('#lblFeeVideo').text('₹' + parseFloat(selectedDoctorFees.Video).toFixed(2));
+            $('#lblFeeVoice').text('₹' + parseFloat(selectedDoctorFees.Voice).toFixed(2));
+            $('#lblFeePriority').text('₹' + parseFloat(selectedDoctorFees.Priority).toFixed(2));
+
+            // Set priority visibility
+            if (selectedDoctorFees.PriorityAvailable) {
+                $('#priorityBox').removeClass('d-none');
+            } else {
+                $('#priorityBox').addClass('d-none');
+                $('#chkPriorityToggle').prop('checked', false);
+            }
+
+            // Reset step 3 slots when doctor changes
+            $('#txtBookingDate').val('');
+            $('#bookingSlotsContainer').empty();
+            $('#hfSelectedSlot').val('');
+            $('#slotsAlertBox').removeClass('d-none').text('Please select a date to list slot timings.');
+
+            // Enable next button
+            $('#btnWizardNext').prop('disabled', false);
+        }
+
+        // On select consultation type click
+        function selectConsultType(type) {
+            $('.wizard-step-section #cardClinic, .wizard-step-section #cardVideo, .wizard-step-section #cardVoice').removeClass('selected');
+            $('#hfApptType').val(type);
+
+            if (type === 'Clinic') $('#cardClinic').addClass('selected');
+            else if (type === 'Video') $('#cardVideo').addClass('selected');
+            else if (type === 'Voice') $('#cardVoice').addClass('selected');
+        }
+
+        function togglePriorityChecked() {
+            var chk = $('#chkPriorityToggle').is(':checked');
+            if (chk) {
+                $('#cardClinic, #cardVideo, #cardVoice').addClass('bg-opacity-50');
+            } else {
+                $('#cardClinic, #cardVideo, #cardVoice').removeClass('bg-opacity-50');
+            }
+        }
+
+        // Fetch available slots from server via AJAX
+        function fetchAvailableSlots() {
+            var date = $('#txtBookingDate').val();
+            var doctorId = $('#hfDoctorID').val();
+
+            if (!date || !doctorId) {
+                $('#bookingSlotsContainer').empty();
+                $('#slotsAlertBox').removeClass('d-none').text('Please select a date to list slot timings.');
+                return;
+            }
+
+            $('#bookingSlotsLoader').removeClass('d-none');
+            $('#slotsAlertBox').addClass('d-none');
+            $('#bookingSlotsContainer').empty();
+            $('#btnWizardNext').prop('disabled', true);
+
+            $.ajax({
+                url: '@Url.Action("GetAvailableSlots", "Appointments")',
+                type: 'GET',
+                data: { doctorId: doctorId, date: date },
+                success: function(res) {
+                    $('#bookingSlotsLoader').addClass('d-none');
+                    if (res.success) {
+                        if (res.slots && res.slots.length > 0) {
+                            var buttons = '';
+                            $.each(res.slots, function(idx, slot) {
+                                buttons += '<button type="button" class="btn btn-outline-primary btn-sm slot-btn rounded-3 font-semibold py-1.5 px-3" onclick="selectSlotTime(this, \'' + slot + '\')">' + slot + '</button>';
+                            });
+                            $('#bookingSlotsContainer').html(buttons);
+                        } else {
+                            $('#slotsAlertBox').removeClass('d-none').text('Doctor is unavailable or fully booked on the selected date.');
+                        }
+                    } else {
+                        $('#slotsAlertBox').removeClass('d-none').text(res.message || 'Error loading slots.');
+                    }
+                },
+                error: function() {
+                    $('#bookingSlotsLoader').addClass('d-none');
+                    $('#slotsAlertBox').removeClass('d-none').text('Failed to connect to the server.');
+                }
+            });
+        }
+
+        function selectSlotTime(btn, time) {
+            $('.slot-btn').removeClass('selected');
+            $(btn).addClass('selected');
+            $('#hfSelectedSlot').val(time);
+            
+            // Enable next button
+            $('#btnWizardNext').prop('disabled', false);
+        }
+
+        // Stepper Navigation Transitions
+        function updateWizardUI() {
+            // Manage Steps visibility
+            $('.wizard-step-section').addClass('d-none');
+            $('#step-' + currentStep).removeClass('d-none');
+
+            // Manage Stepper visual nodes
+            $('.step-node').removeClass('active completed');
+            for (var i = 1; i <= totalSteps; i++) {
+                var node = $('#node-' + i);
+                if (i < currentStep) node.addClass('completed').text('✓');
+                else if (i === currentStep) node.addClass('active').text(i);
+                else node.text(i);
+            }
+
+            // Manage Bottom Buttons
+            if (currentStep === 1) {
+                $('#btnWizardBack').addClass('d-none');
+                $('#btnWizardNext').removeClass('d-none').prop('disabled', !$('#hfDoctorID').val());
+                $('#btnWizardConfirm').addClass('d-none');
+            } else if (currentStep === totalSteps) {
+                $('#btnWizardBack').removeClass('d-none');
+                $('#btnWizardNext').addClass('d-none');
+                $('#btnWizardConfirm').removeClass('d-none');
+                
+                // Populates Step 5 Review info
+                var docName = $('.doctor-item-card .wizard-card.selected h6').text();
+                var channel = $('#hfApptType').val();
+                var isPriority = $('#chkPriorityToggle').is(':checked');
+                
+                $('#revDoctor').text(docName);
+                $('#revChannel').text(channel);
+                $('#revDate').text($('#txtBookingDate').val());
+                $('#revSlot').text($('#hfSelectedSlot').val());
+                $('#revSymptoms').text($('#txtSymptoms').val() || 'None');
+                
+                var finalCost = 0;
+                if (isPriority) {
+                    finalCost = parseFloat(selectedDoctorFees.Priority);
+                    $('#revPriority').text('Priority Consultation Active').addClass('text-danger').removeClass('text-secondary');
+                } else {
+                    if (channel === 'Clinic') finalCost = parseFloat(selectedDoctorFees.Clinic);
+                    else if (channel === 'Video') finalCost = parseFloat(selectedDoctorFees.Video);
+                    else if (channel === 'Voice') finalCost = parseFloat(selectedDoctorFees.Voice);
+                    $('#revPriority').text('Normal Routine Consultation').addClass('text-secondary').removeClass('text-danger');
+                }
+                
+                $('#revCost').text('₹' + finalCost.toFixed(2));
+            } else {
+                $('#btnWizardBack').removeClass('d-none');
+                $('#btnWizardNext').removeClass('d-none');
+                $('#btnWizardConfirm').addClass('d-none');
+
+                // Enable/disable next depending on inputs
+                if (currentStep === 2) {
+                    $('#btnWizardNext').prop('disabled', false); // Consult type selected default is Clinic
+                } else if (currentStep === 3) {
+                    $('#btnWizardNext').prop('disabled', !$('#hfSelectedSlot').val());
+                } else if (currentStep === 4) {
+                    $('#btnWizardNext').prop('disabled', false);
+                }
+            }
+        }
+
+        function wizardStepNext() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateWizardUI();
+            }
+        }
+
+        function wizardStepBack() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateWizardUI();
+            }
+        }
+    </script>
+}
