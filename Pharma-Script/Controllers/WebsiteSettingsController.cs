@@ -41,6 +41,8 @@ namespace Pharma_Script.Controllers
         public async Task<IActionResult> Index()
         {
             var settings = await GetOrCreateSettingsAsync();
+            var org = await _uow.Organizations.GetByIdAsync(OrganizationId);
+            ViewBag.OrganizationSlug = org?.OrganizationSlug;
             return View(settings);
         }
 
@@ -148,27 +150,6 @@ namespace Pharma_Script.Controllers
             await _uow.CMSSettings.UpsertAsync(settings);
 
             return Json(new { success = true, message = "Contact information saved." });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveSocial(WebsiteSocialViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Json(new { success = false, message = "Validation failed.", errors = CollectErrors() });
-            }
-
-            var settings = await GetOrCreateSettingsAsync();
-            settings.FacebookURL = model.FacebookURL;
-            settings.InstagramURL = model.InstagramURL;
-            settings.LinkedInURL = model.LinkedInURL;
-            settings.TwitterURL = model.TwitterURL;
-            settings.YouTubeURL = model.YouTubeURL;
-            settings.UpdatedAt = DateTime.Now;
-            await _uow.CMSSettings.UpsertAsync(settings);
-
-            return Json(new { success = true, message = "Social media links saved." });
         }
 
         [HttpPost]

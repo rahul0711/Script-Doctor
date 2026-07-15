@@ -44,5 +44,20 @@ namespace Pharma_Script.Helpers
         {
             return principal.GetRoleName().Equals("Organization Admin", StringComparison.OrdinalIgnoreCase);
         }
+
+        public static bool IsDoctor(this ClaimsPrincipal principal)
+        {
+            return principal.GetRoleName().Equals("Doctor", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsReceptionist(this ClaimsPrincipal principal)
+        {
+            return principal.GetRoleName().Equals("Receptionist", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsPatient(this ClaimsPrincipal principal)
+        {
+            return principal.GetRoleName().Equals("Patient", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }

@@ -17,11 +17,44 @@ namespace Pharma_Script.Controllers
     {
         private readonly IUnitOfWork _uow;
         private readonly IAppointmentService _appointmentService;
+        private readonly IConsultationSessionService _sessionService;
 
-        public ConsultationController(IUnitOfWork uow, IAppointmentService appointmentService)
+        public ConsultationController(IUnitOfWork uow, IAppointmentService appointmentService, IConsultationSessionService sessionService)
         {
             _uow = uow;
             _appointmentService = appointmentService;
+            _sessionService = sessionService;
+        }
+
+        // GET: /Consultation
+        public async Task<IActionResult> Index()
+        {
+            var orgId = User.GetOrganizationId();
+            if (!orgId.HasValue) return BadRequest("Tenant context not resolved.");
+
+            var userId = User.GetUserId();
+            var doctor = await _uow.Doctors.GetByUserIdAsync(userId);
+            if (doctor == null)
+            {
+                TempData["Error"] = "Doctor record not found.";
+                return RedirectToAction("Index", "Dashboard");
+            }
+
+            var approvedAppts = await _uow.Appointments.SearchAndPaginateAsync(
+                orgId: orgId.Value, branchId: null, doctorId: doctor.DoctorID, patientId: null,
+                status: "Approved", type: null, startDate: null, endDate: null, isPriority: null,
+                searchTerm: null, page: 1, pageSize: 100);
+
+            var completedAppts = await _uow.Appointments.SearchAndPaginateAsync(
+                orgId: orgId.Value, branchId: null, doctorId: doctor.DoctorID, patientId: null,
+                status: "Completed", type: null, startDate: null, endDate: null, isPriority: null,
+                searchTerm: null, page: 1, pageSize: 100);
+
+            var list = approvedAppts.Concat(completedAppts)
+                .OrderByDescending(a => a.AppointmentDate)
+                .ThenByDescending(a => a.StartTime);
+
+            return View(list);
         }
 
         // GET: /Consultation/Workspace/{id}
@@ -138,6 +171,45 @@ namespace Pharma_Script.Controllers
             {
                 TempData["Error"] = $"Failed to record consultation: {ex.Message}";
                 return RedirectToAction("Workspace", new { id = model.AppointmentID });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveVideoLink(int appointmentId, string meetingProvider, string meetingUrl)
+        {
+            var orgId = User.GetOrganizationId();
+            if (!orgId.HasValue) return BadRequest();
+
+            try
+            {
+                await _sessionService.UpdateVideoLinkAsync(appointmentId, meetingProvider, meetingUrl, orgId.Value);
+                TempData["Success"] = "Video link saved successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error saving link: {ex.Message}";
+            }
+
+            return RedirectToAction("Details", "Appointments", new { id = appointmentId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StartSession(int appointmentId)
+        {
+            var orgId = User.GetOrganizationId();
+            if (!orgId.HasValue) return BadRequest();
+
+            try
+            {
+                await _sessionService.UpdateSessionStatusAsync(appointmentId, "Started", orgId.Value);
+                return RedirectToAction("Workspace", new { id = appointmentId });
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Error starting session: {ex.Message}";
+                return RedirectToAction("Details", "Appointments", new { id = appointmentId });
             }
         }
 

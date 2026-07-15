@@ -9,7 +9,7 @@ namespace Pharma_Script.Models
         public int? BranchID { get; set; }
         public int DoctorID { get; set; }
         public int PatientID { get; set; }
-        public string AppointmentType { get; set; } = "Clinic"; // Clinic, Video, Voice
+        public string AppointmentType { get; set; } = "Video"; // Video, Voice
         public DateTime AppointmentDate { get; set; }
         public TimeSpan StartTime { get; set; }
         public TimeSpan EndTime { get; set; }

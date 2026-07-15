@@ -30,8 +30,14 @@ builder.Services.AddScoped<IUnitOfWork>(sp =>
 // Register BLL Services
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IPatientProvisioningService, PatientProvisioningService>();
+builder.Services.AddScoped<IConsultationSessionService, ConsultationSessionService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IReminderService, ReminderService>();
 
 // Configure Cookie Authentication
+// OnRedirectToLogin: when a patient hits a [Authorize(Roles="Patient")] public route,
+// we detect the org slug from the returnUrl and send them to /{slug}/login instead of
+// the internal /Account/Login (which is for Admin/Doctor/Receptionist only).
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -39,6 +45,34 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
+        options.Events.OnRedirectToLogin = ctx =>
+        {
+            var returnUrl = ctx.RedirectUri;
+            // Extract the returnUrl query param from the redirect URI
+            var uri = new Uri(returnUrl);
+            var qs = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (qs.TryGetValue("ReturnUrl", out var ret))
+            {
+                var retPath = ret.ToString(); // e.g. /abc-hospital/doctors/3/book
+                var parts = retPath.TrimStart('/').Split('/');
+                if (parts.Length >= 1)
+                {
+                    var slugCandidate = parts[0];
+                    var slugCache = ctx.HttpContext.RequestServices
+                        .GetRequiredService<Pharma_Script.Services.Interfaces.IOrganizationSlugCache>();
+                    if (slugCache.IsActiveSlug(slugCandidate))
+                    {
+                        // Redirect to tenant-branded login, preserving the returnUrl
+                        var tenantLogin = $"/{slugCandidate}/login?ReturnUrl={Uri.EscapeDataString(retPath)}";
+                        ctx.Response.Redirect(tenantLogin);
+                        return Task.CompletedTask;
+                    }
+                }
+            }
+            // Fall through to admin login for non-public routes
+            ctx.Response.Redirect(ctx.RedirectUri);
+            return Task.CompletedTask;
+        };
     });
 
 var app = builder.Build();

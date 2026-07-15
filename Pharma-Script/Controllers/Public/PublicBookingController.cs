@@ -14,6 +14,11 @@ namespace Pharma_Script.Controllers.Public
     // (IAppointmentService). No slot generation, fee, or availability logic lives
     // here - it all still runs through AppointmentService.BookAppointmentAsync,
     // exactly as it does for the internal /Appointments/Book flow.
+    //
+    // Gated to the Patient role at the controller level so ASP.NET Core's cookie
+    // auth challenges anonymous visitors the moment they click "Book Appointment" -
+    // BEFORE they fill in any booking details - and redirects them straight back
+    // here (slug + doctorId preserved in ReturnUrl) once they log in or register.
     [Authorize(Roles = "Patient")]
     [Route("{slug:activeOrgSlug}/doctors/{doctorId:int}/book")]
     public class PublicBookingController : PublicControllerBase
@@ -52,7 +57,7 @@ namespace Pharma_Script.Controllers.Public
 
         [HttpPost("")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Book(int doctorId, AppointmentBookingViewModel model)
+        public async Task<IActionResult> Book(int doctorId, [Bind(Prefix = "Booking")] AppointmentBookingViewModel booking)
         {
             var mismatch = await ValidateContextAsync(doctorId);
             if (mismatch != null) return mismatch;
@@ -63,13 +68,13 @@ namespace Pharma_Script.Controllers.Public
                 return Forbid();
             }
 
-            model.DoctorID = doctorId;
-            model.PatientID = patient.PatientID;
+            booking.DoctorID = doctorId;
+            booking.PatientID = patient.PatientID;
 
             if (!ModelState.IsValid)
             {
                 var doctor = await Uow.Doctors.GetDoctorDetailsByIdAsync(doctorId, OrganizationId);
-                var vm = new PublicBookingViewModel { Tenant = Tenant, Doctor = doctor!, Booking = model };
+                var vm = new PublicBookingViewModel { Tenant = Tenant, Doctor = doctor!, Booking = booking };
                 TempData["Error"] = "Please complete all required fields correctly.";
                 return View(vm);
             }
@@ -77,7 +82,7 @@ namespace Pharma_Script.Controllers.Public
             try
             {
                 var doctorRecord = await Uow.Doctors.GetByIdAsync(doctorId);
-                var appt = await _appointmentService.BookAppointmentAsync(model, OrganizationId, doctorRecord?.BranchID);
+                var appt = await _appointmentService.BookAppointmentAsync(booking, OrganizationId, doctorRecord?.BranchID);
 
                 var slug = Tenant.Organization.OrganizationSlug;
                 return RedirectToAction("Confirmation", new { slug, doctorId, appointmentId = appt.AppointmentID });
@@ -85,7 +90,7 @@ namespace Pharma_Script.Controllers.Public
             catch (Exception ex)
             {
                 var doctor = await Uow.Doctors.GetDoctorDetailsByIdAsync(doctorId, OrganizationId);
-                var vm = new PublicBookingViewModel { Tenant = Tenant, Doctor = doctor!, Booking = model };
+                var vm = new PublicBookingViewModel { Tenant = Tenant, Doctor = doctor!, Booking = booking };
                 TempData["Error"] = ex.Message;
                 return View(vm);
             }

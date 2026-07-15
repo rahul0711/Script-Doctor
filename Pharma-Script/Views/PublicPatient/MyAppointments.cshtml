@@ -1,0 +1,137 @@
+@model Pharma_Script.ViewModels.Public.PublicMyAppointmentsViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var slug = Model.Tenant.Organization.OrganizationSlug;
+    string StatusClass(string s) => s switch
+    {
+        "Approved" => "pub-badge-approved",
+        "Completed" => "pub-badge-completed",
+        "Cancelled" => "pub-badge-cancelled",
+        "Rejected"  => "pub-badge-cancelled",
+        "Pending"   => "pub-badge-pending",
+        _ => "pub-badge-pending"
+    };
+    string StatusIcon(string s) => s switch
+    {
+        "Approved" => "bi-calendar-check",
+        "Completed" => "bi-check-circle",
+        "Cancelled" => "bi-x-circle",
+        "Rejected"  => "bi-x-circle",
+        "Pending"   => "bi-clock",
+        _ => "bi-clock"
+    };
+}
+
+<section class="pub-section-tight pub-section-soft">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <span class="pub-eyebrow">Patient Portal</span>
+                <h1 class="pub-heading mt-1" style="font-size:1.8rem;">My Appointments</h1>
+            </div>
+            <a href="/@slug/doctors" class="pub-btn-cta">
+                <i class="bi bi-plus-lg me-1"></i>Book New
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="pub-section">
+    <div class="container" style="max-width:800px;">
+
+        @* Status filter tabs *@
+        <div class="d-flex gap-2 flex-wrap mb-4">
+            @foreach (var s in new[] { (string?)null, "Pending", "Approved", "Completed", "Cancelled" })
+            {
+                var label = s ?? "All";
+                var isActive = (Model.StatusFilter == s);
+                var href = s == null ? $"/{slug}/my/appointments" : $"/{slug}/my/appointments?status={s}";
+                <a href="@href"
+                   class="@(isActive ? "pub-btn-cta" : "pub-btn-outline") py-1 px-3"
+                   style="font-size:0.85rem; border-radius:50px;">@label</a>
+            }
+        </div>
+
+        @if (!Model.Appointments.Any())
+        {
+            <div class="pub-service-card text-center py-5">
+                <div class="pub-dept-icon mx-auto mb-3" style="width:64px;height:64px;font-size:1.8rem;">
+                    <i class="bi bi-calendar-x"></i>
+                </div>
+                <h5 class="fw-bold">No appointments found</h5>
+                <p class="text-muted small mb-4">Book your first appointment to get started.</p>
+                <a href="/@slug/doctors" class="pub-btn-cta">Find a Doctor</a>
+            </div>
+        }
+        else
+        {
+            @foreach (var appt in Model.Appointments)
+            {
+                <div class="pub-appt-card mb-3">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <div class="pub-doctor-name">
+                                <i class="bi bi-person-badge me-1" style="color:var(--tenant-primary);"></i>
+                                Dr. @appt.DoctorName
+                            </div>
+                            <div class="pub-doctor-meta mt-1">
+                                <i class="bi bi-calendar3 me-1"></i>@appt.AppointmentDate.ToString("dddd, dd MMMM yyyy")
+                                &middot;
+                                <i class="bi bi-clock me-1"></i>@appt.StartTime.ToString(@"hh\:mm") – @appt.EndTime.ToString(@"hh\:mm")
+                            </div>
+                            <div class="pub-doctor-meta mt-1">
+                                @if (appt.AppointmentType == "Video")
+                                {
+                                    <i class="bi bi-camera-video me-1"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-telephone me-1"></i>
+                                }
+                                @appt.AppointmentType Consultation
+                                @if (appt.PriorityConsultation)
+                                {
+                                    <span class="ms-2 badge bg-danger bg-opacity-10 text-danger fw-semibold" style="font-size:0.73rem;">Priority</span>
+                                }
+                                &middot; ₹@appt.ConsultationFee.ToString("0")
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(appt.Symptoms))
+                            {
+                                <div class="pub-doctor-meta mt-1">
+                                    <i class="bi bi-activity me-1"></i><em>@appt.Symptoms</em>
+                                </div>
+                            }
+                        </div>
+                        <span class="@StatusClass(appt.Status) ms-auto">
+                            <i class="bi @StatusIcon(appt.Status) me-1"></i>@appt.Status
+                        </span>
+                    </div>
+                </div>
+            }
+
+            @* Pagination *@
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-center gap-2 mt-4">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a href="/@slug/my/appointments?page=@(Model.CurrentPage - 1)@(!string.IsNullOrEmpty(Model.StatusFilter) ? "&status=" + Model.StatusFilter : "")"
+                           class="pub-btn-outline py-1 px-3" style="font-size:0.85rem;">
+                            <i class="bi bi-chevron-left"></i> Prev
+                        </a>
+                    }
+                    <span class="d-flex align-items-center px-3 small text-muted">
+                        Page @Model.CurrentPage of @Model.TotalPages
+                    </span>
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <a href="/@slug/my/appointments?page=@(Model.CurrentPage + 1)@(!string.IsNullOrEmpty(Model.StatusFilter) ? "&status=" + Model.StatusFilter : "")"
+                           class="pub-btn-outline py-1 px-3" style="font-size:0.85rem;">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                    }
+                </nav>
+            }
+        }
+    </div>
+</section>

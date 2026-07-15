@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Pharma_Script.Controllers
 {
-    [Authorize(Roles = "Platform Owner,Organization Admin")]
+    [Authorize(Roles = "Platform Owner,Organization Admin,Doctor")]
     public class DoctorLeaveController : Controller
     {
         private readonly IUnitOfWork _uow;
@@ -25,18 +25,22 @@ namespace Pharma_Script.Controllers
         public async Task<IActionResult> Index(int doctorId)
         {
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
+
             var doc = await _uow.Doctors.GetDoctorDetailsByIdAsync(doctorId, User.IsPlatformOwner() ? null : userOrgId);
             if (doc == null)
-            {
                 return NotFound("Doctor profile not found.");
-            }
+
+            // Doctors may only manage their own leaves
+            if (User.IsDoctor() && doc.UserID != userId)
+                return Forbid();
 
             var upcomingLeaves = await _uow.DoctorLeaves.GetUpcomingLeavesByDoctorIdAsync(doctorId);
-            var pastLeaves = await _uow.DoctorLeaves.GetPastLeavesByDoctorIdAsync(doctorId);
+            var pastLeaves     = await _uow.DoctorLeaves.GetPastLeavesByDoctorIdAsync(doctorId);
 
-            ViewBag.Doctor = doc;
+            ViewBag.Doctor        = doc;
             ViewBag.UpcomingLeaves = upcomingLeaves;
-            ViewBag.PastLeaves = pastLeaves;
+            ViewBag.PastLeaves    = pastLeaves;
 
             return View();
         }
@@ -46,8 +50,11 @@ namespace Pharma_Script.Controllers
         public async Task<IActionResult> Create(int doctorId)
         {
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(doctorId);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Forbid();
             }
@@ -74,8 +81,11 @@ namespace Pharma_Script.Controllers
             }
 
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(model.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Json(new { success = false, message = "Unauthorized access." });
             }
@@ -122,8 +132,11 @@ namespace Pharma_Script.Controllers
             }
 
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(leave.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Forbid();
             }
@@ -152,8 +165,11 @@ namespace Pharma_Script.Controllers
             }
 
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(model.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Json(new { success = false, message = "Unauthorized access." });
             }
@@ -203,8 +219,11 @@ namespace Pharma_Script.Controllers
             }
 
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(leave.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Json(new { success = false, message = "Unauthorized access." });
             }

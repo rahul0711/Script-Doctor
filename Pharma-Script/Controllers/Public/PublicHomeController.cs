@@ -23,8 +23,6 @@ namespace Pharma_Script.Controllers.Public
             var featuredDoctors = await Uow.Doctors.SearchAndPaginateAsync(OrganizationId, null, null, null, true, "", 1, 6);
             var totalDoctorCount = await Uow.Doctors.GetSearchCountAsync(OrganizationId, null, null, null, true, "");
             var services = await Uow.Services.GetActiveByOrganizationIdAsync(OrganizationId);
-            var gallery = await Uow.Gallery.GetActiveByOrganizationIdAsync(OrganizationId);
-            var faqs = await Uow.FAQs.GetActiveByOrganizationIdAsync(OrganizationId);
 
             var model = new PublicHomeViewModel
             {
@@ -33,9 +31,7 @@ namespace Pharma_Script.Controllers.Public
                 Departments = departments.Where(d => d.IsActive).ToList(),
                 FeaturedDoctors = featuredDoctors.ToList(),
                 TotalDoctorCount = totalDoctorCount,
-                Services = services.ToList(),
-                GalleryPreview = gallery.Take(8).ToList(),
-                FAQs = faqs.ToList()
+                Services = services.ToList()
             };
 
             var websiteTitle = Tenant.CMSSettings?.WebsiteTitle ?? Tenant.Organization.OrganizationName;

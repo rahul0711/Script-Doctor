@@ -144,10 +144,12 @@ namespace Pharma_Script.Controllers
             }
 
             // Load payments, doctor notes, prescription and status history
+            ViewBag.Patient = await _uow.Patients.GetPatientDetailsByIdAsync(appt.PatientID, orgId);
             ViewBag.Payment = await _uow.Payments.GetByAppointmentIdAsync(id, orgId);
             ViewBag.DoctorNote = await _uow.DoctorNotes.GetByAppointmentIdAsync(id, orgId);
             ViewBag.Prescription = await _uow.Prescriptions.GetByAppointmentIdAsync(id, orgId);
             ViewBag.History = await _uow.AppointmentStatusHistories.GetByAppointmentIdAsync(id);
+            ViewBag.ConsultationSession = await _uow.ConsultationSessions.GetByAppointmentIdAsync(id, orgId ?? appt.OrganizationID);
 
             return View(appt);
         }
@@ -203,6 +205,7 @@ namespace Pharma_Script.Controllers
 
         // GET: /Appointments/GetAvailableSlots
         [HttpGet]
+        [AllowAnonymous]
         public async Task<JsonResult> GetAvailableSlots(int doctorId, string date)
         {
             try

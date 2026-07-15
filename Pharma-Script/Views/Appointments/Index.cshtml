@@ -54,7 +54,7 @@
                 <label class="form-label small fw-semibold text-secondary">Type</label>
                 <select name="type" class="form-select">
                     <option value="">-- All Types --</option>
-                    @foreach (var t in new[] { "Clinic", "Video", "Voice" })
+                    @foreach (var t in new[] { "Video", "Voice" })
                     {
                         <option value="@t" selected="@(ViewBag.Type == t)">@t</option>
                     }

@@ -36,11 +36,6 @@ namespace Pharma_Script.Repositories.Implementations
                 EmergencyPhone = reader.IsDBNull(reader.GetOrdinal("EmergencyPhone")) ? null : reader.GetString(reader.GetOrdinal("EmergencyPhone")),
                 Address = reader.IsDBNull(reader.GetOrdinal("Address")) ? null : reader.GetString(reader.GetOrdinal("Address")),
                 GoogleMapEmbed = reader.IsDBNull(reader.GetOrdinal("GoogleMapEmbed")) ? null : reader.GetString(reader.GetOrdinal("GoogleMapEmbed")),
-                FacebookURL = reader.IsDBNull(reader.GetOrdinal("FacebookURL")) ? null : reader.GetString(reader.GetOrdinal("FacebookURL")),
-                InstagramURL = reader.IsDBNull(reader.GetOrdinal("InstagramURL")) ? null : reader.GetString(reader.GetOrdinal("InstagramURL")),
-                LinkedInURL = reader.IsDBNull(reader.GetOrdinal("LinkedInURL")) ? null : reader.GetString(reader.GetOrdinal("LinkedInURL")),
-                TwitterURL = reader.IsDBNull(reader.GetOrdinal("TwitterURL")) ? null : reader.GetString(reader.GetOrdinal("TwitterURL")),
-                YouTubeURL = reader.IsDBNull(reader.GetOrdinal("YouTubeURL")) ? null : reader.GetString(reader.GetOrdinal("YouTubeURL")),
                 FooterText = reader.IsDBNull(reader.GetOrdinal("FooterText")) ? null : reader.GetString(reader.GetOrdinal("FooterText")),
                 CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
                 UpdatedAt = reader.IsDBNull(reader.GetOrdinal("UpdatedAt")) ? null : reader.GetDateTime(reader.GetOrdinal("UpdatedAt"))
@@ -63,11 +58,6 @@ namespace Pharma_Script.Repositories.Implementations
             cmd.Parameters.AddWithValue("@EmergencyPhone", (object?)entity.EmergencyPhone ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@Address", (object?)entity.Address ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@GoogleMapEmbed", (object?)entity.GoogleMapEmbed ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@FacebookURL", (object?)entity.FacebookURL ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@InstagramURL", (object?)entity.InstagramURL ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@LinkedInURL", (object?)entity.LinkedInURL ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@TwitterURL", (object?)entity.TwitterURL ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@YouTubeURL", (object?)entity.YouTubeURL ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@FooterText", (object?)entity.FooterText ?? DBNull.Value);
         }
 
@@ -75,12 +65,10 @@ namespace Pharma_Script.Repositories.Implementations
         {
             var query = $@"INSERT INTO {TableName}
                 (OrganizationID, WebsiteTitle, WebsiteLogo, Favicon, PrimaryColor, SecondaryColor, AboutUs, Mission, Vision,
-                 ContactEmail, ContactPhone, EmergencyPhone, Address, GoogleMapEmbed, FacebookURL, InstagramURL, LinkedInURL,
-                 TwitterURL, YouTubeURL, FooterText)
+                 ContactEmail, ContactPhone, EmergencyPhone, Address, GoogleMapEmbed, FooterText)
                 VALUES
                 (@OrganizationID, @WebsiteTitle, @WebsiteLogo, @Favicon, @PrimaryColor, @SecondaryColor, @AboutUs, @Mission, @Vision,
-                 @ContactEmail, @ContactPhone, @EmergencyPhone, @Address, @GoogleMapEmbed, @FacebookURL, @InstagramURL, @LinkedInURL,
-                 @TwitterURL, @YouTubeURL, @FooterText);
+                 @ContactEmail, @ContactPhone, @EmergencyPhone, @Address, @GoogleMapEmbed, @FooterText);
                 SELECT LAST_INSERT_ID();";
 
             await EnsureConnectionOpenAsync();
@@ -99,8 +87,7 @@ namespace Pharma_Script.Repositories.Implementations
                 PrimaryColor = @PrimaryColor, SecondaryColor = @SecondaryColor, AboutUs = @AboutUs,
                 Mission = @Mission, Vision = @Vision, ContactEmail = @ContactEmail, ContactPhone = @ContactPhone,
                 EmergencyPhone = @EmergencyPhone, Address = @Address, GoogleMapEmbed = @GoogleMapEmbed,
-                FacebookURL = @FacebookURL, InstagramURL = @InstagramURL, LinkedInURL = @LinkedInURL,
-                TwitterURL = @TwitterURL, YouTubeURL = @YouTubeURL, FooterText = @FooterText
+                FooterText = @FooterText
                 WHERE CMSSettingID = @CMSSettingID AND OrganizationID = @OrganizationID";
 
             await EnsureConnectionOpenAsync();

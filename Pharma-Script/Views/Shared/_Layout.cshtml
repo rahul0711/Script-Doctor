@@ -22,6 +22,7 @@
 
     @if (User.Identity?.IsAuthenticated == true)
     {
+        @Html.AntiForgeryToken()
         <div class="app-container">
             <!-- Sidebar Navigation (SaaS Layout) -->
             @await Html.PartialAsync("_Sidebar")
@@ -35,11 +36,25 @@
                     </button>
                     
                     <div class="ms-auto d-flex align-items-center gap-3">
-                        <!-- Notification Badge (Mockup UI) -->
-                        <button class="btn btn-link text-secondary p-1 position-relative border-0" type="button" title="Notifications">
-                            <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-1 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                        </button>
+                        <!-- Notifications Dropdown -->
+                        <div class="dropdown" id="notificationDropdownContainer">
+                            <button class="btn btn-link text-secondary p-1 position-relative border-0" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+                                <i class="bi bi-bell fs-5"></i>
+                                <span id="notificationBadge" class="position-absolute top-1 start-100 translate-middle p-1 bg-danger border border-light rounded-circle d-none"></span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-0 rounded-3" aria-labelledby="notificationDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                                <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light">
+                                    <h6 class="mb-0 fw-bold">Notifications</h6>
+                                    <button class="btn btn-sm btn-link text-decoration-none p-0" id="markAllReadBtn" style="font-size: 0.8rem;">Mark all read</button>
+                                </div>
+                                <div id="notificationList" class="p-2">
+                                    <div class="text-center py-4 text-muted small">No new notifications</div>
+                                </div>
+                                <div class="p-2 border-top text-center bg-light">
+                                    <a href="/Notifications/All" class="text-decoration-none small fw-medium">View All</a>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="vr my-2" style="height: 20px; color: var(--border-color);"></div>
 
@@ -106,6 +121,68 @@
                 if (!$(e.target).closest('#sidebar, #sidebarToggle').length) {
                     $('#sidebar').removeClass('show');
                 }
+            });
+
+            // Notifications Logic
+            function loadNotifications() {
+                $.get('/Notifications/Unread', function (data) {
+                    var count = data.length;
+                    var badge = $('#notificationBadge');
+                    var list = $('#notificationList');
+                    
+                    if (count > 0) {
+                        badge.removeClass('d-none');
+                        list.empty();
+                        $.each(data, function (i, notif) {
+                            var icon = 'bi-info-circle';
+                            var color = 'text-primary';
+                            if (notif.notificationType === 'Reminder') { icon = 'bi-alarm'; color = 'text-warning'; }
+                            else if (notif.notificationType === 'Appointment') { icon = 'bi-calendar-check'; color = 'text-success'; }
+
+                            var item = `
+                                <div class="d-flex align-items-start mb-2 p-2 rounded hover-bg-light cursor-pointer notification-item" data-id="${notif.notificationID}">
+                                    <i class="bi ${icon} fs-4 ${color} me-3"></i>
+                                    <div>
+                                        <div class="fw-semibold small lh-1 mb-1">${notif.title}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">${notif.message}</div>
+                                    </div>
+                                </div>
+                            `;
+                            list.append(item);
+                        });
+                    } else {
+                        badge.addClass('d-none');
+                        list.html('<div class="text-center py-4 text-muted small">No new notifications</div>');
+                    }
+                });
+            }
+
+            // Load on page load
+            loadNotifications();
+
+            // Mark single as read
+            $(document).on('click', '.notification-item', function () {
+                var id = $(this).data('id');
+                var elem = $(this);
+                $.post('/Notifications/MarkAsRead/' + id, function () {
+                    elem.slideUp(200, function() {
+                        elem.remove();
+                        if ($('.notification-item').length === 0) {
+                            $('#notificationBadge').addClass('d-none');
+                            $('#notificationList').html('<div class="text-center py-4 text-muted small">No new notifications</div>');
+                        }
+                    });
+                });
+            });
+
+            // Mark all as read
+            $('#markAllReadBtn').on('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $.post('/Notifications/MarkAllAsRead', function () {
+                    $('#notificationBadge').addClass('d-none');
+                    $('#notificationList').html('<div class="text-center py-4 text-muted small">No new notifications</div>');
+                });
             });
         });
     </script>

@@ -20,6 +20,32 @@ namespace Pharma_Script.Repositories.Implementations
         protected override string TableName => "Appointments";
         protected override string PrimaryKeyName => "AppointmentID";
 
+        public async Task<IEnumerable<Appointment>> GetUpcomingAppointmentsForRemindersAsync(DateTime date)
+        {
+            var query = @"
+                SELECT a.*
+                FROM Appointments a
+                WHERE a.Status = 'Approved' 
+                  AND a.AppointmentDate = @Date
+                  AND NOT EXISTS (
+                      SELECT 1 FROM Notifications n 
+                      WHERE n.RelatedEntityID = a.AppointmentID 
+                        AND n.RelatedEntityType = 'AppointmentID' 
+                        AND n.NotificationType = 'Reminder'
+                  )";
+
+            var list = new List<Appointment>();
+            using var cmd = new MySqlCommand(query, (MySqlConnection)Connection, (MySqlTransaction?)TransactionProvider?.Invoke());
+            cmd.Parameters.AddWithValue("@Date", date.Date);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add(Map(reader));
+            }
+            return list;
+        }
+
         protected override Appointment Map(DbDataReader reader)
         {
             var appointment = new Appointment

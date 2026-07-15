@@ -7,6 +7,7 @@
     var notes = (Pharma_Script.Models.DoctorNote?)ViewBag.DoctorNote;
     var prescription = (Pharma_Script.Models.Prescription?)ViewBag.Prescription;
     var history = (IEnumerable<Pharma_Script.Models.AppointmentStatusHistory>?)ViewBag.History;
+    var session = (Pharma_Script.Models.ConsultationSession?)ViewBag.ConsultationSession;
 }
 
 <div class="page-title-box">
@@ -98,9 +99,12 @@
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body p-4">
                         <h6 class="text-primary fw-bold border-bottom pb-2 mb-3"><i class="bi bi-person me-2"></i>Patient Profile</h6>
+                        @{
+                            var patInfo = (Pharma_Script.Models.Patient?)ViewBag.Patient;
+                        }
                         <h5 class="text-dark mb-1">@Model.PatientName</h5>
                         <p class="text-muted small mb-3">ID: PAT-@Model.PatientID</p>
-                        <div class="row g-2 small">
+                        <div class="row g-2.5 small">
                             <div class="col-4 text-secondary font-medium">Gender:</div>
                             <div class="col-8 text-dark fw-semibold">@(Model.PatientGender ?? "N/A")</div>
                             
@@ -108,9 +112,53 @@
                             <div class="col-8 text-dark fw-semibold">@(Model.PatientBloodGroup ?? "N/A")</div>
                             
                             <div class="col-4 text-secondary font-medium">Age:</div>
-                            <div class="col-8 text-dark fw-semibold">
+                            <div class="col-8 text-dark fw-semibold mb-2">
                                 @(Model.PatientDOB.HasValue ? (DateTime.Today.Year - Model.PatientDOB.Value.Year).ToString() + " years" : "N/A")
                             </div>
+
+                            @if (patInfo != null)
+                            {
+                                <div class="col-12 border-top pt-2 mt-2">
+                                    <div class="row g-2">
+                                        <div class="col-4 text-secondary font-medium">Email:</div>
+                                        <div class="col-8 text-dark fw-semibold text-break">@(string.IsNullOrEmpty(patInfo.Email) ? "N/A" : patInfo.Email)</div>
+                                        
+                                        <div class="col-4 text-secondary font-medium">Phone:</div>
+                                        <div class="col-8 text-dark fw-semibold">@(string.IsNullOrEmpty(patInfo.Phone) ? "N/A" : patInfo.Phone)</div>
+
+                                        <div class="col-4 text-secondary font-medium">Height:</div>
+                                        <div class="col-8 text-dark fw-semibold">@(patInfo.Height.HasValue ? $"{patInfo.Height.Value} cm" : "N/A")</div>
+
+                                        <div class="col-4 text-secondary font-medium">Weight:</div>
+                                        <div class="col-8 text-dark fw-semibold">@(patInfo.Weight.HasValue ? $"{patInfo.Weight.Value} kg" : "N/A")</div>
+
+                                        <div class="col-4 text-secondary font-medium">Emergency Contact:</div>
+                                        <div class="col-8 text-dark fw-semibold text-break">
+                                            @if (!string.IsNullOrEmpty(patInfo.EmergencyContactName))
+                                            {
+                                                <span>@patInfo.EmergencyContactName @(string.IsNullOrEmpty(patInfo.EmergencyContactNumber) ? "" : $"({patInfo.EmergencyContactNumber})")</span>
+                                            }
+                                            else
+                                            {
+                                                <span>N/A</span>
+                                            }
+                                        </div>
+
+                                        <div class="col-4 text-secondary font-medium">Address:</div>
+                                        <div class="col-8 text-dark fw-semibold">
+                                            @{
+                                                var addrParts = new List<string>();
+                                                if (!string.IsNullOrEmpty(patInfo.Address)) addrParts.Add(patInfo.Address);
+                                                if (!string.IsNullOrEmpty(patInfo.City)) addrParts.Add(patInfo.City);
+                                                if (!string.IsNullOrEmpty(patInfo.State)) addrParts.Add(patInfo.State);
+                                                if (!string.IsNullOrEmpty(patInfo.Pincode)) addrParts.Add(patInfo.Pincode);
+                                                var fullAddr = string.Join(", ", addrParts);
+                                            }
+                                            @(string.IsNullOrEmpty(fullAddr) ? "N/A" : fullAddr)
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -245,6 +293,71 @@
                             </a>
                         </div>
                     }
+                </div>
+            </div>
+        }
+
+        <!-- Consultation Session for Video/Voice -->
+        @if (Model.AppointmentType == "Video" || Model.AppointmentType == "Voice")
+        {
+            <div class="card border-0 shadow-sm rounded-4 mt-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-camera-video text-primary me-2"></i>Consultation Link Management</h5>
+                    
+                    @if (User.IsInRole("Doctor"))
+                    {
+                        @if (Model.Status == "Approved")
+                        {
+                            <form method="post" action="@Url.Action("SaveVideoLink", "Consultation")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="appointmentId" value="@Model.AppointmentID" />
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-semibold">Provider</label>
+                                        <select name="meetingProvider" class="form-select form-select-sm" required>
+                                            <option value="GoogleMeet" selected="@(session?.MeetingProvider == "GoogleMeet")">Google Meet</option>
+                                            <option value="Zoom" selected="@(session?.MeetingProvider == "Zoom")">Zoom</option>
+                                            <option value="Other" selected="@(session?.MeetingProvider == "Other")">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <label class="form-label small fw-semibold">Meeting URL / Link</label>
+                                        <input type="url" name="meetingUrl" class="form-control form-control-sm" value="@session?.MeetingURL" placeholder="https://..." required />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-sm btn-primary w-100">Save Link</button>
+                                    </div>
+                                </div>
+                            </form>
+                            <hr />
+                        }
+                    }
+
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded mt-3">
+                        <div>
+                            <h6 class="mb-1 text-dark fw-bold">Session Status: <span class="badge bg-secondary">@(session?.SessionStatus ?? "Pending")</span></h6>
+                            @if (!string.IsNullOrEmpty(session?.MeetingURL))
+                            {
+                                <p class="mb-0 small text-success"><i class="bi bi-check-circle me-1"></i>Link is ready for patient to join.</p>
+                            }
+                            else
+                            {
+                                <p class="mb-0 small text-muted">Waiting for doctor to provide the meeting link.</p>
+                            }
+                        </div>
+                        @if (User.IsInRole("Patient") && !string.IsNullOrEmpty(session?.MeetingURL))
+                        {
+                            <a href="@session.MeetingURL" target="_blank" class="btn btn-success btn-sm"><i class="bi bi-camera-video me-1"></i>Join Video Consultation</a>
+                        }
+                        @if (User.IsInRole("Doctor") && !string.IsNullOrEmpty(session?.MeetingURL) && Model.Status == "Approved")
+                        {
+                            <form method="post" action="@Url.Action("StartSession", "Consultation")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="appointmentId" value="@Model.AppointmentID" />
+                                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-play-circle me-1"></i>Start Session & Proceed to Workspace</button>
+                            </form>
+                        }
+                    </div>
                 </div>
             </div>
         }

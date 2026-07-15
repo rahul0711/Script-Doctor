@@ -12,7 +12,10 @@
         <h4 class="page-title">Weekly Availability Schedule</h4>
         <p class="text-muted small mb-0 font-medium">Dr. @doctor.FirstName @doctor.LastName — @(doctor.Qualification)</p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 align-items-center">
+        <button class="btn btn-outline-danger fw-medium px-3.5 py-2 d-none" id="btnDeleteSelected">
+            <i class="bi bi-trash me-1.5"></i>Delete Selected (<span id="selectedCount">0</span>)
+        </button>
         <a href="@Url.Action("Index", "Doctors")" class="btn btn-light fw-medium px-3.5 py-2">
             <i class="bi bi-arrow-left me-1.5"></i>Back to Doctors
         </a>
@@ -30,7 +33,13 @@
         <div class="col-12 col-md-6 col-lg-4">
             <div class="card h-100 border shadow-sm">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center py-2 px-3">
-                    <span class="fw-bold text-dark"><i class="bi bi-calendar3 me-2 text-primary"></i>@day</span>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (daySlots.Any())
+                        {
+                            <input type="checkbox" class="form-check-input select-all-day-slots" data-day="@day" title="Select all slots for @day" />
+                        }
+                        <span class="fw-bold text-dark"><i class="bi bi-calendar3 me-2 text-primary"></i>@day</span>
+                    </div>
                     <span class="badge bg-primary rounded-pill small">@daySlots.Count Slots</span>
                 </div>
                 <div class="card-body p-3 d-flex flex-column gap-2.5">
@@ -40,25 +49,27 @@
                         {
                             var activeClass = slot.IsAvailable ? "" : "opacity-60 border-dashed";
                             <div class="p-2.5 border rounded bg-white position-relative @activeClass d-flex justify-content-between align-items-center">
-                                <div class="small">
-                                    <div class="d-flex align-items-center gap-1.5">
-                                        <strong class="text-dark">
-                                            @DateTime.Today.Add(slot.StartTime).ToString("hh:mm tt") - 
-                                            @DateTime.Today.Add(slot.EndTime).ToString("hh:mm tt")
-                                        </strong>
-                                        @if (!slot.IsAvailable)
-                                        {
-                                            <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">Disabled</span>
-                                        }
-                                    </div>
-                                    <div class="text-muted mt-1" style="font-size: 0.72rem;">
-                                        <i class="bi bi-hourglass me-1"></i>Slot: @slot.SlotDuration mins
-                                        @if (slot.BreakStart.HasValue && slot.BreakEnd.HasValue)
-                                        {
-                                            <div class="mt-0.5 text-warning fw-semibold">
-                                                <i class="bi bi-cup-hot me-1"></i>Break: @DateTime.Today.Add(slot.BreakStart.Value).ToString("hh:mm tt") - @DateTime.Today.Add(slot.BreakEnd.Value).ToString("hh:mm tt")
-                                            </div>
-                                        }
+                                <div class="d-flex align-items-center gap-2.5">
+                                   <div class="small">
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <strong class="text-dark">
+                                                @DateTime.Today.Add(slot.StartTime).ToString("hh:mm tt") - 
+                                                @DateTime.Today.Add(slot.EndTime).ToString("hh:mm tt")
+                                            </strong>
+                                            @if (!slot.IsAvailable)
+                                            {
+                                                <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">Disabled</span>
+                                            }
+                                        </div>
+                                        <div class="text-muted mt-1" style="font-size: 0.72rem;">
+                                            <i class="bi bi-hourglass me-1"></i>Slot: @slot.SlotDuration mins
+                                            @if (slot.BreakStart.HasValue && slot.BreakEnd.HasValue)
+                                            {
+                                                <div class="mt-0.5 text-warning fw-semibold">
+                                                    <i class="bi bi-cup-hot me-1"></i>Break: @DateTime.Today.Add(slot.BreakStart.Value).ToString("hh:mm tt") - @DateTime.Today.Add(slot.BreakEnd.Value).ToString("hh:mm tt")
+                                                </div>
+                                            }
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="d-flex gap-1">
@@ -171,6 +182,89 @@
                             icon: 'error',
                             title: 'System Error',
                             text: 'Failed to process request.'
+                        });
+                    }
+                });
+            });
+
+            // Toggle all slot checkboxes for a specific day when the day's header checkbox is changed
+            $(document).on('change', '.select-all-day-slots', function () {
+                var day = $(this).data('day');
+                $('.slot-checkbox[data-day="' + day + '"]').prop('checked', this.checked);
+                updateDeleteSelectedButton();
+            });
+
+            // Update header checkbox status and bulk action button when any slot checkbox is toggled
+            $(document).on('change', '.slot-checkbox', function () {
+                var day = $(this).data('day');
+                var total = $('.slot-checkbox[data-day="' + day + '"]').length;
+                var checked = $('.slot-checkbox[data-day="' + day + '"]:checked').length;
+                $('.select-all-day-slots[data-day="' + day + '"]').prop('checked', total === checked);
+                updateDeleteSelectedButton();
+            });
+
+            function updateDeleteSelectedButton() {
+                var count = $('.slot-checkbox:checked').length;
+                $('#selectedCount').text(count);
+                if (count > 0) {
+                    $('#btnDeleteSelected').removeClass('d-none');
+                } else {
+                    $('#btnDeleteSelected').addClass('d-none');
+                }
+            }
+
+            // Bulk Delete Slots
+            $('#btnDeleteSelected').on('click', function () {
+                var selectedIds = $('.slot-checkbox:checked').map(function () {
+                    return $(this).val();
+                }).get();
+
+                if (selectedIds.length === 0) return;
+
+                Swal.fire({
+                    title: 'Delete ' + selectedIds.length + ' selected slots?',
+                    text: "Patients will no longer be able to book slots in these hour ranges.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, Delete All',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("DeleteMultiple", "DoctorAvailability")',
+                            type: 'POST',
+                            data: {
+                                ids: selectedIds,
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted',
+                                        text: res.message,
+                                        timer: 1200,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Failed',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Connection error while performing bulk delete.'
+                                });
+                            }
                         });
                     }
                 });

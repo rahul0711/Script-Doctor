@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Pharma_Script.Controllers
 {
-    [Authorize(Roles = "Platform Owner,Organization Admin")]
+    [Authorize(Roles = "Platform Owner,Organization Admin,Doctor")]
     public class DoctorAvailabilityController : Controller
     {
         private readonly IUnitOfWork _uow;
@@ -25,11 +25,15 @@ namespace Pharma_Script.Controllers
         public async Task<IActionResult> Schedule(int doctorId)
         {
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
+
             var doc = await _uow.Doctors.GetDoctorDetailsByIdAsync(doctorId, User.IsPlatformOwner() ? null : userOrgId);
             if (doc == null)
-            {
                 return NotFound("Doctor profile not found.");
-            }
+
+            // Doctors may only view their own schedule
+            if (User.IsDoctor() && doc.UserID != userId)
+                return Forbid();
 
             var availabilities = await _uow.DoctorAvailabilities.GetAvailabilityByDoctorIdAsync(doctorId);
 
@@ -42,8 +46,11 @@ namespace Pharma_Script.Controllers
         public async Task<IActionResult> Create(int doctorId)
         {
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(doctorId);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Forbid();
             }
@@ -70,10 +77,23 @@ namespace Pharma_Script.Controllers
                 return Json(new { success = false, message = "Validation failed.", errors });
             }
 
+            // Determine days to insert
+            var daysToInsert = model.SelectedDays != null && model.SelectedDays.Length > 0
+                ? model.SelectedDays
+                : new[] { model.DayOfWeek };
+
+            if (daysToInsert.Length == 1 && (string.IsNullOrEmpty(daysToInsert[0]) || daysToInsert[0] == "Temp"))
+            {
+                return Json(new { success = false, message = "Please select at least one day of the week." });
+            }
+
             // Verify tenant boundaries
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(model.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Json(new { success = false, message = "Unauthorized doctor access." });
             }
@@ -104,32 +124,43 @@ namespace Pharma_Script.Controllers
                 }
             }
 
-            // Check overlapping availability for the same doctor and day
-            var isOverlapping = await _uow.DoctorAvailabilities.CheckOverlapAsync(model.DoctorID, model.DayOfWeek, model.StartTime, model.EndTime, null);
-            if (isOverlapping)
+            // Check overlapping availability for the same doctor for all target days
+            foreach (var day in daysToInsert)
             {
-                return Json(new { success = false, message = $"An availability slot already overlaps with the selected hours on {model.DayOfWeek}." });
+                var isOverlapping = await _uow.DoctorAvailabilities.CheckOverlapAsync(model.DoctorID, day, model.StartTime, model.EndTime, null);
+                if (isOverlapping)
+                {
+                    return Json(new { success = false, message = $"An availability slot already overlaps with the selected hours on {day}." });
+                }
             }
 
             try
             {
-                var availability = new DoctorAvailability
+                await _uow.BeginTransactionAsync();
+                foreach (var day in daysToInsert)
                 {
-                    DoctorID = model.DoctorID,
-                    DayOfWeek = model.DayOfWeek,
-                    StartTime = model.StartTime,
-                    EndTime = model.EndTime,
-                    SlotDuration = model.SlotDuration,
-                    BreakStart = model.BreakStart,
-                    BreakEnd = model.BreakEnd,
-                    IsAvailable = model.IsAvailable
-                };
+                    var availability = new DoctorAvailability
+                    {
+                        DoctorID = model.DoctorID,
+                        DayOfWeek = day,
+                        StartTime = model.StartTime,
+                        EndTime = model.EndTime,
+                        SlotDuration = model.SlotDuration,
+                        BreakStart = model.BreakStart,
+                        BreakEnd = model.BreakEnd,
+                        IsAvailable = model.IsAvailable
+                    };
 
-                await _uow.DoctorAvailabilities.AddAsync(availability);
-                return Json(new { success = true, message = "Availability slot created successfully." });
+                    await _uow.DoctorAvailabilities.AddAsync(availability);
+                }
+                await _uow.CommitAsync();
+                return Json(new { success = true, message = daysToInsert.Length > 1 
+                    ? "Availability slots created successfully for selected days." 
+                    : "Availability slot created successfully." });
             }
             catch (Exception ex)
             {
+                await _uow.RollbackAsync();
                 return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
             }
         }
@@ -146,8 +177,11 @@ namespace Pharma_Script.Controllers
 
             // Tenant verification
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(avail.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Forbid();
             }
@@ -181,8 +215,11 @@ namespace Pharma_Script.Controllers
 
             // Verify tenant boundaries
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(model.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Json(new { success = false, message = "Unauthorized access." });
             }
@@ -255,8 +292,11 @@ namespace Pharma_Script.Controllers
 
             // Tenant verification
             var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
             var doc = await _uow.Doctors.GetByIdAsync(avail.DoctorID);
-            if (doc == null || (!User.IsPlatformOwner() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value))
+            if (doc == null
+                || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                || (User.IsDoctor() && doc.UserID != userId))
             {
                 return Json(new { success = false, message = "Unauthorized access." });
             }
@@ -268,6 +308,48 @@ namespace Pharma_Script.Controllers
             }
             catch (Exception ex)
             {
+                return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
+            }
+        }
+
+        // POST: /DoctorAvailability/DeleteMultiple
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMultiple(int[] ids)
+        {
+            if (ids == null || ids.Length == 0)
+            {
+                return Json(new { success = false, message = "No slots selected for deletion." });
+            }
+
+            var userOrgId = User.GetOrganizationId();
+            var userId    = User.GetUserId();
+
+            try
+            {
+                await _uow.BeginTransactionAsync();
+                foreach (var id in ids)
+                {
+                    var avail = await _uow.DoctorAvailabilities.GetByIdAsync(id);
+                    if (avail == null) continue;
+
+                    var doc = await _uow.Doctors.GetByIdAsync(avail.DoctorID);
+                    if (doc == null
+                        || (!User.IsPlatformOwner() && !User.IsDoctor() && userOrgId.HasValue && doc.OrganizationID != userOrgId.Value)
+                        || (User.IsDoctor() && doc.UserID != userId))
+                    {
+                        await _uow.RollbackAsync();
+                        return Json(new { success = false, message = "Unauthorized access to one or more of the selected slots." });
+                    }
+
+                    await _uow.DoctorAvailabilities.DeleteAsync(id);
+                }
+                await _uow.CommitAsync();
+                return Json(new { success = true, message = "Selected availability slots deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                await _uow.RollbackAsync();
                 return Json(new { success = false, message = $"An error occurred: {ex.Message}" });
             }
         }

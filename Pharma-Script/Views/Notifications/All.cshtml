@@ -1,0 +1,45 @@
+@model IEnumerable<Pharma_Script.Models.Notification>
+@{
+    Layout = "_Layout";
+}
+
+<div class="page-title-box mb-4">
+    <h4 class="page-title">All Notifications</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center p-5 text-muted">
+                <i class="bi bi-bell-slash fs-1 d-block mb-3"></i>
+                You don't have any notifications yet.
+            </div>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var notif in Model)
+                {
+                    var icon = "bi-info-circle";
+                    var color = "text-primary";
+                    if (notif.NotificationType == "Reminder") { icon = "bi-alarm"; color = "text-warning"; }
+                    else if (notif.NotificationType == "Appointment") { icon = "bi-calendar-check"; color = "text-success"; }
+
+                    var bgClass = notif.IsRead ? "" : "bg-light";
+
+                    <div class="list-group-item p-3 @bgClass">
+                        <div class="d-flex align-items-start">
+                            <i class="bi @icon fs-4 @color me-3 mt-1"></i>
+                            <div>
+                                <h6 class="mb-1 fw-bold">@notif.Title</h6>
+                                <p class="mb-1 text-muted small">@notif.Message</p>
+                                <small class="text-muted" style="font-size: 0.7rem;">@notif.CreatedAt.ToLocalTime().ToString("g")</small>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

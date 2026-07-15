@@ -7,36 +7,75 @@
     var slug = org.OrganizationSlug;
     string PubUrl(string path) => $"/{slug}/{path}".TrimEnd('/');
     var primaryHero = Model.HeroSections.FirstOrDefault();
+    string Excerpt(string? text, int len = 110) =>
+        string.IsNullOrWhiteSpace(text) ? "" : (text.Length > len ? text.Substring(0, len).TrimEnd() + "…" : text);
 }
 
-<!-- Hero -->
-<section class="pub-hero">
+<!-- Doctors (first thing visitors see) -->
+<section class="pub-section-tight pub-section-soft">
     <div class="container">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-6">
-                <span class="pub-eyebrow">Welcome to @(cms?.WebsiteTitle ?? org.OrganizationName)</span>
-                <h1 class="pub-hero-title mt-2">@(primaryHero?.Title ?? $"Compassionate Care, Right When You Need It")</h1>
-                <p class="pub-hero-subtitle">@(primaryHero?.Subtitle ?? "Book appointments with trusted doctors, view specialties, and manage your care - all in one place.")</p>
-                <div class="d-flex flex-wrap gap-3">
-                    <a href="@(string.IsNullOrEmpty(primaryHero?.ButtonURL) ? PubUrl("doctors") : primaryHero.ButtonURL)" class="pub-btn-cta">
-                        @(primaryHero?.ButtonText ?? "Book Appointment")
-                    </a>
-                    <a href="@PubUrl("doctors")" class="pub-btn-outline">Find a Doctor</a>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                @if (!string.IsNullOrEmpty(primaryHero?.BannerImage))
+        <div class="text-center mb-5">
+            <span class="pub-eyebrow">Welcome to @(cms?.WebsiteTitle ?? org.OrganizationName)</span>
+            <h1 class="pub-heading mt-2">@(primaryHero?.Title ?? "Meet Our Doctors")</h1>
+            <p class="pub-subheading mx-auto">@(primaryHero?.Subtitle ?? "Book appointments with trusted, verified specialists - all in one place.")</p>
+        </div>
+
+        @if (Model.FeaturedDoctors.Any())
+        {
+            <div class="row g-4">
+                @foreach (var doc in Model.FeaturedDoctors)
                 {
-                    <img src="@primaryHero.BannerImage" alt="@primaryHero.Title" class="pub-hero-image" loading="eager" />
-                }
-                else
-                {
-                    <div class="pub-hero-image d-flex align-items-center justify-content-center" style="height:340px;background:var(--tenant-primary-soft);">
-                        <i class="bi bi-heart-pulse-fill" style="font-size:5rem;color:var(--tenant-primary);"></i>
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <div class="pub-doctor-card h-100 d-flex flex-column">
+                            @if (!string.IsNullOrEmpty(doc.ProfileImage))
+                            {
+                                <img src="@doc.ProfileImage" alt="Dr. @doc.FirstName @doc.LastName" class="pub-doctor-photo" loading="eager" />
+                            }
+                            else
+                            {
+                                <div class="pub-doctor-photo d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-person-badge" style="font-size:3rem;color:var(--ink-muted);"></i>
+                                </div>
+                            }
+                            <div class="pub-doctor-body d-flex flex-column flex-grow-1">
+                                <div class="pub-doctor-name">Dr. @doc.FirstName @doc.LastName</div>
+                                <div class="pub-doctor-meta">@doc.DepartmentName &middot; @doc.ExperienceYears yrs</div>
+
+                                @if (doc.SpecializationNames.Any())
+                                {
+                                    <div class="mt-2 mb-1">
+                                        @foreach (var spec in doc.SpecializationNames.Take(2))
+                                        {
+                                            <span class="badge rounded-pill text-bg-light border me-1 mb-1 small">@spec</span>
+                                        }
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(doc.Biography))
+                                {
+                                    <p class="text-muted small mb-2">@Excerpt(doc.Biography)</p>
+                                }
+
+                                <div class="mt-auto">
+                                    <span class="pub-fee-badge d-inline-block mb-2">₹@(Math.Min(doc.VideoConsultationFee, doc.VoiceConsultationFee)) onwards</span>
+                                    <div class="d-flex gap-2">
+                                        <a href="@PubUrl($"doctors/{doc.DoctorID}")" class="pub-btn-outline btn-sm flex-fill text-center">View Profile</a>
+                                        <a href="@PubUrl($"doctors/{doc.DoctorID}/book")" class="pub-btn-cta btn-sm flex-fill text-center">Book</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 }
             </div>
-        </div>
+            <div class="text-center mt-4">
+                <a href="@PubUrl("doctors")" class="pub-btn-outline">View All Doctors <i class="bi bi-arrow-right ms-1"></i></a>
+            </div>
+        }
+        else
+        {
+            <div class="text-center text-muted">Our doctor listings will be available here shortly.</div>
+        }
     </div>
 </section>
 
@@ -124,51 +163,6 @@
     </section>
 }
 
-<!-- Featured Doctors -->
-@if (Model.FeaturedDoctors.Any())
-{
-    <section class="pub-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="pub-eyebrow">Meet Our Team</span>
-                <h2 class="pub-heading mt-2">Featured Doctors</h2>
-            </div>
-            <div class="row g-4">
-                @foreach (var doc in Model.FeaturedDoctors)
-                {
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <div class="pub-doctor-card">
-                            @if (!string.IsNullOrEmpty(doc.ProfileImage))
-                            {
-                                <img src="@doc.ProfileImage" alt="Dr. @doc.FirstName @doc.LastName" class="pub-doctor-photo" loading="lazy" />
-                            }
-                            else
-                            {
-                                <div class="pub-doctor-photo d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-person-badge" style="font-size:3rem;color:var(--ink-muted);"></i>
-                                </div>
-                            }
-                            <div class="pub-doctor-body">
-                                <div class="pub-doctor-name">Dr. @doc.FirstName @doc.LastName</div>
-                                <div class="pub-doctor-meta">@doc.DepartmentName</div>
-                                <div class="pub-doctor-meta mb-2">@doc.ExperienceYears yrs experience</div>
-                                <span class="pub-fee-badge">₹@doc.ConsultationFee onwards</span>
-                                <div class="d-flex gap-2 mt-3">
-                                    <a href="@PubUrl($"doctors/{doc.DoctorID}")" class="pub-btn-outline btn-sm flex-fill text-center">View Profile</a>
-                                    <a href="@PubUrl($"doctors/{doc.DoctorID}/book")" class="pub-btn-cta btn-sm flex-fill text-center">Book</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-            <div class="text-center mt-4">
-                <a href="@PubUrl("doctors")" class="pub-btn-outline">View All Doctors <i class="bi bi-arrow-right ms-1"></i></a>
-            </div>
-        </div>
-    </section>
-}
-
 <!-- Services -->
 @if (Model.Services.Any())
 {
@@ -236,62 +230,6 @@
         </div>
     </div>
 </section>
-
-<!-- Gallery Preview -->
-@if (Model.GalleryPreview.Any())
-{
-    <section class="pub-section pub-section-soft" id="gallery">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="pub-eyebrow">Take a Look Inside</span>
-                <h2 class="pub-heading mt-2">Gallery</h2>
-            </div>
-            <div class="row g-3">
-                @foreach (var image in Model.GalleryPreview)
-                {
-                    <div class="col-6 col-md-3">
-                        <div class="pub-gallery-item">
-                            <img src="@image.ImagePath" alt="@(image.ImageTitle ?? "Gallery image")" loading="lazy" />
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    </section>
-}
-
-<!-- FAQs -->
-@if (Model.FAQs.Any())
-{
-    <section class="pub-section">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="pub-eyebrow">Have Questions?</span>
-                <h2 class="pub-heading mt-2">Frequently Asked Questions</h2>
-            </div>
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="accordion pub-accordion" id="faqAccordion">
-                        @for (int i = 0; i < Model.FAQs.Count; i++)
-                        {
-                            var faq = Model.FAQs[i];
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button @(i == 0 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="#faq@(i)">
-                                        @faq.Question
-                                    </button>
-                                </h2>
-                                <div id="faq@(i)" class="accordion-collapse collapse @(i == 0 ? "show" : "")" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body text-muted">@faq.Answer</div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-}
 
 <!-- Contact CTA -->
 <section class="pub-section" id="contact">

@@ -10,8 +10,6 @@ namespace Pharma_Script.ViewModels.Public
         public List<Pharma_Script.Models.Department> Departments { get; set; } = new();
         public List<Pharma_Script.Models.Doctor> FeaturedDoctors { get; set; } = new();
         public List<Service> Services { get; set; } = new();
-        public List<GalleryImage> GalleryPreview { get; set; } = new();
-        public List<FAQ> FAQs { get; set; } = new();
         public int TotalDoctorCount { get; set; }
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -9,6 +10,11 @@ namespace Pharma_Script.ViewModels.Doctor
         public int DoctorID { get; set; }
         public int UserID { get; set; }
         public int OrganizationID { get; set; }
+
+        [Display(Name = "Profile Image")]
+        public IFormFile? ProfileImageFile { get; set; }
+
+        public string? ExistingProfileImage { get; set; }
 
         [Display(Name = "Branch")]
         public int? BranchID { get; set; }

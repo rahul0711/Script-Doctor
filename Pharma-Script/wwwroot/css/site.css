@@ -92,6 +92,20 @@ body {
     margin-bottom: 4px;
 }
 
+/* Section label (category header in sidebar) */
+li.sidebar-section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.6;
+    padding: 12px 14px 4px;
+    margin-top: 4px;
+    pointer-events: none;
+    user-select: none;
+}
+
 .sidebar-menu a {
     display: flex;
     align-items: center;

@@ -17,6 +17,7 @@
     color: var(--ink);
     background: var(--surface);
     margin: 0;
+    overflow-x: hidden;
 }
 
 .pub-body img { max-width: 100%; }
@@ -149,7 +150,8 @@
     border-radius: 18px;
     box-shadow: 0 20px 45px -25px rgba(15,23,42,0.25);
     padding: 1.5rem;
-    margin-top: -3.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
     position: relative;
     z-index: 5;
 }
@@ -377,5 +379,263 @@
     .pub-hero { padding: 3rem 0; text-align: center; }
     .pub-hero-subtitle { margin-left: auto; margin-right: auto; }
     .pub-section { padding: 3rem 0; }
-    .pub-quickbar { margin-top: 1.5rem; }
+    .pub-section-tight { padding: 2.5rem 0; }
+
+    .pub-heading { font-size: 1.65rem; }
+    .pub-subheading { font-size: 0.98rem; }
+
+    .pub-doctor-photo { height: 190px; }
+    .pub-doctor-body { padding: 1rem; }
+
+    .pub-service-card { padding: 1.25rem; }
+    .pub-contact-cta { padding: 2rem 1.5rem; }
+
+    .pub-stat { padding: 1rem 0.5rem; }
+    .pub-stat-value { font-size: 1.7rem; }
+
+    .pub-dept-pill { padding: 1rem 0.5rem; }
+
+    .pub-quickbar { text-align: center; }
+    .pub-quickbar .pub-btn-cta { margin-top: 0.5rem; }
 }
+
+/* ---------- Consultation Type Cards ---------- */
+.consult-type-card {
+    position: relative;
+    border: 2px solid var(--line);
+    border-radius: 16px;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    background: #fff;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    user-select: none;
+}
+
+.consult-type-card:hover {
+    border-color: var(--tenant-primary);
+    box-shadow: 0 6px 24px -8px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+}
+
+.consult-type-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: var(--tenant-primary-soft, #eef2ff);
+    color: var(--tenant-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 0.75rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.consult-type-fee {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin-top: 0.25rem;
+    transition: color 0.2s ease;
+}
+
+/* Selected / active state */
+.consult-type-card.consult-type-selected {
+    border-color: var(--tenant-primary);
+    background: var(--tenant-primary);
+    box-shadow: 0 8px 28px -6px rgba(0,0,0,0.25);
+    transform: translateY(-3px);
+    color: #fff;
+}
+
+.consult-type-card.consult-type-selected .consult-type-icon {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+.consult-type-card.consult-type-selected .fw-semibold {
+    color: #fff;
+}
+
+.consult-type-card.consult-type-selected .consult-type-fee {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* ==========================================================
+   PATIENT PORTAL — Appointment Cards
+   ========================================================== */
+.pub-appt-card {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    padding: 1.25rem 1.5rem;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.pub-appt-card:hover {
+    box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Status badges */
+.pub-badge-approved,
+.pub-badge-pending,
+.pub-badge-completed,
+.pub-badge-cancelled,
+.pub-badge-rejected,
+.pub-badge-prescription {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.pub-badge-approved  { background: #d1fae5; color: #065f46; }
+.pub-badge-completed { background: #dbeafe; color: #1d4ed8; }
+.pub-badge-cancelled,
+.pub-badge-rejected  { background: #fee2e2; color: #991b1b; }
+.pub-badge-pending   { background: #fef3c7; color: #92400e; }
+.pub-badge-prescription { background: var(--tenant-primary-soft); color: var(--tenant-primary); }
+
+/* Generic badge for use with dynamic status names (pub-badge-{status.ToLower()}) */
+.pub-badge-rescheduled { background: #ede9fe; color: #6d28d9; }
+.pub-badge-no { background: #f1f5f9; color: #475569; } /* "No Show" */
+
+/* ==========================================================
+   PATIENT PORTAL — Medical Timeline
+   ========================================================== */
+.pub-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.pub-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.55rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--tenant-primary), var(--line));
+    border-radius: 2px;
+}
+
+.pub-timeline-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+}
+
+.pub-timeline-dot {
+    position: absolute;
+    left: -1.6rem;
+    top: 0.35rem;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--tenant-primary);
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px var(--tenant-primary);
+}
+
+.pub-timeline-date {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--tenant-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+}
+
+.pub-timeline-content { /* wraps the card */ }
+
+/* ==========================================================
+   PATIENT PORTAL — Medicine List
+   ========================================================== */
+.pub-medicine-list {
+    background: var(--surface-soft);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.5rem;
+}
+
+.pub-medicine-item {
+    padding: 0.25rem 0;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.pub-medicine-item:last-child {
+    border-bottom: none;
+}
+
+/* ==========================================================
+   PATIENT PORTAL — Nav avatar button & dropdown
+   ========================================================== */
+.pub-patient-avatar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--tenant-primary-soft);
+    color: var(--tenant-primary);
+    border: 1.5px solid color-mix(in srgb, var(--tenant-primary) 25%, transparent);
+    border-radius: 50px;
+    padding: 0.45rem 1rem;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.pub-patient-avatar-btn:hover,
+.pub-patient-avatar-btn:focus,
+.pub-patient-avatar-btn[aria-expanded="true"] {
+    background: var(--tenant-primary);
+    color: #fff;
+    outline: none;
+}
+
+/* Remove Bootstrap default dropdown arrow styling */
+.pub-patient-avatar-btn::after {
+    margin-left: 0.3rem;
+    opacity: 0.6;
+}
+
+.pub-patient-dropdown {
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    min-width: 200px;
+    padding: 0.25rem 0;
+    overflow: hidden;
+}
+
+.pub-patient-dropdown .dropdown-item {
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 0.55rem 1.1rem;
+    color: var(--ink);
+    transition: background 0.1s ease;
+}
+
+.pub-patient-dropdown .dropdown-item:hover {
+    background: var(--tenant-primary-soft);
+    color: var(--tenant-primary);
+}
+
+.pub-patient-dropdown .dropdown-item.text-danger:hover {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ==========================================================
+   MOBILE — Patient Portal responsive tweaks
+   ========================================================== */
+@media (max-width: 767.98px) {
+    .pub-timeline { padding-left: 1.25rem; }
+    .pub-timeline::before { left: 0.3rem; }
+    .pub-timeline-dot { left: -1.1rem; }
+    .pub-appt-card { padding: 1rem; }
+}
+

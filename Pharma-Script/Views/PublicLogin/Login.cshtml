@@ -1,0 +1,95 @@
+@model Pharma_Script.ViewModels.Public.PublicPatientLoginViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var tenant = (Pharma_Script.Models.PublicTenant)ViewData["Tenant"]!;
+    var slug = tenant.Organization.OrganizationSlug;
+    var orgName = tenant.CMSSettings?.WebsiteTitle ?? tenant.Organization.OrganizationName;
+}
+
+<section class="pub-section" style="min-height:75vh; display:flex; align-items:center;">
+    <div class="container" style="max-width:480px;">
+        <div class="text-center mb-4">
+            <span class="pub-eyebrow">Patient Portal</span>
+            <h1 class="pub-heading mt-2" style="font-size:1.75rem;">Welcome Back</h1>
+            <p class="pub-subheading mx-auto" style="font-size:0.95rem;">
+                Sign in to your @orgName patient account to manage appointments and view your health history.
+            </p>
+        </div>
+
+        <div class="pub-service-card" style="padding:2rem;">
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger small py-2 mb-3">@TempData["Error"]</div>
+            }
+
+            <form asp-action="Login" method="post" asp-route-returnUrl="@returnUrl">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+                    <input asp-for="Email" class="form-control" placeholder="you@example.com" autocomplete="email" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label small fw-semibold text-secondary"></label>
+                    <div class="position-relative">
+                        <input asp-for="Password" type="password" class="form-control" id="pwdInput"
+                               placeholder="Your password" autocomplete="current-password" />
+                        <button type="button" class="btn btn-sm position-absolute top-50 end-0 translate-middle-y pe-3 border-0 bg-transparent text-muted"
+                                onclick="togglePwd()" id="pwdToggle" tabindex="-1">
+                            <i class="bi bi-eye" id="pwdIcon"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4 d-flex align-items-center justify-content-between">
+                    <div class="form-check">
+                        <input asp-for="RememberMe" class="form-check-input" id="rememberMe" />
+                        <label class="form-check-label small text-secondary" for="rememberMe">Remember me</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="pub-btn-cta w-100 py-2" id="btnLogin">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
+                </button>
+            </form>
+
+            <hr class="my-3" />
+
+            <div class="text-center small text-secondary">
+                New patient?
+                <a href="/@slug/register@(!string.IsNullOrEmpty(returnUrl) ? "?returnUrl=" + Uri.EscapeDataString(returnUrl) : "")"
+                   style="color:var(--tenant-primary);font-weight:600;">
+                    Create your account
+                </a>
+            </div>
+        </div>
+
+        <div class="text-center mt-3 small text-muted">
+            <i class="bi bi-shield-lock me-1"></i>
+            Staff &amp; doctors: use the
+            <a href="/Account/Login" style="color:var(--ink-muted);">admin portal</a>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePwd() {
+            var inp = document.getElementById('pwdInput');
+            var icon = document.getElementById('pwdIcon');
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                inp.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+    </script>
+}

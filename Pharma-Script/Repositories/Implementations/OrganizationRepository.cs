@@ -194,7 +194,7 @@ namespace Pharma_Script.Repositories.Implementations
         public async Task<bool> UpdateStatusAsync(int id, bool isActive)
         {
             var query = $"UPDATE {TableName} SET IsActive = @IsActive, UpdatedAt = @UpdatedAt WHERE OrganizationID = @OrganizationID";
-            
+
             await EnsureConnectionOpenAsync();
             using (var cmd = CreateCommand(query))
             {
@@ -203,6 +203,106 @@ namespace Pharma_Script.Repositories.Implementations
                 cmd.Parameters.AddWithValue("@OrganizationID", id);
                 var rows = await cmd.ExecuteNonQueryAsync();
                 return rows > 0;
+            }
+        }
+
+        // Deleting an Organization must first clear every dependent row across the
+        // schema, since none of those foreign keys cascade on delete. Tables that
+        // every code path is known to create are deleted unconditionally; a few
+        // legacy/optional tables (Reviews, NotificationTemplates, NotificationLogs,
+        // HomepageSections) are only referenced in old reference SQL dumps and may
+        // never have been created on a given database, so those are skipped
+        // gracefully if MySQL reports the table doesn't exist (error 1146).
+        public override async Task<bool> DeleteAsync(int id)
+        {
+            await EnsureConnectionOpenAsync();
+
+            var ownsTransaction = Transaction == null;
+            var tx = Transaction ?? await Connection.BeginTransactionAsync();
+
+            async Task ExecAsync(string sql)
+            {
+                using var cmd = Connection.CreateCommand();
+                cmd.CommandText = sql;
+                cmd.Transaction = tx;
+                cmd.Parameters.AddWithValue("@OrganizationID", id);
+                await cmd.ExecuteNonQueryAsync();
+            }
+
+            async Task TryExecAsync(string sql)
+            {
+                try
+                {
+                    await ExecAsync(sql);
+                }
+                catch (MySqlException ex) when (ex.Number == 1146) // table doesn't exist
+                {
+                }
+            }
+
+            try
+            {
+                await ExecAsync("DELETE FROM PrescriptionMedicines WHERE PrescriptionID IN (SELECT PrescriptionID FROM Prescriptions WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM Prescriptions WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM Payments WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM FollowUps WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM DoctorNotes WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM ConsultationSessions WHERE OrganizationID = @OrganizationID");
+                await TryExecAsync("DELETE FROM Reviews WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM AppointmentStatusHistory WHERE AppointmentID IN (SELECT AppointmentID FROM Appointments WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM Appointments WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM MedicalDocuments WHERE OrganizationID = @OrganizationID");
+                await TryExecAsync("DELETE FROM NotificationLogs WHERE NotificationID IN (SELECT NotificationID FROM Notifications WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM Notifications WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM DoctorSpecializations WHERE DoctorID IN (SELECT DoctorID FROM Doctors WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM DoctorAvailability WHERE DoctorID IN (SELECT DoctorID FROM Doctors WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM DoctorLeave WHERE DoctorID IN (SELECT DoctorID FROM Doctors WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM Doctors WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM PatientMedicalHistory WHERE PatientID IN (SELECT PatientID FROM Patients WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM PatientVitals WHERE PatientID IN (SELECT PatientID FROM Patients WHERE OrganizationID = @OrganizationID)");
+                await ExecAsync("DELETE FROM Patients WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM Receptionists WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM CMSSettings WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM HeroSections WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM Services WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM Gallery WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM FAQs WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM ContactMessages WHERE OrganizationID = @OrganizationID");
+                await TryExecAsync("DELETE FROM HomepageSections WHERE OrganizationID = @OrganizationID");
+                await TryExecAsync("DELETE FROM NotificationTemplates WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM Departments WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM Users WHERE OrganizationID = @OrganizationID");
+                await ExecAsync("DELETE FROM Branches WHERE OrganizationID = @OrganizationID");
+
+                int rows;
+                using (var cmd = Connection.CreateCommand())
+                {
+                    cmd.CommandText = $"DELETE FROM {TableName} WHERE {PrimaryKeyName} = @OrganizationID";
+                    cmd.Transaction = tx;
+                    cmd.Parameters.AddWithValue("@OrganizationID", id);
+                    rows = await cmd.ExecuteNonQueryAsync();
+                }
+
+                if (ownsTransaction)
+                {
+                    await tx.CommitAsync();
+                }
+                return rows > 0;
+            }
+            catch
+            {
+                if (ownsTransaction)
+                {
+                    await tx.RollbackAsync();
+                }
+                throw;
+            }
+            finally
+            {
+                if (ownsTransaction)
+                {
+                    await tx.DisposeAsync();
+                }
             }
         }
     }

@@ -1,11 +1,18 @@
 @model Pharma_Script.ViewModels.Doctor.DoctorViewModel
 @using Pharma_Script.Helpers
 
-<form asp-action="Create" asp-controller="Doctors" method="post">
+<form asp-action="Create" asp-controller="Doctors" method="post" enctype="multipart/form-data">
     @Html.AntiForgeryToken()
 
     <div class="row g-3">
         <h6 class="text-primary border-bottom pb-2 mb-2"><i class="bi bi-person-badge me-2"></i>Account & Identity</h6>
+
+        <div class="col-12">
+            <label asp-for="ProfileImageFile" class="form-label small fw-semibold text-secondary"></label>
+            <input asp-for="ProfileImageFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+            <span class="form-text small">JPG, PNG, or WEBP. Max 3MB.</span>
+            <span asp-validation-for="ProfileImageFile" class="text-danger small" style="font-size: 0.75rem;"></span>
+        </div>
 
         @if (User.IsPlatformOwner())
         {

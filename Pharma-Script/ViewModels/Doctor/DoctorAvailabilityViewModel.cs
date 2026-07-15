@@ -35,5 +35,7 @@ namespace Pharma_Script.ViewModels.Doctor
 
         [Display(Name = "Is Available?")]
         public bool IsAvailable { get; set; } = true;
+
+        public string[]? SelectedDays { get; set; }
     }
 }

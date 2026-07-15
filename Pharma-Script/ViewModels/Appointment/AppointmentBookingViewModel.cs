@@ -9,7 +9,7 @@ namespace Pharma_Script.ViewModels.Appointment
         public int DoctorID { get; set; }
 
         [Required(ErrorMessage = "Consultation type is required.")]
-        public string AppointmentType { get; set; } = "Clinic"; // Clinic, Video, Voice
+        public string AppointmentType { get; set; } = "Video"; // Video, Voice
 
         public bool PriorityConsultation { get; set; }
 

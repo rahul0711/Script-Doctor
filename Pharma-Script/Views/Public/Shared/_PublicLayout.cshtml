@@ -8,6 +8,20 @@
     var primaryColor = string.IsNullOrWhiteSpace(cms?.PrimaryColor) ? "#2563eb" : cms!.PrimaryColor;
     var secondaryColor = string.IsNullOrWhiteSpace(cms?.SecondaryColor) ? "#059669" : cms!.SecondaryColor;
     string PubUrl(string path) => $"/{slug}/{path}".TrimEnd('/');
+
+    // Determine if the currently-authenticated user is a patient of THIS organization.
+    // We compare the OrganizationID claim to the slug-resolved OrganizationID — never trust the client.
+    var isPatientOfThisOrg = false;
+    var patientFullName = string.Empty;
+    if (User.Identity?.IsAuthenticated == true && User.IsInRole("Patient"))
+    {
+        var orgClaim = User.FindFirst("OrganizationID")?.Value;
+        if (int.TryParse(orgClaim, out var claimedOrgId) && claimedOrgId == org.OrganizationID)
+        {
+            isPatientOfThisOrg = true;
+            patientFullName = User.FindFirst("FullName")?.Value ?? "Patient";
+        }
+    }
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -56,12 +70,22 @@
                 <div class="collapse navbar-collapse" id="pubNav">
                     <ul class="navbar-nav mx-auto">
                         <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")">Home</a></li>
-                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#about">About Us</a></li>
                         <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("doctors")">Doctors</a></li>
-                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#services">Services</a></li>
-                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#gallery">Gallery</a></li>
-                        <li class="nav-item"><a class="nav-link pub-nav-link" href="@PubUrl("")#contact">Contact</a></li>
+                        @if (isPatientOfThisOrg)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link pub-nav-link" href="@PubUrl("my/appointments")">
+                                    <i class="bi bi-calendar3 me-1"></i>My Appointments
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link pub-nav-link" href="@PubUrl("my/history")">
+                                    <i class="bi bi-journal-medical me-1"></i>My History
+                                </a>
+                            </li>
+                        }
                     </ul>
+
                     <div class="d-flex align-items-center gap-3 mt-3 mt-lg-0">
                         @if (!string.IsNullOrEmpty(cms?.ContactPhone))
                         {
@@ -69,7 +93,59 @@
                                 <i class="bi bi-telephone-fill"></i>@cms.ContactPhone
                             </a>
                         }
-                        <a href="@PubUrl("doctors")" class="pub-btn-cta">Book Appointment</a>
+
+                        @if (isPatientOfThisOrg)
+                        {
+                            @* Logged-in patient: Book + avatar dropdown *@
+                            <a href="@PubUrl("doctors")" class="pub-btn-cta">
+                                <i class="bi bi-calendar-plus me-1"></i>Book
+                            </a>
+                            <div class="dropdown">
+                                <button class="pub-patient-avatar-btn dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    <span class="d-none d-md-inline">@patientFullName.Split(' ')[0]</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end pub-patient-dropdown shadow">
+                                    <li class="dropdown-header small text-muted px-3 pt-2 pb-1">
+                                        <i class="bi bi-person me-1"></i>@patientFullName
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <a class="dropdown-item" href="@PubUrl("my/profile")">
+                                            <i class="bi bi-person-badge me-2"></i>My Profile
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="@PubUrl("my/appointments")">
+                                            <i class="bi bi-calendar3 me-2"></i>My Appointments
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="@PubUrl("my/history")">
+                                            <i class="bi bi-journal-medical me-2"></i>My History
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form method="post" action="@PubUrl("login/logout")">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            @* Anonymous visitor: Login + Book *@
+                            <a href="@PubUrl("login")" class="pub-nav-link d-flex align-items-center gap-1">
+                                <i class="bi bi-person"></i>Login
+                            </a>
+                            <a href="@PubUrl("doctors")" class="pub-btn-cta">Book Appointment</a>
+                        }
                     </div>
                 </div>
             </div>
@@ -80,22 +156,13 @@
         @RenderBody()
     </main>
 
+
     <footer class="pub-footer">
         <div class="container">
             <div class="row g-4">
                 <div class="col-12 col-md-4">
                     <h6>@websiteTitle</h6>
                     <p class="small">@(cms?.AboutUs != null && cms.AboutUs.Length > 140 ? cms.AboutUs.Substring(0, 140) + "…" : cms?.AboutUs)</p>
-                    @if (!string.IsNullOrEmpty(cms?.FacebookURL) || !string.IsNullOrEmpty(cms?.InstagramURL) || !string.IsNullOrEmpty(cms?.LinkedInURL) || !string.IsNullOrEmpty(cms?.TwitterURL) || !string.IsNullOrEmpty(cms?.YouTubeURL))
-                    {
-                        <div class="pub-footer-social mt-3">
-                            @if (!string.IsNullOrEmpty(cms?.FacebookURL)) { <a href="@cms.FacebookURL" target="_blank" rel="noopener"><i class="bi bi-facebook"></i></a> }
-                            @if (!string.IsNullOrEmpty(cms?.InstagramURL)) { <a href="@cms.InstagramURL" target="_blank" rel="noopener"><i class="bi bi-instagram"></i></a> }
-                            @if (!string.IsNullOrEmpty(cms?.LinkedInURL)) { <a href="@cms.LinkedInURL" target="_blank" rel="noopener"><i class="bi bi-linkedin"></i></a> }
-                            @if (!string.IsNullOrEmpty(cms?.TwitterURL)) { <a href="@cms.TwitterURL" target="_blank" rel="noopener"><i class="bi bi-twitter-x"></i></a> }
-                            @if (!string.IsNullOrEmpty(cms?.YouTubeURL)) { <a href="@cms.YouTubeURL" target="_blank" rel="noopener"><i class="bi bi-youtube"></i></a> }
-                        </div>
-                    }
                 </div>
                 <div class="col-6 col-md-2">
                     <h6>Quick Links</h6>

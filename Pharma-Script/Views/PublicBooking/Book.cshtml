@@ -36,31 +36,28 @@
         <form id="pubBookingForm" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Booking.DoctorID" id="hfDoctorID" value="@doc.DoctorID" />
-            <input type="hidden" asp-for="Booking.AppointmentType" id="hfApptType" value="Clinic" />
+            <input type="hidden" asp-for="Booking.AppointmentType" id="hfApptType" value="Video" />
             <input type="hidden" asp-for="Booking.SelectedSlot" id="hfSelectedSlot" />
 
             <div class="pub-service-card mb-4">
                 <h6 class="fw-bold mb-3">1. Consultation Type</h6>
                 <div class="row g-3">
-                    <div class="col-4">
-                        <div class="border rounded-3 p-3 text-center wizard-card" id="cardClinic" onclick="selectConsultType('Clinic')" style="cursor:pointer;">
-                            <i class="bi bi-hospital fs-3 mb-1" style="color:var(--tenant-primary);"></i>
-                            <div class="fw-semibold small">Clinic Visit</div>
-                            <div class="small text-muted">₹@doc.ConsultationFee</div>
+                    <div class="col-6">
+                        <div class="consult-type-card" id="cardVideo" onclick="selectConsultType('Video')">
+                            <div class="consult-type-icon">
+                                <i class="bi bi-camera-video"></i>
+                            </div>
+                            <div class="fw-semibold">Video Call</div>
+                            <div class="consult-type-fee">₹@doc.VideoConsultationFee</div>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="border rounded-3 p-3 text-center wizard-card" id="cardVideo" onclick="selectConsultType('Video')" style="cursor:pointer;">
-                            <i class="bi bi-camera-video fs-3 mb-1" style="color:var(--tenant-secondary);"></i>
-                            <div class="fw-semibold small">Video Call</div>
-                            <div class="small text-muted">₹@doc.VideoConsultationFee</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="border rounded-3 p-3 text-center wizard-card" id="cardVoice" onclick="selectConsultType('Voice')" style="cursor:pointer;">
-                            <i class="bi bi-telephone fs-3 mb-1" style="color:var(--tenant-secondary);"></i>
-                            <div class="fw-semibold small">Voice Call</div>
-                            <div class="small text-muted">₹@doc.VoiceConsultationFee</div>
+                    <div class="col-6">
+                        <div class="consult-type-card" id="cardVoice" onclick="selectConsultType('Voice')">
+                            <div class="consult-type-icon">
+                                <i class="bi bi-telephone"></i>
+                            </div>
+                            <div class="fw-semibold">Voice Call</div>
+                            <div class="consult-type-fee">₹@doc.VoiceConsultationFee</div>
                         </div>
                     </div>
                 </div>
@@ -117,14 +114,12 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        $('#cardClinic').addClass('border-primary');
-
         function selectConsultType(type) {
-            $('#cardClinic, #cardVideo, #cardVoice').removeClass('border-primary').css('border-color', '');
+            $('.consult-type-card').removeClass('consult-type-selected');
             $('#hfApptType').val(type);
-            $('#card' + type).css('border-color', 'var(--tenant-primary)');
+            $('#card' + type).addClass('consult-type-selected');
         }
-        selectConsultType('Clinic');
+        selectConsultType('Video');
 
         $('#txtDate').on('change', function () {
             var date = $(this).val();

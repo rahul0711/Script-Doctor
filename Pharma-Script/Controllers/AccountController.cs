@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Pharma_Script.Helpers;
 using Pharma_Script.Repositories.Interfaces;
 using Pharma_Script.ViewModels.Account;
+using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -93,6 +94,17 @@ namespace Pharma_Script.Controllers
             if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             {
                 return Redirect(returnUrl);
+            }
+
+            // Patients don't have an internal dashboard — send them to their
+            // hospital's own public website instead.
+            if ((user.RoleName ?? string.Empty).Equals("Patient", StringComparison.OrdinalIgnoreCase) && user.OrganizationID.HasValue)
+            {
+                var org = await _uow.Organizations.GetByIdAsync(user.OrganizationID.Value);
+                if (org != null && !string.IsNullOrWhiteSpace(org.OrganizationSlug))
+                {
+                    return Redirect($"/{org.OrganizationSlug}/my/appointments");
+                }
             }
 
             return RedirectToAction("Index", "Dashboard");

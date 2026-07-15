@@ -36,9 +36,9 @@ namespace Pharma_Script.Repositories.Implementations
         public ICMSSettingRepository CMSSettings { get; }
         public IHeroSectionRepository HeroSections { get; }
         public IServiceRepository Services { get; }
-        public IGalleryRepository Gallery { get; }
-        public IFAQRepository FAQs { get; }
         public IContactMessageRepository ContactMessages { get; }
+        public IConsultationSessionRepository ConsultationSessions { get; }
+        public INotificationRepository Notifications { get; }
 
         public UnitOfWork(string connectionString)
         {
@@ -72,9 +72,9 @@ namespace Pharma_Script.Repositories.Implementations
             CMSSettings = new CMSSettingRepository(_connection, () => _transaction);
             HeroSections = new HeroSectionRepository(_connection, () => _transaction);
             Services = new ServiceRepository(_connection, () => _transaction);
-            Gallery = new GalleryRepository(_connection, () => _transaction);
-            FAQs = new FAQRepository(_connection, () => _transaction);
             ContactMessages = new ContactMessageRepository(_connection, () => _transaction);
+            ConsultationSessions = new ConsultationSessionRepository(_connection, () => _transaction);
+            Notifications = new NotificationRepository(_connection, () => _transaction);
         }
 
         public async Task OpenConnectionAsync()

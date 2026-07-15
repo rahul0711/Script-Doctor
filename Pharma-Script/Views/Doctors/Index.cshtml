@@ -78,9 +78,16 @@
                             <td>@item.DoctorID</td>
                             <td class="fw-semibold text-dark">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center border" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;">
-                                        @item.FirstName[0]
-                                    </div>
+                                    @if (!string.IsNullOrEmpty(item.ProfileImage))
+                                    {
+                                        <img src="@item.ProfileImage" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;" alt="@item.FirstName" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center border" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;">
+                                            @item.FirstName[0]
+                                        </div>
+                                    }
                                     <div>
                                         <div>Dr. @item.FirstName @item.LastName</div>
                                         <div class="text-muted small" style="font-size: 0.75rem;">@item.Email</div>
@@ -240,7 +247,9 @@
                 $.ajax({
                     url: form.attr('action'),
                     type: form.attr('method'),
-                    data: form.serialize(),
+                    data: new FormData(form[0]),
+                    processData: false,
+                    contentType: false,
                     success: function (res) {
                         if (res.success) {
                             modal.hide();

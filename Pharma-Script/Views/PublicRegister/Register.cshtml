@@ -69,7 +69,8 @@
 
                 <div class="text-center mt-3 small">
                     Already have an account?
-                    <a href="/Account/Login?returnUrl=@Uri.EscapeDataString(returnUrl ?? $"/{slug}")">Sign in</a>
+                    <a href="/@slug/login@(!string.IsNullOrEmpty(returnUrl) ? "?ReturnUrl=" + Uri.EscapeDataString(returnUrl) : "")"
+                       style="color:var(--tenant-primary);font-weight:600;">Sign in</a>
                 </div>
             </form>
         </div>

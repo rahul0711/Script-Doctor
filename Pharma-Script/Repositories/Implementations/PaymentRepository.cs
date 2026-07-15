@@ -119,7 +119,7 @@ namespace Pharma_Script.Repositories.Implementations
 
             if (orgId.HasValue)
             {
-                query += " AND p.OrganizationID = @OrganizationID";
+                query += " AND a.OrganizationID = @OrganizationID";
             }
 
             await EnsureConnectionOpenAsync();
@@ -209,7 +209,7 @@ namespace Pharma_Script.Repositories.Implementations
         {
             if (orgId.HasValue)
             {
-                sb.Append(" AND p.OrganizationID = @OrgID");
+                sb.Append(" AND a.OrganizationID = @OrgID");
                 cmd.Parameters.AddWithValue("@OrgID", orgId.Value);
             }
             if (!string.IsNullOrEmpty(status))

@@ -86,7 +86,7 @@
                                         }
                                     </div>
                                 }
-                                <span class="pub-fee-badge">₹@doc.ConsultationFee onwards</span>
+                                <span class="pub-fee-badge">₹@(Math.Min(doc.VideoConsultationFee, doc.VoiceConsultationFee)) onwards</span>
                                 <div class="d-flex gap-2 mt-3">
                                     <a href="@PubUrl($"doctors/{doc.DoctorID}")" class="pub-btn-outline btn-sm flex-fill text-center">View Profile</a>
                                     <a href="@PubUrl($"doctors/{doc.DoctorID}/book")" class="pub-btn-cta btn-sm flex-fill text-center">Book</a>

@@ -13,10 +13,12 @@ namespace Pharma_Script.Services.Implementations
     public class AppointmentService : IAppointmentService
     {
         private readonly IUnitOfWork _uow;
+        private readonly INotificationService _notificationService;
 
-        public AppointmentService(IUnitOfWork uow)
+        public AppointmentService(IUnitOfWork uow, INotificationService notificationService)
         {
             _uow = uow;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<string>> GetAvailableSlotsAsync(int doctorId, DateTime date)
@@ -182,9 +184,7 @@ namespace Pharma_Script.Services.Implementations
             }
             else
             {
-                if (model.AppointmentType.Equals("Clinic", StringComparison.OrdinalIgnoreCase))
-                    consultationFee = doctor.ConsultationFee;
-                else if (model.AppointmentType.Equals("Video", StringComparison.OrdinalIgnoreCase))
+                if (model.AppointmentType.Equals("Video", StringComparison.OrdinalIgnoreCase))
                     consultationFee = doctor.VideoConsultationFee;
                 else if (model.AppointmentType.Equals("Voice", StringComparison.OrdinalIgnoreCase))
                     consultationFee = doctor.VoiceConsultationFee;
@@ -233,6 +233,22 @@ namespace Pharma_Script.Services.Implementations
                 await _uow.AppointmentStatusHistories.AddAsync(history);
                 await _uow.CommitAsync();
 
+                // Notification is a best-effort side effect - the appointment is already
+                // committed above, so a notification failure must never surface as a
+                // booking failure to the patient.
+                try
+                {
+                    await _notificationService.SendNotificationAsync(
+                        doctor.UserID, orgId, "Appointment",
+                        "New Appointment Request",
+                        $"You have a new appointment request for {appt.StartTime:hh\\:mm} on {appt.AppointmentDate:MMM dd, yyyy}.",
+                        "AppointmentID", appt.AppointmentID);
+                }
+                catch (Exception notifyEx)
+                {
+                    Console.WriteLine($"Notification failed for AppointmentID {appt.AppointmentID}: {notifyEx.Message}");
+                }
+
                 return appt;
             }
             catch
@@ -274,6 +290,26 @@ namespace Pharma_Script.Services.Implementations
                 };
                 await _uow.AppointmentStatusHistories.AddAsync(history);
                 await _uow.CommitAsync();
+
+                // Notification is a best-effort side effect - never surface its failure
+                // as a failure of the already-committed status update.
+                try
+                {
+                    var patient = await _uow.Patients.GetByIdAsync(appt.PatientID);
+                    if (patient != null)
+                    {
+                        await _notificationService.SendNotificationAsync(
+                            patient.UserID, appt.OrganizationID, "Appointment",
+                            $"Appointment {newStatus}",
+                            $"Your appointment for {appt.AppointmentDate:MMM dd, yyyy} has been {newStatus.ToLower()}.",
+                            "AppointmentID", appt.AppointmentID);
+                    }
+                }
+                catch (Exception notifyEx)
+                {
+                    Console.WriteLine($"Notification failed for AppointmentID {appt.AppointmentID}: {notifyEx.Message}");
+                }
+
                 return true;
             }
             catch
@@ -540,6 +576,26 @@ namespace Pharma_Script.Services.Implementations
                 }
 
                 await _uow.CommitAsync();
+
+                // Notification is a best-effort side effect - never surface its failure
+                // as a failure of the already-committed consultation record.
+                try
+                {
+                    var patientObj = await _uow.Patients.GetByIdAsync(appt.PatientID);
+                    if (patientObj != null)
+                    {
+                        await _notificationService.SendNotificationAsync(
+                            patientObj.UserID, appt.OrganizationID, "Appointment",
+                            "Consultation Completed",
+                            "Your consultation has been completed. Check your dashboard for prescription and notes.",
+                            "AppointmentID", appt.AppointmentID);
+                    }
+                }
+                catch (Exception notifyEx)
+                {
+                    Console.WriteLine($"Notification failed for AppointmentID {appt.AppointmentID}: {notifyEx.Message}");
+                }
+
                 return true;
             }
             catch

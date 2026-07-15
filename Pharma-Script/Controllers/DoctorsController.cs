@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Pharma_Script.Helpers;
@@ -16,10 +17,12 @@ namespace Pharma_Script.Controllers
     public class DoctorsController : Controller
     {
         private readonly IUnitOfWork _uow;
+        private readonly IWebHostEnvironment _env;
 
-        public DoctorsController(IUnitOfWork uow)
+        public DoctorsController(IUnitOfWork uow, IWebHostEnvironment env)
         {
             _uow = uow;
+            _env = env;
         }
 
         // GET: /Doctors
@@ -181,6 +184,12 @@ namespace Pharma_Script.Controllers
             await _uow.BeginTransactionAsync();
             try
             {
+                string? profileImagePath = null;
+                if (model.ProfileImageFile != null)
+                {
+                    profileImagePath = await CmsImageUploadHelper.UploadAsync(model.ProfileImageFile, _env.WebRootPath, model.OrganizationID, "doctors", 3 * 1024 * 1024);
+                }
+
                 // Create user
                 var user = new User
                 {
@@ -191,6 +200,7 @@ namespace Pharma_Script.Controllers
                     Email = model.Email,
                     Phone = model.Phone,
                     PasswordHash = PasswordHasher.HashPassword(model.Password!),
+                    ProfileImage = profileImagePath,
                     IsActive = model.IsActive,
                     CreatedAt = DateTime.Now
                 };
@@ -225,6 +235,11 @@ namespace Pharma_Script.Controllers
 
                 await _uow.CommitAsync();
                 return Json(new { success = true, message = "Doctor created successfully." });
+            }
+            catch (CmsUploadValidationException ex)
+            {
+                await _uow.RollbackAsync();
+                return Json(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -267,6 +282,7 @@ namespace Pharma_Script.Controllers
                 LastName = doc.LastName,
                 Email = doc.Email,
                 Phone = doc.Phone,
+                ExistingProfileImage = doc.ProfileImage,
                 SpecializationIDs = doc.SpecializationIDs
             };
 
@@ -360,6 +376,14 @@ namespace Pharma_Script.Controllers
                     user.Email = model.Email;
                     user.Phone = model.Phone;
                     user.IsActive = model.IsActive;
+
+                    if (model.ProfileImageFile != null)
+                    {
+                        var newProfileImage = await CmsImageUploadHelper.UploadAsync(model.ProfileImageFile, _env.WebRootPath, model.OrganizationID, "doctors", 3 * 1024 * 1024);
+                        CmsImageUploadHelper.DeleteIfExists(_env.WebRootPath, user.ProfileImage);
+                        user.ProfileImage = newProfileImage;
+                    }
+
                     await _uow.Users.UpdateAsync(user);
                 }
 
@@ -387,6 +411,11 @@ namespace Pharma_Script.Controllers
 
                 await _uow.CommitAsync();
                 return Json(new { success = true, message = "Doctor profile updated successfully." });
+            }
+            catch (CmsUploadValidationException ex)
+            {
+                await _uow.RollbackAsync();
+                return Json(new { success = false, message = ex.Message });
             }
             catch (Exception ex)
             {

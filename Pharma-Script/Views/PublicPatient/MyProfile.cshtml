@@ -1,0 +1,140 @@
+@model Pharma_Script.ViewModels.Public.PublicMyProfileViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var slug = Model.Tenant.Organization.OrganizationSlug;
+    var p = Model.Patient;
+    var age = (int)((DateTime.Today - p.DateOfBirth).TotalDays / 365.25);
+}
+
+<section class="pub-section-tight pub-section-soft">
+    <div class="container">
+        <span class="pub-eyebrow">Patient Portal</span>
+        <h1 class="pub-heading mt-1" style="font-size:1.8rem;">My Profile</h1>
+    </div>
+</section>
+
+<section class="pub-section">
+    <div class="container" style="max-width:680px;">
+
+        @* Profile card *@
+        <div class="pub-service-card mb-4 p-4">
+            <div class="d-flex align-items-center gap-4 flex-wrap mb-4">
+                <div class="pub-dept-icon" style="width:72px;height:72px;font-size:2rem;border-radius:50%;flex-shrink:0;">
+                    <i class="bi bi-person-circle"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0">@p.FirstName @p.LastName</h3>
+                    <div class="text-muted small mt-1">
+                        @p.Gender &middot; @age years old &middot; @p.Email
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(p.Phone))
+                    {
+                        <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@p.Phone</div>
+                    }
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="small fw-semibold text-secondary mb-1">Date of Birth</div>
+                    <div>@p.DateOfBirth.ToString("dd MMMM yyyy")</div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="small fw-semibold text-secondary mb-1">Gender</div>
+                    <div>@p.Gender</div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(p.BloodGroup))
+                {
+                    <div class="col-12 col-md-6">
+                        <div class="small fw-semibold text-secondary mb-1">Blood Group</div>
+                        <div class="fw-bold" style="color:var(--tenant-primary);">@p.BloodGroup</div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(p.City) || !string.IsNullOrWhiteSpace(p.Address))
+                {
+                    <div class="col-12">
+                        <div class="small fw-semibold text-secondary mb-1">Address</div>
+                        <div class="small">
+                            @p.Address@(!string.IsNullOrWhiteSpace(p.Address) && !string.IsNullOrWhiteSpace(p.City) ? ", " : "")@p.City@(!string.IsNullOrWhiteSpace(p.State) ? ", " + p.State : "")@(!string.IsNullOrWhiteSpace(p.Country) ? ", " + p.Country : "")@(!string.IsNullOrWhiteSpace(p.Pincode) ? " - " + p.Pincode : "")
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(p.EmergencyContactName))
+                {
+                    <div class="col-12 col-md-6">
+                        <div class="small fw-semibold text-secondary mb-1">Emergency Contact</div>
+                        <div class="small">@p.EmergencyContactName @(p.EmergencyContactNumber != null ? "· " + p.EmergencyContactNumber : "")</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Latest Vitals *@
+        @if (Model.LatestVitals != null)
+        {
+            var v = Model.LatestVitals;
+            <div class="pub-service-card p-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="pub-dept-icon" style="margin:0;width:38px;height:38px;font-size:1rem;">
+                        <i class="bi bi-heart-pulse"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold">Latest Vitals</h6>
+                    <span class="ms-auto small text-muted">@v.RecordedAt.ToString("dd MMM yyyy")</span>
+                </div>
+                <div class="row g-3 text-center">
+                    @if (v.Height.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="pub-stat-value" style="font-size:1.4rem;">@v.Height</div>
+                            <div class="pub-stat-label">Height (cm)</div>
+                        </div>
+                    }
+                    @if (v.Weight.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="pub-stat-value" style="font-size:1.4rem;">@v.Weight</div>
+                            <div class="pub-stat-label">Weight (kg)</div>
+                        </div>
+                    }
+                    @if (v.BMI.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="pub-stat-value" style="font-size:1.4rem;">@v.BMI?.ToString("0.0")</div>
+                            <div class="pub-stat-label">BMI</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(v.BloodPressure))
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="pub-stat-value" style="font-size:1.4rem;">@v.BloodPressure</div>
+                            <div class="pub-stat-label">BP</div>
+                        </div>
+                    }
+                    @if (v.HeartRate.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="pub-stat-value" style="font-size:1.4rem;">@v.HeartRate</div>
+                            <div class="pub-stat-label">Heart Rate</div>
+                        </div>
+                    }
+                    @if (v.OxygenLevel.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="pub-stat-value" style="font-size:1.4rem;">@v.OxygenLevel%</div>
+                            <div class="pub-stat-label">SpO₂</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="mt-4 d-flex gap-3 flex-wrap">
+            <a href="/@slug/my/appointments" class="pub-btn-outline">
+                <i class="bi bi-calendar3 me-1"></i>My Appointments
+            </a>
+            <a href="/@slug/my/history" class="pub-btn-outline">
+                <i class="bi bi-journal-medical me-1"></i>My History
+            </a>
+        </div>
+    </div>
+</section>

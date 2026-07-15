@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pharma_Script.Helpers;
 using Pharma_Script.Repositories.Interfaces;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,14 +20,89 @@ namespace Pharma_Script.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var isPlatformOwner = User.IsPlatformOwner();
-            var orgId = User.GetOrganizationId();
+            var userId          = User.GetUserId();
+            var isPatient       = User.GetRoleName().Equals("Patient", StringComparison.OrdinalIgnoreCase);
 
-            int orgsCount = 0;
+            // Patients don't get an internal dashboard — their history lives on the
+            // hospital's own public website (/{slug}/my/appointments).
+            if (isPatient)
+            {
+                var patientOrgId = User.GetOrganizationId();
+                if (patientOrgId.HasValue)
+                {
+                    var org = await _uow.Organizations.GetByIdAsync(patientOrgId.Value);
+                    if (org != null && !string.IsNullOrWhiteSpace(org.OrganizationSlug))
+                    {
+                        return Redirect($"/{org.OrganizationSlug}/my/appointments");
+                    }
+                }
+
+                return RedirectToAction("Login", "Account");
+            }
+
+            var isPlatformOwner = User.IsPlatformOwner();
+            var isOrgAdmin      = User.IsOrganizationAdmin();
+            var isDoctor        = User.IsDoctor();
+            var orgId           = User.GetOrganizationId();
+
+            // ── Doctor Dashboard ──────────────────────────────────────────
+            if (isDoctor)
+            {
+                var doctor = await _uow.Doctors.GetByUserIdAsync(userId);
+                if (doctor == null)
+                {
+                    ViewBag.DoctorError = "Doctor profile not found.";
+                    return View("DoctorDashboard");
+                }
+
+                var doctorId = doctor.DoctorID;
+                var today    = DateTime.Today;
+
+                // Today's appointments
+                var todayAppointments = (await _uow.Appointments.SearchAndPaginateAsync(
+                    orgId: null, branchId: null, doctorId: doctorId, patientId: null,
+                    status: null, type: null,
+                    startDate: today, endDate: today,
+                    isPriority: null, searchTerm: null,
+                    page: 1, pageSize: 50)).ToList();
+
+                // Upcoming appointments (next 7 days, excluding today)
+                var upcomingAppointments = await _uow.Appointments.GetSearchCountAsync(
+                    orgId: null, branchId: null, doctorId: doctorId, patientId: null,
+                    status: "Approved", type: null,
+                    startDate: today.AddDays(1), endDate: today.AddDays(7),
+                    isPriority: null, searchTerm: null);
+
+                // Pending appointments
+                var pendingCount = await _uow.Appointments.GetSearchCountAsync(
+                    orgId: null, branchId: null, doctorId: doctorId, patientId: null,
+                    status: "Pending", type: null,
+                    startDate: null, endDate: null,
+                    isPriority: null, searchTerm: null);
+
+                // Total appointments ever (completed)
+                var completedCount = await _uow.Appointments.GetSearchCountAsync(
+                    orgId: null, branchId: null, doctorId: doctorId, patientId: null,
+                    status: "Completed", type: null,
+                    startDate: null, endDate: null,
+                    isPriority: null, searchTerm: null);
+
+                ViewBag.Doctor               = doctor;
+                ViewBag.TodayAppointments    = todayAppointments;
+                ViewBag.TodayCount           = todayAppointments.Count;
+                ViewBag.UpcomingCount        = upcomingAppointments;
+                ViewBag.PendingCount         = pendingCount;
+                ViewBag.CompletedCount       = completedCount;
+
+                return View("DoctorDashboard");
+            }
+
+            // ── Admin / Platform Owner Dashboard ─────────────────────────
+            int orgsCount    = 0;
             int branchesCount = 0;
-            int deptsCount = 0;
-            int usersCount = 0;
-            int specsCount = 0;
+            int deptsCount   = 0;
+            int usersCount   = 0;
+            int specsCount   = 0;
 
             if (isPlatformOwner)
             {
@@ -59,11 +135,11 @@ namespace Pharma_Script.Controllers
             var specList = await _uow.Specializations.GetAllAsync();
             specsCount = specList.Count();
 
-            ViewBag.OrgsCount = orgsCount;
+            ViewBag.OrgsCount     = orgsCount;
             ViewBag.BranchesCount = branchesCount;
-            ViewBag.DeptsCount = deptsCount;
-            ViewBag.UsersCount = usersCount;
-            ViewBag.SpecsCount = specsCount;
+            ViewBag.DeptsCount    = deptsCount;
+            ViewBag.UsersCount    = usersCount;
+            ViewBag.SpecsCount    = specsCount;
 
             return View();
         }

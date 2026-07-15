@@ -29,9 +29,9 @@ namespace Pharma_Script.Repositories.Interfaces
         ICMSSettingRepository CMSSettings { get; }
         IHeroSectionRepository HeroSections { get; }
         IServiceRepository Services { get; }
-        IGalleryRepository Gallery { get; }
-        IFAQRepository FAQs { get; }
         IContactMessageRepository ContactMessages { get; }
+        IConsultationSessionRepository ConsultationSessions { get; }
+        INotificationRepository Notifications { get; }
 
         Task OpenConnectionAsync();
         Task BeginTransactionAsync();

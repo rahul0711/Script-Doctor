@@ -6,17 +6,29 @@
 
     <div class="row g-3">
         <div class="col-12">
-            <label asp-for="DayOfWeek" class="form-label small fw-semibold text-secondary"></label>
-            <select asp-for="DayOfWeek" class="form-select" required>
-                <option value="">-- Select Day of Week --</option>
-                <option value="Monday">Monday</option>
-                <option value="Tuesday">Tuesday</option>
-                <option value="Wednesday">Wednesday</option>
-                <option value="Thursday">Thursday</option>
-                <option value="Friday">Friday</option>
-                <option value="Saturday">Saturday</option>
-                <option value="Sunday">Sunday</option>
-            </select>
+            <label class="form-label small fw-semibold text-secondary mb-1">Days of Week</label>
+            
+            <div class="mb-2">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="selectAllDays" />
+                    <label class="form-check-label small fw-bold text-primary" for="selectAllDays">Select All Days</label>
+                </div>
+            </div>
+
+            <div class="row g-2">
+                @foreach (var day in new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" })
+                {
+                    <div class="col-6 col-sm-4">
+                        <div class="form-check">
+                            <input class="form-check-input day-checkbox" type="checkbox" name="SelectedDays" value="@day" id="day_@day" />
+                            <label class="form-check-label small text-dark" for="day_@day">@day</label>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <!-- Hidden input to satisfy Model DayOfWeek validation -->
+            <input type="hidden" asp-for="DayOfWeek" id="hdnDayOfWeek" value="Temp" />
             <span asp-validation-for="DayOfWeek" class="text-danger small" style="font-size: 0.75rem;"></span>
         </div>
 
@@ -72,3 +84,19 @@
         <button type="submit" class="btn btn-primary">Add Slot</button>
     </div>
 </form>
+
+<script>
+    $(document).ready(function () {
+        // Toggle all day checkboxes when "Select All Days" is clicked
+        $('#selectAllDays').on('change', function () {
+            $('.day-checkbox').prop('checked', this.checked);
+        });
+
+        // If any day checkbox is clicked, update "Select All Days" checkbox status
+        $('.day-checkbox').on('change', function () {
+            var total = $('.day-checkbox').length;
+            var checked = $('.day-checkbox:checked').length;
+            $('#selectAllDays').prop('checked', total === checked);
+        });
+    });
+</script>

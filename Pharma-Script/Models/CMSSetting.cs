@@ -19,11 +19,6 @@ namespace Pharma_Script.Models
         public string? EmergencyPhone { get; set; }
         public string? Address { get; set; }
         public string? GoogleMapEmbed { get; set; }
-        public string? FacebookURL { get; set; }
-        public string? InstagramURL { get; set; }
-        public string? LinkedInURL { get; set; }
-        public string? TwitterURL { get; set; }
-        public string? YouTubeURL { get; set; }
         public string? FooterText { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }

@@ -1,0 +1,249 @@
+@model Pharma_Script.ViewModels.Public.PublicPatientHistoryViewModel
+@{
+    Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var slug = Model.Tenant.Organization.OrganizationSlug;
+    var patient = Model.Patient;
+}
+
+<section class="pub-section-tight pub-section-soft">
+    <div class="container">
+        <span class="pub-eyebrow">Patient Portal</span>
+        <h1 class="pub-heading mt-1" style="font-size:1.8rem;">My Medical History</h1>
+        <p class="pub-subheading" style="font-size:0.92rem;">
+            A complete timeline of your consultations at @(Model.Tenant.CMSSettings?.WebsiteTitle ?? Model.Tenant.Organization.OrganizationName).
+        </p>
+    </div>
+</section>
+
+<section class="pub-section">
+    <div class="container" style="max-width:820px;">
+
+        @* Latest Vitals Card *@
+        @if (Model.LatestVitals != null)
+        {
+            var v = Model.LatestVitals;
+            <div class="pub-service-card mb-5">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="pub-dept-icon" style="margin:0;width:40px;height:40px;font-size:1.1rem;">
+                        <i class="bi bi-heart-pulse"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold">Latest Vitals</h6>
+                    <span class="ms-auto small text-muted">@v.RecordedAt.ToString("dd MMM yyyy")</span>
+                </div>
+                <div class="row g-3 text-center">
+                    @if (v.Height.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="fw-bold" style="font-size:1.2rem; color:var(--tenant-primary);">@v.Height cm</div>
+                            <div class="small text-muted">Height</div>
+                        </div>
+                    }
+                    @if (v.Weight.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="fw-bold" style="font-size:1.2rem; color:var(--tenant-primary);">@v.Weight kg</div>
+                            <div class="small text-muted">Weight</div>
+                        </div>
+                    }
+                    @if (v.BMI.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="fw-bold" style="font-size:1.2rem; color:var(--tenant-primary);">@v.BMI?.ToString("0.0")</div>
+                            <div class="small text-muted">BMI</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(v.BloodPressure))
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="fw-bold" style="font-size:1.2rem; color:var(--tenant-primary);">@v.BloodPressure</div>
+                            <div class="small text-muted">Blood Pressure</div>
+                        </div>
+                    }
+                    @if (v.HeartRate.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="fw-bold" style="font-size:1.2rem; color:var(--tenant-primary);">@v.HeartRate bpm</div>
+                            <div class="small text-muted">Heart Rate</div>
+                        </div>
+                    }
+                    @if (v.OxygenLevel.HasValue)
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="fw-bold" style="font-size:1.2rem; color:var(--tenant-primary);">@v.OxygenLevel%</div>
+                            <div class="small text-muted">SpO₂</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(v.BloodSugar))
+                    {
+                        <div class="col-6 col-md-3">
+                            <div class="fw-bold" style="font-size:1.2rem; color:var(--tenant-primary);">@v.BloodSugar</div>
+                            <div class="small text-muted">Blood Sugar</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* Medical Timeline *@
+        @if (!Model.Timeline.Any())
+        {
+            <div class="pub-service-card text-center py-5">
+                <div class="pub-dept-icon mx-auto mb-3" style="width:64px;height:64px;font-size:1.8rem;">
+                    <i class="bi bi-journal-medical"></i>
+                </div>
+                <h5 class="fw-bold">No history yet</h5>
+                <p class="text-muted small mb-4">Your consultation history will appear here after your first appointment.</p>
+                <a href="/@slug/doctors" class="pub-btn-cta">Find a Doctor</a>
+            </div>
+        }
+        else
+        {
+            <div class="pub-timeline">
+                @foreach (var entry in Model.Timeline)
+                {
+                    var appt = entry.Appointment;
+                    <div class="pub-timeline-item">
+                        <div class="pub-timeline-dot"></div>
+                        <div class="pub-timeline-content">
+                            <div class="pub-timeline-date">
+                                <i class="bi bi-calendar3 me-1"></i>
+                                @appt.AppointmentDate.ToString("dd MMMM yyyy")
+                            </div>
+
+                            <div class="pub-service-card mt-2 p-4">
+                                @* Doctor & Consultation Header *@
+                                <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+                                    <div>
+                                        <div class="pub-doctor-name">Dr. @appt.DoctorName</div>
+                                        <div class="pub-doctor-meta mt-1">
+                                            @if (appt.AppointmentType == "Video")
+                                            {
+                                                <i class="bi bi-camera-video me-1"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-telephone me-1"></i>
+                                            }
+                                            @appt.AppointmentType Consultation
+                                            &middot; @appt.StartTime.ToString(@"hh\:mm") – @appt.EndTime.ToString(@"hh\:mm")
+                                        </div>
+                                    </div>
+                                    <span class="pub-badge-@appt.Status.ToLower()">@appt.Status</span>
+                                </div>
+
+                                @* Symptoms / Reason *@
+                                @if (!string.IsNullOrWhiteSpace(appt.Symptoms) || !string.IsNullOrWhiteSpace(appt.AppointmentReason))
+                                {
+                                    <div class="mb-3 p-3 rounded-3" style="background:var(--surface-soft);">
+                                        @if (!string.IsNullOrWhiteSpace(appt.Symptoms))
+                                        {
+                                            <div class="small"><span class="fw-semibold">Symptoms:</span> @appt.Symptoms</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(appt.AppointmentReason))
+                                        {
+                                            <div class="small mt-1"><span class="fw-semibold">Reason:</span> @appt.AppointmentReason</div>
+                                        }
+                                    </div>
+                                }
+
+                                @* Doctor Note — Diagnosis + Advice only (ClinicalNotes is private) *@
+                                @if (entry.Note != null && (!string.IsNullOrWhiteSpace(entry.Note.Diagnosis) || !string.IsNullOrWhiteSpace(entry.Note.Advice)))
+                                {
+                                    <div class="mb-3">
+                                        @if (!string.IsNullOrWhiteSpace(entry.Note.Diagnosis))
+                                        {
+                                            <div class="small mb-1">
+                                                <i class="bi bi-clipboard2-pulse me-1" style="color:var(--tenant-primary);"></i>
+                                                <span class="fw-semibold">Diagnosis:</span> @entry.Note.Diagnosis
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.Note.Advice))
+                                        {
+                                            <div class="small">
+                                                <i class="bi bi-chat-text me-1" style="color:var(--tenant-secondary);"></i>
+                                                <span class="fw-semibold">Doctor's Advice:</span> @entry.Note.Advice
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @* Prescription *@
+                                @if (entry.Prescription != null)
+                                {
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="pub-badge-prescription">
+                                                <i class="bi bi-capsule me-1"></i>Prescription #@entry.Prescription.PrescriptionNumber
+                                            </span>
+                                        </div>
+                                        @if (entry.Medicines.Any())
+                                        {
+                                            <div class="pub-medicine-list">
+                                                @foreach (var med in entry.Medicines)
+                                                {
+                                                    var timing = new List<string>();
+                                                    if (med.Morning) timing.Add("Morning");
+                                                    if (med.Afternoon) timing.Add("Afternoon");
+                                                    if (med.Night) timing.Add("Night");
+                                                    var food = med.BeforeFood ? "Before food" : (med.AfterFood ? "After food" : "");
+                                                    <div class="pub-medicine-item">
+                                                        <i class="bi bi-dot me-1 text-muted"></i>
+                                                        <span class="fw-semibold">@med.MedicineName</span>
+                                                        @if (!string.IsNullOrWhiteSpace(med.Strength))
+                                                        {
+                                                            <span class="text-muted small"> @med.Strength</span>
+                                                        }
+                                                        @if (!string.IsNullOrWhiteSpace(med.Dosage))
+                                                        {
+                                                            <span class="text-muted small"> — @med.Dosage</span>
+                                                        }
+                                                        @if (timing.Any())
+                                                        {
+                                                            <span class="text-muted small"> · @string.Join(", ", timing)</span>
+                                                        }
+                                                        @if (!string.IsNullOrWhiteSpace(food))
+                                                        {
+                                                            <span class="text-muted small"> (@food)</span>
+                                                        }
+                                                        @if (med.DurationDays > 0)
+                                                        {
+                                                            <span class="text-muted small"> for @med.DurationDays day@(med.DurationDays == 1 ? "" : "s")</span>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(entry.Prescription.GeneralInstructions))
+                                        {
+                                            <div class="small text-muted mt-1">
+                                                <i class="bi bi-info-circle me-1"></i>@entry.Prescription.GeneralInstructions
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @* Follow-up *@
+                                @if (entry.FollowUp != null)
+                                {
+                                    <div class="d-flex align-items-center gap-2 mt-2 p-2 rounded-3"
+                                         style="background:var(--tenant-primary-soft);border-left:3px solid var(--tenant-primary);">
+                                        <i class="bi bi-arrow-repeat" style="color:var(--tenant-primary);"></i>
+                                        <div class="small">
+                                            <span class="fw-semibold">Follow-up:</span>
+                                            @entry.FollowUp.FollowUpDate.ToString("dd MMM yyyy")
+                                            @if (!string.IsNullOrWhiteSpace(entry.FollowUp.Reason))
+                                            {
+                                                <span class="text-muted"> — @entry.FollowUp.Reason</span>
+                                            }
+                                            <span class="ms-2 badge bg-secondary bg-opacity-25 text-secondary" style="font-size:0.7rem;">@entry.FollowUp.Status</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>

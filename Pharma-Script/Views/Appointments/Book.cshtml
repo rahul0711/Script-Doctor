@@ -104,7 +104,7 @@
         
         <!-- Hidden wizard tracking bindings -->
         <input type="hidden" asp-for="DoctorID" id="hfDoctorID" />
-        <input type="hidden" asp-for="AppointmentType" id="hfApptType" value="Clinic" />
+        <input type="hidden" asp-for="AppointmentType" id="hfApptType" value="Video" />
         <input type="hidden" asp-for="SelectedSlot" id="hfSelectedSlot" />
         
         @if (User.IsInRole("Patient"))
@@ -165,7 +165,7 @@
                                  data-branch="@doc.BranchID" 
                                  data-dept="@doc.DepartmentID" 
                                  data-specs="@specsIDs"
-                                 data-fees='{"Clinic": "@doc.ConsultationFee", "Video": "@doc.VideoConsultationFee", "Voice": "@doc.VoiceConsultationFee", "Priority": "@doc.PriorityConsultationFee", "PriorityAvailable": @(doc.IsPriorityAvailable ? "true" : "false")}'>
+                                 data-fees='{"Video": "@doc.VideoConsultationFee", "Voice": "@doc.VoiceConsultationFee", "Priority": "@doc.PriorityConsultationFee", "PriorityAvailable": @(doc.IsPriorityAvailable ? "true" : "false")}'>
                                 
                                 <div class="card h-100 border rounded-3 p-3.5 wizard-card cursor-pointer" onclick="selectDoctorCard(this, @doc.DoctorID)">
                                     <div class="d-flex align-items-start gap-3">
@@ -187,7 +187,7 @@
                                         </div>
                                     </div>
                                     <div class="border-top mt-3 pt-2.5 d-flex justify-content-between align-items-center text-secondary small font-medium">
-                                        <div>Fee: <strong class="text-dark">₹@doc.ConsultationFee.ToString("N0")</strong></div>
+                                        <div>Video: <strong class="text-dark">₹@doc.VideoConsultationFee.ToString("N0")</strong></div>
                                         @if (doc.IsPriorityAvailable)
                                         {
                                             <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2">Priority Active</span>
@@ -214,18 +214,8 @@
                 <h5 class="text-dark border-bottom pb-3 mb-3"><i class="bi bi-telephone-inbound text-primary me-2"></i>Step 2: Consultation Type</h5>
                 
                 <div class="row g-3 text-dark">
-                    <!-- Clinic Visit Card -->
-                    <div class="col-12 col-md-4">
-                        <div class="card border rounded-3 p-3.5 text-center wizard-card cursor-pointer" id="cardClinic" onclick="selectConsultType('Clinic')">
-                            <i class="bi bi-hospital fs-1 text-primary mb-2"></i>
-                            <h6 class="fw-bold mb-1">Clinic Visit</h6>
-                            <p class="text-muted small mb-3">Meet doctor physically at the clinic desk.</p>
-                            <h5 class="text-success fw-bold mb-0" id="lblFeeClinic">₹0.00</h5>
-                        </div>
-                    </div>
-
                     <!-- Video Consult Card -->
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <div class="card border rounded-3 p-3.5 text-center wizard-card cursor-pointer" id="cardVideo" onclick="selectConsultType('Video')">
                             <i class="bi bi-camera-video fs-1 text-success mb-2"></i>
                             <h6 class="fw-bold mb-1">Video Call</h6>
@@ -235,7 +225,7 @@
                     </div>
 
                     <!-- Voice Consult Card -->
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <div class="card border rounded-3 p-3.5 text-center wizard-card cursor-pointer" id="cardVoice" onclick="selectConsultType('Voice')">
                             <i class="bi bi-telephone fs-1 text-info mb-2"></i>
                             <h6 class="fw-bold mb-1">Voice Call</h6>
@@ -419,10 +409,10 @@
             selectedDoctorFees = docCardEl.data('fees');
 
             // Apply to Step 2 labels
-            $('#lblFeeClinic').text('₹' + parseFloat(selectedDoctorFees.Clinic).toFixed(2));
             $('#lblFeeVideo').text('₹' + parseFloat(selectedDoctorFees.Video).toFixed(2));
             $('#lblFeeVoice').text('₹' + parseFloat(selectedDoctorFees.Voice).toFixed(2));
             $('#lblFeePriority').text('₹' + parseFloat(selectedDoctorFees.Priority).toFixed(2));
+            selectConsultType('Video');
 
             // Set priority visibility
             if (selectedDoctorFees.PriorityAvailable) {
@@ -444,20 +434,19 @@
 
         // On select consultation type click
         function selectConsultType(type) {
-            $('.wizard-step-section #cardClinic, .wizard-step-section #cardVideo, .wizard-step-section #cardVoice').removeClass('selected');
+            $('.wizard-step-section #cardVideo, .wizard-step-section #cardVoice').removeClass('selected');
             $('#hfApptType').val(type);
 
-            if (type === 'Clinic') $('#cardClinic').addClass('selected');
-            else if (type === 'Video') $('#cardVideo').addClass('selected');
+            if (type === 'Video') $('#cardVideo').addClass('selected');
             else if (type === 'Voice') $('#cardVoice').addClass('selected');
         }
 
         function togglePriorityChecked() {
             var chk = $('#chkPriorityToggle').is(':checked');
             if (chk) {
-                $('#cardClinic, #cardVideo, #cardVoice').addClass('bg-opacity-50');
+                $('#cardVideo, #cardVoice').addClass('bg-opacity-50');
             } else {
-                $('#cardClinic, #cardVideo, #cardVoice').removeClass('bg-opacity-50');
+                $('#cardVideo, #cardVoice').removeClass('bg-opacity-50');
             }
         }
 
@@ -554,8 +543,7 @@
                     finalCost = parseFloat(selectedDoctorFees.Priority);
                     $('#revPriority').text('Priority Consultation Active').addClass('text-danger').removeClass('text-secondary');
                 } else {
-                    if (channel === 'Clinic') finalCost = parseFloat(selectedDoctorFees.Clinic);
-                    else if (channel === 'Video') finalCost = parseFloat(selectedDoctorFees.Video);
+                    if (channel === 'Video') finalCost = parseFloat(selectedDoctorFees.Video);
                     else if (channel === 'Voice') finalCost = parseFloat(selectedDoctorFees.Voice);
                     $('#revPriority').text('Normal Routine Consultation').addClass('text-secondary').removeClass('text-danger');
                 }
@@ -568,7 +556,7 @@
 
                 // Enable/disable next depending on inputs
                 if (currentStep === 2) {
-                    $('#btnWizardNext').prop('disabled', false); // Consult type selected default is Clinic
+                    $('#btnWizardNext').prop('disabled', false); // Consult type selected default is Video
                 } else if (currentStep === 3) {
                     $('#btnWizardNext').prop('disabled', !$('#hfSelectedSlot').val());
                 } else if (currentStep === 4) {

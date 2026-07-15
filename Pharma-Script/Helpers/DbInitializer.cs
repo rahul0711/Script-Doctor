@@ -70,6 +70,116 @@ namespace Pharma_Script.Helpers
                 }
             }
 
+            // 2b. Ensure Notifications table exists (safe to run every startup)
+            using (var conn = new MySqlConnection("server=120.138.7.130;uid=scriptindia;pwd=India@4321;database=ScriptIndia_Healthcare;"))
+            {
+                await conn.OpenAsync();
+                const string createNotifications = @"
+                    CREATE TABLE IF NOT EXISTS Notifications (
+                        NotificationID   INT           NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        OrganizationID   INT           NOT NULL,
+                        UserID           INT           NOT NULL,
+                        NotificationType VARCHAR(100)  NOT NULL,
+                        Title            VARCHAR(255)  NOT NULL,
+                        Message          TEXT          NOT NULL,
+                        RelatedEntityType VARCHAR(100) NULL,
+                        RelatedEntityID  INT           NULL,
+                        IsRead           TINYINT(1)   NOT NULL DEFAULT 0,
+                        CreatedAt        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        INDEX idx_notif_user   (UserID, OrganizationID, IsRead),
+                        INDEX idx_notif_entity (RelatedEntityType, RelatedEntityID)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = createNotifications;
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+            // 2bb. Ensure ConsultationSessions table exists (safe to run every startup)
+            using (var conn = new MySqlConnection("server=120.138.7.130;uid=scriptindia;pwd=India@4321;database=ScriptIndia_Healthcare;"))
+            {
+                await conn.OpenAsync();
+                const string createConsultationSessions = @"
+                    CREATE TABLE IF NOT EXISTS ConsultationSessions (
+                        ConsultationSessionID INT           NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        OrganizationID        INT           NOT NULL,
+                        AppointmentID         INT           NOT NULL,
+                        DoctorID              INT           NOT NULL,
+                        PatientID             INT           NOT NULL,
+                        ConsultationType      VARCHAR(20)   NOT NULL DEFAULT 'Video',
+                        MeetingProvider       VARCHAR(50)   NULL,
+                        MeetingURL            VARCHAR(500)  NULL,
+                        SessionStatus         VARCHAR(20)   NOT NULL DEFAULT 'Pending',
+                        CreatedByUserID       INT           NOT NULL,
+                        CreatedAt             DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        UpdatedAt             DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        FOREIGN KEY (AppointmentID) REFERENCES Appointments(AppointmentID) ON DELETE CASCADE,
+                        FOREIGN KEY (DoctorID) REFERENCES Doctors(DoctorID),
+                        FOREIGN KEY (PatientID) REFERENCES Patients(PatientID)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = createConsultationSessions;
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
+            // 2c. Ensure OrganizationID column exists in Prescriptions, Payments, FollowUps, DoctorNotes, and ConsultationSessions
+            using (var conn = new MySqlConnection("server=120.138.7.130;uid=scriptindia;pwd=India@4321;database=ScriptIndia_Healthcare;"))
+            {
+                await conn.OpenAsync();
+                string[] tablesToCheck = { "Prescriptions", "Payments", "FollowUps", "DoctorNotes", "ConsultationSessions" };
+                foreach (var table in tablesToCheck)
+                {
+                    bool columnExists = false;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = $@"
+                            SELECT COUNT(*) 
+                            FROM information_schema.COLUMNS 
+                            WHERE TABLE_SCHEMA = 'ScriptIndia_Healthcare' 
+                              AND TABLE_NAME = '{table}' 
+                              AND COLUMN_NAME = 'OrganizationID';";
+                        columnExists = Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
+                    }
+
+                    if (!columnExists)
+                    {
+                        try
+                        {
+                            // 1. Add column as NULL first to allow table update with existing rows
+                            using (var cmd = conn.CreateCommand())
+                            {
+                                cmd.CommandText = $"ALTER TABLE `{table}` ADD COLUMN OrganizationID INT NULL;";
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+
+                            // 2. Populate OrganizationID from linked Appointments table
+                            using (var cmd = conn.CreateCommand())
+                            {
+                                cmd.CommandText = $@"
+                                    UPDATE `{table}` t 
+                                    INNER JOIN Appointments a ON t.AppointmentID = a.AppointmentID 
+                                    SET t.OrganizationID = a.OrganizationID;";
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+
+                            // 3. Make column NOT NULL to match code expectations
+                            using (var cmd = conn.CreateCommand())
+                            {
+                                cmd.CommandText = $"ALTER TABLE `{table}` MODIFY COLUMN OrganizationID INT NOT NULL;";
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[DbInitializer] Failed to add OrganizationID to {table}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
             // 3. Seed Roles if missing
             var existingRoles = await uow.Roles.GetAllAsync();
             var requiredRoles = new[] { "Platform Owner", "Organization Admin", "Doctor", "Patient", "Receptionist" };

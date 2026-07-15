@@ -8,64 +8,126 @@
             <i class="bi bi-heart-pulse-fill"></i>Script<span>India</span>
         </a>
     </div>
+    @{
+        var _currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        var _currentAction     = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    }
     <ul class="sidebar-menu">
-        <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+        <li class="@(_currentController == "Dashboard" ? "active" : "")">
             <a href="@Url.Action("Index", "Dashboard")">
                 <i class="bi bi-columns-gap"></i>Dashboard
             </a>
         </li>
 
+        @* ── Doctor Navigation ──────────────────────────────────── *@
+        @if (User.IsDoctor())
+        {
+            var _doctorUserId = User.GetUserId();
+            var _sidebarDoctor = await Uow.Doctors.GetByUserIdAsync(_doctorUserId);
+            var _doctorId = _sidebarDoctor?.DoctorID ?? 0;
+
+            <li class="sidebar-section-label">My Practice</li>
+
+            <li class="@(_currentController == "Appointments" ? "active" : "")">
+                <a href="@Url.Action("Index", "Appointments")">
+                    <i class="bi bi-calendar2-check"></i>Appointments
+                </a>
+            </li>
+
+            <li class="@(_currentController == "Patients" ? "active" : "")">
+                <a href="@Url.Action("Index", "Patients")">
+                    <i class="bi bi-heart-pulse"></i>Patients
+                </a>
+            </li>
+
+            <li class="@(_currentController == "Consultation" ? "active" : "")">
+                <a href="@Url.Action("Index", "Consultation")">
+                    <i class="bi bi-clipboard2-pulse"></i>Consultations
+                </a>
+            </li>
+
+            @if (_doctorId > 0)
+            {
+                <li class="sidebar-section-label">Schedule</li>
+
+                <li class="@(_currentController == "DoctorAvailability" ? "active" : "")">
+                    <a href="@Url.Action("Schedule", "DoctorAvailability", new { doctorId = _doctorId })">
+                        <i class="bi bi-clock-history"></i>My Availability
+                    </a>
+                </li>
+
+                <li class="@(_currentController == "DoctorLeave" ? "active" : "")">
+                    <a href="@Url.Action("Index", "DoctorLeave", new { doctorId = _doctorId })">
+                        <i class="bi bi-calendar-minus"></i>Manage Leaves
+                    </a>
+                </li>
+            }
+        }
+
+        @* ── Platform Owner Navigation ──────────────────────────── *@
         @if (User.IsPlatformOwner())
         {
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Organizations" ? "active" : "")">
+            <li class="@(_currentController == "Organizations" ? "active" : "")">
                 <a href="@Url.Action("Index", "Organizations")">
                     <i class="bi bi-building"></i>Organizations
                 </a>
             </li>
         }
 
+        @* ── Org Admin / Platform Owner Navigation ─────────────── *@
         @if (User.IsPlatformOwner() || User.IsOrganizationAdmin())
         {
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Branches" ? "active" : "")">
+            <li class="@(_currentController == "Branches" ? "active" : "")">
                 <a href="@Url.Action("Index", "Branches")">
                     <i class="bi bi-diagram-3"></i>Branches
                 </a>
             </li>
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Departments" ? "active" : "")">
+            <li class="@(_currentController == "Departments" ? "active" : "")">
                 <a href="@Url.Action("Index", "Departments")">
                     <i class="bi bi-layers"></i>Departments
                 </a>
             </li>
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Roles" ? "active" : "")">
+            <li class="@(_currentController == "Roles" ? "active" : "")">
                 <a href="@Url.Action("Index", "Roles")">
                     <i class="bi bi-shield-check"></i>Roles
                 </a>
             </li>
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")">
+            <li class="@(_currentController == "Users" ? "active" : "")">
                 <a href="@Url.Action("Index", "Users")">
                     <i class="bi bi-people"></i>Users
                 </a>
             </li>
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Doctors" ? "active" : "")">
+            <li class="@(_currentController == "Doctors" ? "active" : "")">
                 <a href="@Url.Action("Index", "Doctors")">
                     <i class="bi bi-person-badge-fill"></i>Doctors
                 </a>
             </li>
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Receptionists" ? "active" : "")">
+            <li class="@(_currentController == "Receptionists" ? "active" : "")">
                 <a href="@Url.Action("Index", "Receptionists")">
                     <i class="bi bi-person-workspace"></i>Receptionists
                 </a>
             </li>
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Specializations" ? "active" : "")">
+            <li class="@(_currentController == "Specializations" ? "active" : "")">
                 <a href="@Url.Action("Index", "Specializations")">
                     <i class="bi bi-stethoscope"></i>Specializations
                 </a>
             </li>
+            <li class="@(_currentController == "Patients" ? "active" : "")">
+                <a href="@Url.Action("Index", "Patients")">
+                    <i class="bi bi-heart-pulse"></i>Patients
+                </a>
+            </li>
         }
 
-        @if (User.IsPlatformOwner() || User.IsOrganizationAdmin() || User.GetRoleName().Equals("Doctor", StringComparison.OrdinalIgnoreCase) || User.GetRoleName().Equals("Receptionist", StringComparison.OrdinalIgnoreCase))
+        @* ── Receptionist Navigation ────────────────────────────── *@
+        @if (User.IsReceptionist())
         {
-            <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Patients" ? "active" : "")">
+            <li class="@(_currentController == "Appointments" ? "active" : "")">
+                <a href="@Url.Action("Index", "Appointments")">
+                    <i class="bi bi-calendar2-check"></i>Appointments
+                </a>
+            </li>
+            <li class="@(_currentController == "Patients" ? "active" : "")">
                 <a href="@Url.Action("Index", "Patients")">
                     <i class="bi bi-heart-pulse"></i>Patients
                 </a>
@@ -73,7 +135,7 @@
         }
 
         @{
-            var websiteControllers = new[] { "WebsiteSettings", "HeroSections", "Services", "Gallery", "FAQs", "ContactMessages" };
+            var websiteControllers = new[] { "WebsiteSettings", "HeroSections", "Services", "ContactMessages" };
             var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
             var isWebsiteSection = websiteControllers.Contains(currentController);
         }
@@ -94,12 +156,6 @@
                         </li>
                         <li class="@(currentController == "Services" ? "active" : "")">
                             <a href="@Url.Action("Index", "Services")">Services</a>
-                        </li>
-                        <li class="@(currentController == "Gallery" ? "active" : "")">
-                            <a href="@Url.Action("Index", "Gallery")">Gallery</a>
-                        </li>
-                        <li class="@(currentController == "FAQs" ? "active" : "")">
-                            <a href="@Url.Action("Index", "FAQs")">FAQs</a>
                         </li>
                         <li class="@(currentController == "ContactMessages" ? "active" : "")">
                             <a href="@Url.Action("Index", "ContactMessages")">Contact Messages</a>
