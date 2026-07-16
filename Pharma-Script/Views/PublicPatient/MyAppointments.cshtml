@@ -20,6 +20,32 @@
         "Pending"   => "bi-clock",
         _ => "bi-clock"
     };
+
+    // Payment status shown separately from appointment approval status - a doctor
+    // approving/rejecting an appointment has no bearing on whether the patient's
+    // payment actually succeeded.
+    string PaymentLabel(string? p) => p switch
+    {
+        "Paid" => "Payment Success",
+        "Failed" => "Payment Failed",
+        "Refunded" => "Refunded",
+        "Pending" => "Payment Pending",
+        _ => "Payment Pending"
+    };
+    string PaymentClass(string? p) => p switch
+    {
+        "Paid" => "pub-badge-approved",
+        "Failed" => "pub-badge-cancelled",
+        "Refunded" => "pub-badge-rescheduled",
+        _ => "pub-badge-pending"
+    };
+    string PaymentIcon(string? p) => p switch
+    {
+        "Paid" => "bi-check-circle",
+        "Failed" => "bi-x-circle",
+        "Refunded" => "bi-arrow-counterclockwise",
+        _ => "bi-clock"
+    };
 }
 
 <section class="pub-section-tight pub-section-soft">
@@ -102,9 +128,14 @@
                                 </div>
                             }
                         </div>
-                        <span class="@StatusClass(appt.Status) ms-auto">
-                            <i class="bi @StatusIcon(appt.Status) me-1"></i>@appt.Status
-                        </span>
+                        <div class="d-flex flex-column align-items-end gap-2 ms-auto">
+                            <span class="@StatusClass(appt.Status)">
+                                <i class="bi @StatusIcon(appt.Status) me-1"></i>@appt.Status
+                            </span>
+                            <span class="@PaymentClass(appt.PaymentStatus)">
+                                <i class="bi @PaymentIcon(appt.PaymentStatus) me-1"></i>@PaymentLabel(appt.PaymentStatus)
+                            </span>
+                        </div>
                     </div>
                 </div>
             }

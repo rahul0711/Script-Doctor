@@ -19,6 +19,7 @@ namespace Pharma_Script.Repositories.Implementations
         public IUserRepository Users { get; }
         public ISpecializationRepository Specializations { get; }
         public IDoctorRepository Doctors { get; }
+        public IDoctorPaymentGatewayRepository DoctorPaymentGateways { get; }
         public IDoctorAvailabilityRepository DoctorAvailabilities { get; }
         public IDoctorLeaveRepository DoctorLeaves { get; }
         public IReceptionistRepository Receptionists { get; }
@@ -55,6 +56,7 @@ namespace Pharma_Script.Repositories.Implementations
             Users = new UserRepository(_connection, () => _transaction);
             Specializations = new SpecializationRepository(_connection, () => _transaction);
             Doctors = new DoctorRepository(_connection, () => _transaction);
+            DoctorPaymentGateways = new DoctorPaymentGatewayRepository(_connection, () => _transaction);
             DoctorAvailabilities = new DoctorAvailabilityRepository(_connection, () => _transaction);
             DoctorLeaves = new DoctorLeaveRepository(_connection, () => _transaction);
             Receptionists = new ReceptionistRepository(_connection, () => _transaction);

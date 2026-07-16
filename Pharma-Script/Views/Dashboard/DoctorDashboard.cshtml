@@ -5,20 +5,47 @@
     ViewData["Title"] = "Doctor Dashboard";
     var doctor = ViewBag.Doctor as Doctor;
     var todayAppts = ViewBag.TodayAppointments as List<Appointment> ?? new List<Appointment>();
-    var today = DateTime.Now.ToString("dd MMMM yyyy");
+    var monthAppts = ViewBag.MonthAppointments as List<Appointment> ?? new List<Appointment>();
+    var today = DateTime.Now.ToString("dd MMM yyyy");
     var dayName = DateTime.Now.ToString("dddd");
+    var greeting = DateTime.Now.Hour < 12 ? "Good morning" : DateTime.Now.Hour < 17 ? "Good afternoon" : "Good evening";
+    var now = DateTime.Now;
+
+    // Soonest appointment (today or later this month) that hasn't started yet.
+    var nextAppt = monthAppts
+        .Where(a => (a.Status == "Approved" || a.Status == "Pending")
+                    && (a.AppointmentDate.Date > now.Date || (a.AppointmentDate.Date == now.Date && a.StartTime > now.TimeOfDay)))
+        .OrderBy(a => a.AppointmentDate).ThenBy(a => a.StartTime)
+        .FirstOrDefault();
+
+    // Mini calendar grid for the current month
+    var calMonthStart = new DateTime(now.Year, now.Month, 1);
+    var daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
+    var leadingBlanks = (int)calMonthStart.DayOfWeek;
+    var apptDatesSet = monthAppts.Select(a => a.AppointmentDate.Date).ToHashSet();
+
+    // Client-side day lookup for the calendar's click-to-filter panel - avoids a round trip
+    // since the whole month's appointments are already on the page.
+    var calendarJson = System.Text.Json.JsonSerializer.Serialize(monthAppts.Select(a => new
+    {
+        date = a.AppointmentDate.ToString("yyyy-MM-dd"),
+        time = a.StartTime.ToString(@"hh\:mm") + " - " + a.EndTime.ToString(@"hh\:mm"),
+        patient = a.PatientName ?? ("Patient #" + a.PatientID),
+        type = a.AppointmentType,
+        status = a.Status
+    }));
+
+    var videoCount = monthAppts.Count(a => a.AppointmentType == "Video");
+    var voiceCount = monthAppts.Count(a => a.AppointmentType == "Voice");
 }
 
 <div class="page-title-box">
     <div>
-        <h4 class="page-title">
-            Good @(DateTime.Now.Hour < 12 ? "Morning" : DateTime.Now.Hour < 17 ? "Afternoon" : "Evening"),
-            Dr. @(doctor?.FirstName ?? User.GetFullName()) 👋
-        </h4>
-        <p class="text-muted small mb-0">Here's your practice overview for today — @dayName, @today</p>
+        <h4 class="page-title">@greeting, Dr. @(doctor?.FirstName ?? User.GetFullName())</h4>
+        <p class="page-subtitle mb-0">@dayName, @today</p>
     </div>
-    <a href="@Url.Action("Index", "Appointments")" class="btn btn-primary btn-sm px-3">
-        <i class="bi bi-calendar2-check me-1"></i> View All Appointments
+    <a href="@Url.Action("Index", "Appointments")" class="btn btn-primary btn-sm">
+        <i class="bi bi-calendar2-check me-1"></i>All appointments
     </a>
 </div>
 
@@ -28,13 +55,73 @@
 }
 else
 {
-    <!-- ── Stat Cards ──────────────────────────────────────────────── -->
-    <div class="row g-4">
-        <div class="col-12 col-sm-6 col-xl-3">
+    @* ── Next Appointment widget ──────────────────────────────── *@
+    <div class="panel mb-4 next-appt-panel">
+        <div class="panel-header">
+            <span class="panel-title"><i class="bi bi-calendar-event me-1"></i>Next Appointment</span>
+        </div>
+        @if (nextAppt != null)
+        {
+            var apptDateTime = nextAppt.AppointmentDate.Date + nextAppt.StartTime;
+            var isToday = nextAppt.AppointmentDate.Date == now.Date;
+            var typeIcon2 = nextAppt.AppointmentType switch
+            {
+                "Video" => "bi-camera-video",
+                "Voice" => "bi-telephone",
+                _ => "bi-hospital"
+            };
+            var badgeClass2 = nextAppt.Status switch
+            {
+                "Approved" => "badge-active",
+                "Pending" => "status-badge--pending",
+                _ => "status-badge--completed"
+            };
+            <div class="panel-body">
+                <div class="next-appt-body">
+                    <div class="next-appt-avatar"><i class="bi bi-person-fill"></i></div>
+                    <div class="next-appt-info">
+                        <div class="next-appt-patient">@(nextAppt.PatientName ?? "Patient #" + nextAppt.PatientID)</div>
+                        <div class="next-appt-meta">
+                            <span><i class="bi @typeIcon2 me-1"></i>@nextAppt.AppointmentType Consultation</span>
+                            <span class="mx-1">&middot;</span>
+                            <span>@(isToday ? "Today" : nextAppt.AppointmentDate.ToString("ddd, dd MMM")), @nextAppt.StartTime.ToString(@"hh\:mm")–@nextAppt.EndTime.ToString(@"hh\:mm")</span>
+                        </div>
+                        <div class="next-appt-countdown small text-muted mt-1" data-appt-datetime="@apptDateTime.ToString("yyyy-MM-ddTHH:mm:ss")">&nbsp;</div>
+                    </div>
+                    <div class="next-appt-actions">
+                        <span class="@badgeClass2 mb-2 d-inline-block">@nextAppt.Status</span>
+                        @if (nextAppt.Status == "Approved")
+                        {
+                            <a href="@Url.Action("Workspace", "Consultation", new { id = nextAppt.AppointmentID })" class="btn btn-success btn-sm d-block">
+                                <i class="bi bi-stethoscope me-1"></i>Start Consultation
+                            </a>
+                        }
+                        else
+                        {
+                            <button class="btn btn-outline-secondary btn-sm d-block" disabled>Awaiting Approval</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-calendar-heart"></i>
+                </div>
+                <p class="empty-state-title">No upcoming appointments</p>
+                <p class="empty-state-desc">You're all caught up for this month.</p>
+            </div>
+        }
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="stat-card">
                 <div class="stat-card-info">
-                    <p>Today's Appointments</p>
-                    <h3>@ViewBag.TodayCount</h3>
+                    <p>Today</p>
+                    <h3 class="stat-value">@ViewBag.TodayCount</h3>
                 </div>
                 <div class="stat-card-icon icon-blue">
                     <i class="bi bi-calendar-check"></i>
@@ -42,11 +129,11 @@ else
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="stat-card">
                 <div class="stat-card-info">
-                    <p>Pending Approvals</p>
-                    <h3>@ViewBag.PendingCount</h3>
+                    <p>Pending</p>
+                    <h3 class="stat-value">@ViewBag.PendingCount</h3>
                 </div>
                 <div class="stat-card-icon icon-warning">
                     <i class="bi bi-hourglass-split"></i>
@@ -54,11 +141,11 @@ else
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="stat-card">
                 <div class="stat-card-info">
-                    <p>Upcoming (Next 7 Days)</p>
-                    <h3>@ViewBag.UpcomingCount</h3>
+                    <p>Next 7 days</p>
+                    <h3 class="stat-value">@ViewBag.UpcomingCount</h3>
                 </div>
                 <div class="stat-card-icon icon-green">
                     <i class="bi bi-calendar-week"></i>
@@ -66,11 +153,11 @@ else
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-xl-3">
+        <div class="col-12 col-sm-6 col-lg-3">
             <div class="stat-card">
                 <div class="stat-card-info">
-                    <p>Completed Consultations</p>
-                    <h3>@ViewBag.CompletedCount</h3>
+                    <p>Completed</p>
+                    <h3 class="stat-value">@ViewBag.CompletedCount</h3>
                 </div>
                 <div class="stat-card-icon icon-danger">
                     <i class="bi bi-patch-check"></i>
@@ -79,33 +166,64 @@ else
         </div>
     </div>
 
-    <!-- ── Main Content Row ───────────────────────────────────────── -->
-    <div class="row g-4 mt-2">
+    @* ── Quick Actions ─────────────────────────────────────── *@
+    <div class="panel mb-4">
+        <div class="panel-header">
+            <span class="panel-title">Quick Actions</span>
+        </div>
+        <div class="panel-body">
+            <div class="quick-actions-grid">
+                <a href="@Url.Action("Index", "Appointments", new { startDate = DateTime.Today.ToString("yyyy-MM-dd"), endDate = DateTime.Today.ToString("yyyy-MM-dd") })" class="quick-action-card">
+                    <div class="quick-action-icon icon-blue"><i class="bi bi-calendar-check"></i></div>
+                    <span>Today's Appointments</span>
+                </a>
+                <a href="@Url.Action("Index", "Consultation")" class="quick-action-card">
+                    <div class="quick-action-icon icon-green"><i class="bi bi-stethoscope"></i></div>
+                    <span>Start Consultation</span>
+                </a>
+                <a href="#miniCalendarPanel" class="quick-action-card">
+                    <div class="quick-action-icon icon-warning"><i class="bi bi-calendar3"></i></div>
+                    <span>View Calendar</span>
+                </a>
+                <a href="@Url.Action("Schedule", "DoctorAvailability", new { doctorId = doctor!.DoctorID })" class="quick-action-card">
+                    <div class="quick-action-icon icon-danger"><i class="bi bi-clock-history"></i></div>
+                    <span>My Availability</span>
+                </a>
+                <a href="#doctorProfilePanel" class="quick-action-card">
+                    <div class="quick-action-icon icon-blue"><i class="bi bi-person-badge"></i></div>
+                    <span>My Profile</span>
+                </a>
+            </div>
+        </div>
+    </div>
 
-        <!-- Today's Appointment List -->
+    @* ── Main content ─────────────────────────────────────── *@
+    <div class="row g-3">
+
+        @* ── Today's schedule ── *@
         <div class="col-12 col-lg-8">
-            <div class="table-card p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h6 class="fw-bold text-dark mb-0">
-                        <i class="bi bi-calendar-day text-primary me-2"></i>Today's Schedule
-                    </h6>
-                    <a href="@Url.Action("Index", "Appointments")" class="btn btn-sm btn-light border text-muted">
-                        View All <i class="bi bi-arrow-right ms-1"></i>
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Today's schedule</span>
+                    <a href="@Url.Action("Index", "Appointments")" class="btn btn-light btn-sm">
+                        View all <i class="bi bi-arrow-right ms-1"></i>
                     </a>
                 </div>
 
                 @if (!todayAppts.Any())
                 {
-                    <div class="text-center py-5 text-muted">
-                        <i class="bi bi-calendar-x" style="font-size: 2.5rem; opacity: 0.3;"></i>
-                        <p class="mt-3 mb-0 fw-medium">No appointments scheduled for today</p>
-                        <small>Enjoy your free day!</small>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-calendar-x"></i>
+                        </div>
+                        <p class="empty-state-title">No appointments today</p>
+                        <p class="empty-state-desc">Enjoy your free day.</p>
                     </div>
                 }
                 else
                 {
                     <div class="table-responsive">
-                        <table class="table custom-table">
+                        <table class="custom-table">
                             <thead>
                                 <tr>
                                     <th>Patient</th>
@@ -121,54 +239,51 @@ else
                                     <tr>
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
-                                                <div class="avatar-sm rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center"
-                                                     style="width: 34px; height: 34px; min-width: 34px;">
-                                                    <i class="bi bi-person-fill text-primary" style="font-size: 0.85rem;"></i>
+                                                <div class="patient-avatar">
+                                                    <i class="bi bi-person-fill"></i>
                                                 </div>
                                                 <div>
-                                                    <div class="fw-medium text-dark" style="font-size: 0.875rem;">
+                                                    <div class="fw-medium" style="font-size:0.875rem;">
                                                         @(appt.PatientName ?? "Patient #" + appt.PatientID)
                                                     </div>
                                                     @if (appt.PriorityConsultation)
                                                     {
-                                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size: 0.65rem;">Priority</span>
+                                                        <span class="status-badge--cancelled" style="font-size:0.68rem; padding:1px 6px; border-radius:3px;">Priority</span>
                                                     }
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="text-muted small">
+                                        <td class="tabular-nums" style="color:var(--text-secondary); font-size:0.82rem; white-space:nowrap;">
                                             @appt.StartTime.ToString(@"hh\:mm") – @appt.EndTime.ToString(@"hh\:mm")
                                         </td>
-                                        <td>
+                                        <td style="font-size:0.82rem; color:var(--text-secondary);">
                                             @{
                                                 var typeIcon = appt.AppointmentType switch
                                                 {
-                                                    "Video" => "bi-camera-video text-info",
-                                                    "Voice" => "bi-telephone text-success",
-                                                    _ => "bi-hospital text-primary"
+                                                    "Video" => "bi-camera-video",
+                                                    "Voice" => "bi-telephone",
+                                                    _       => "bi-hospital"
                                                 };
                                             }
-                                            <span class="text-muted small">
-                                                <i class="bi @typeIcon me-1"></i>@appt.AppointmentType
-                                            </span>
+                                            <i class="bi @typeIcon me-1"></i>@appt.AppointmentType
                                         </td>
                                         <td>
                                             @{
-                                                var (badgeClass, badgeText) = appt.Status switch
+                                                var badgeClass = appt.Status switch
                                                 {
-                                                    "Approved"    => ("badge-active", "Approved"),
-                                                    "Pending"     => ("badge bg-warning-subtle text-warning border border-warning-subtle rounded px-2 py-1 small", "Pending"),
-                                                    "Completed"   => ("badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded px-2 py-1 small", "Completed"),
-                                                    "Cancelled"   => ("badge bg-danger-subtle text-danger border border-danger-subtle rounded px-2 py-1 small", "Cancelled"),
-                                                    _             => ("badge bg-light text-muted border rounded px-2 py-1 small", appt.Status)
+                                                    "Approved"  => "badge-active",
+                                                    "Pending"   => "status-badge--pending",
+                                                    "Completed" => "status-badge--completed",
+                                                    "Cancelled" => "status-badge--cancelled",
+                                                    _           => "status-badge--completed"
                                                 };
                                             }
-                                            <span class="@badgeClass">@badgeText</span>
+                                            <span class="@badgeClass">@appt.Status</span>
                                         </td>
                                         <td>
                                             <a href="@Url.Action("Details", "Appointments", new { id = appt.AppointmentID })"
-                                               class="btn btn-sm btn-light border px-2 py-1">
-                                                <i class="bi bi-eye" style="font-size: 0.75rem;"></i>
+                                               class="btn-action" title="View details">
+                                                <i class="bi bi-eye" style="font-size:0.75rem;"></i>
                                             </a>
                                         </td>
                                     </tr>
@@ -180,69 +295,185 @@ else
             </div>
         </div>
 
-        <!-- Quick Actions & Doctor Profile -->
+        @* ── Sidebar: mini calendar + profile ── *@
         <div class="col-12 col-lg-4">
 
-            <!-- Doctor Profile Card -->
+            @* Mini Calendar *@
+            <div class="panel mb-3 scroll-anchor-target" id="miniCalendarPanel">
+                <div class="panel-header">
+                    <span class="panel-title">@now.ToString("MMMM yyyy")</span>
+                </div>
+                <div class="panel-body">
+                    <div class="mini-cal-weekdays">
+                        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    </div>
+                    <div class="mini-cal-grid">
+                        @for (int i = 0; i < leadingBlanks; i++)
+                        {
+                            <div class="mini-cal-day mini-cal-day--blank"></div>
+                        }
+                        @for (int d = 1; d <= daysInMonth; d++)
+                        {
+                            var cellDate = new DateTime(now.Year, now.Month, d);
+                            var hasAppt = apptDatesSet.Contains(cellDate);
+                            var isToday2 = cellDate.Date == now.Date;
+                            var cls = "mini-cal-day" + (hasAppt ? " mini-cal-day--has-appt" : "") + (isToday2 ? " mini-cal-day--today" : "");
+                            <div class="@cls" data-date="@cellDate.ToString("yyyy-MM-dd")" onclick="selectCalendarDay(this)">@d</div>
+                        }
+                    </div>
+                    <div id="calendarDayDetails" class="mt-2">
+                        <div class="text-center py-3 text-muted small">Click a highlighted date to see appointments.</div>
+                    </div>
+                </div>
+            </div>
+
             @if (doctor != null)
             {
-                <div class="table-card p-4 mb-4">
-                    <h6 class="fw-bold text-dark mb-3">My Profile</h6>
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center"
-                             style="width: 52px; height: 52px; min-width: 52px;">
-                            <i class="bi bi-person-circle text-primary" style="font-size: 1.6rem;"></i>
-                        </div>
-                        <div>
-                            <div class="fw-semibold text-dark">Dr. @doctor.FirstName @doctor.LastName</div>
-                            <small class="text-muted">
-                                @(doctor.SpecializationNames.Any() ? string.Join(", ", doctor.SpecializationNames) : "General")
-                            </small>
-                        </div>
+                <div class="panel mb-3 scroll-anchor-target" id="doctorProfilePanel">
+                    <div class="panel-header">
+                        <span class="panel-title">My profile</span>
                     </div>
-                    <div class="d-flex flex-column gap-1" style="font-size: 0.8rem;">
-                        @if (!string.IsNullOrEmpty(doctor.DepartmentName))
-                        {
-                            <div class="text-muted">
-                                <i class="bi bi-layers me-2 text-primary"></i>@doctor.DepartmentName
+                    <div class="panel-body">
+                        <div class="doctor-profile-block">
+                            <div class="doctor-avatar">
+                                <i class="bi bi-person-circle"></i>
                             </div>
-                        }
-                        @if (!string.IsNullOrEmpty(doctor.BranchName))
-                        {
-                            <div class="text-muted">
-                                <i class="bi bi-geo-alt me-2 text-primary"></i>@doctor.BranchName
+                            <div>
+                                <p class="doctor-name">Dr. @doctor.FirstName @doctor.LastName</p>
+                                <p class="doctor-spec">
+                                    @(doctor.SpecializationNames.Any() ? string.Join(", ", doctor.SpecializationNames) : "General Practice")
+                                </p>
                             </div>
-                        }
-                        <div class="text-muted">
-                            <i class="bi bi-award me-2 text-primary"></i>@doctor.Qualification — @doctor.ExperienceYears yrs exp.
+                        </div>
+                        <div class="doctor-meta-list">
+                            @if (!string.IsNullOrEmpty(doctor.DepartmentName))
+                            {
+                                <div class="doctor-meta-item">
+                                    <i class="bi bi-layers"></i>
+                                    <span>@doctor.DepartmentName</span>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(doctor.BranchName))
+                            {
+                                <div class="doctor-meta-item">
+                                    <i class="bi bi-geo-alt"></i>
+                                    <span>@doctor.BranchName</span>
+                                </div>
+                            }
+                            <div class="doctor-meta-item">
+                                <i class="bi bi-award"></i>
+                                <span>@doctor.Qualification &mdash; @doctor.ExperienceYears yr experience</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             }
 
-            <!-- Quick Navigation -->
-            <div class="table-card p-4">
-                <h6 class="fw-bold text-dark mb-3">Quick Actions</h6>
-                <div class="d-grid gap-2">
-                    <a href="@Url.Action("Index", "Appointments")" class="btn btn-light text-start py-2 px-3">
-                        <i class="bi bi-calendar2-check me-2 text-primary"></i>My Appointments
-                    </a>
-                    <a href="@Url.Action("Index", "Patients")" class="btn btn-light text-start py-2 px-3">
-                        <i class="bi bi-heart-pulse me-2 text-danger"></i>My Patients
-                    </a>
-                    @if (doctor != null)
-                    {
-                        <a href="@Url.Action("Schedule", "DoctorAvailability", new { doctorId = doctor.DoctorID })"
-                           class="btn btn-light text-start py-2 px-3">
-                            <i class="bi bi-clock-history me-2 text-success"></i>My Availability
-                        </a>
-                        <a href="@Url.Action("Index", "DoctorLeave", new { doctorId = doctor.DoctorID })"
-                           class="btn btn-light text-start py-2 px-3">
-                            <i class="bi bi-calendar-minus me-2 text-warning"></i>Manage Leaves
-                        </a>
-                    }
+        </div>
+
+    </div>
+
+    @* ── Analytics ─────────────────────────────────────────── *@
+    <div class="panel mt-3">
+        <div class="panel-header">
+            <span class="panel-title">Consultation Types (This Month)</span>
+        </div>
+        <div class="panel-body">
+            @if (videoCount + voiceCount == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-bar-chart"></i>
+                    </div>
+                    <p class="empty-state-title">No data yet</p>
+                    <p class="empty-state-desc">Analytics will appear once you have appointments this month.</p>
                 </div>
-            </div>
+            }
+            else
+            {
+                <div style="max-width:320px;margin:0 auto;">
+                    <canvas id="consultTypeChart"></canvas>
+                </div>
+            }
         </div>
     </div>
+
+    <script id="calendarData" type="application/json">@Html.Raw(calendarJson)</script>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+        var calendarDataEl = document.getElementById('calendarData');
+        var calendarAppointments = calendarDataEl ? JSON.parse(calendarDataEl.textContent || '[]') : [];
+
+        function selectCalendarDay(el) {
+            if (!el || el.classList.contains('mini-cal-day--blank')) return;
+            var dateStr = el.getAttribute('data-date');
+
+            document.querySelectorAll('.mini-cal-day--selected').forEach(function (n) { n.classList.remove('mini-cal-day--selected'); });
+            el.classList.add('mini-cal-day--selected');
+
+            var items = calendarAppointments.filter(function (a) { return a.date === dateStr; });
+            var panel = document.getElementById('calendarDayDetails');
+            if (!panel) return;
+
+            if (items.length === 0) {
+                panel.innerHTML = '<div class="text-center py-3 text-muted small">No appointments on this day.</div>';
+                return;
+            }
+
+            var html = '<div class="small fw-semibold mb-2">' + items.length + ' appointment' + (items.length > 1 ? 's' : '') + '</div>';
+            items.forEach(function (a) {
+                html += '<div class="cal-day-item">' +
+                    '<span class="cal-day-item-time">' + a.time + '</span>' +
+                    '<span class="cal-day-item-patient">' + a.patient + '</span>' +
+                    '<span class="status-badge--' + a.status.toLowerCase() + '">' + a.status + '</span>' +
+                    '</div>';
+            });
+            panel.innerHTML = html;
+        }
+
+        // Optional live countdown on the Next Appointment widget
+        (function () {
+            var el = document.querySelector('.next-appt-countdown');
+            if (!el) return;
+            var target = new Date(el.getAttribute('data-appt-datetime'));
+
+            function tick() {
+                var diffMs = target - new Date();
+                if (diffMs <= 0) { el.textContent = 'Starting now'; return; }
+                var totalMinutes = Math.floor(diffMs / 60000);
+                var hours = Math.floor(totalMinutes / 60);
+                var minutes = totalMinutes % 60;
+                el.textContent = hours > 0 ? ('Starts in ' + hours + 'h ' + minutes + 'm') : ('Starts in ' + minutes + 'm');
+            }
+            tick();
+            setInterval(tick, 60000);
+        })();
+
+        @if (videoCount + voiceCount > 0)
+        {
+            <text>
+            new Chart(document.getElementById('consultTypeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Video', 'Voice'],
+                    datasets: [{
+                        data: [@videoCount, @voiceCount],
+                        backgroundColor: ['#2563eb', '#16a34a'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 12 } } }
+                    },
+                    cutout: '65%'
+                }
+            });
+            </text>
+        }
+    </script>
 }

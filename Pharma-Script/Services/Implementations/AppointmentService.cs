@@ -113,7 +113,15 @@ namespace Pharma_Script.Services.Implementations
             return availableSlots;
         }
 
-        public async Task<Appointment> BookAppointmentAsync(AppointmentBookingViewModel model, int orgId, int? branchId)
+        private class ValidatedBooking
+        {
+            public Doctor Doctor { get; set; } = null!;
+            public TimeSpan StartTime { get; set; }
+            public TimeSpan EndTime { get; set; }
+            public decimal ConsultationFee { get; set; }
+        }
+
+        private async Task<ValidatedBooking> ValidateAndResolveAsync(AppointmentBookingViewModel model, int orgId)
         {
             if (model.AppointmentDate.Date < DateTime.Today)
             {
@@ -129,7 +137,7 @@ namespace Pharma_Script.Services.Implementations
 
             var dayOfWeek = model.AppointmentDate.ToString("dddd");
             var availabilities = await _uow.DoctorAvailabilities.GetAvailabilityByDoctorIdAsync(model.DoctorID);
-            var availability = availabilities.FirstOrDefault(a => 
+            var availability = availabilities.FirstOrDefault(a =>
                 a.DayOfWeek.Equals(dayOfWeek, StringComparison.OrdinalIgnoreCase) && a.IsAvailable);
 
             if (availability == null)
@@ -192,7 +200,27 @@ namespace Pharma_Script.Services.Implementations
                     throw new InvalidOperationException("Invalid consultation type selection.");
             }
 
-            // 7. Insert Appointment & Status Log inside a transaction
+            return new ValidatedBooking
+            {
+                Doctor = doctor,
+                StartTime = startTime,
+                EndTime = endTime,
+                ConsultationFee = consultationFee
+            };
+        }
+
+        public async Task<decimal> QuoteFeeAsync(AppointmentBookingViewModel model, int orgId)
+        {
+            var validated = await ValidateAndResolveAsync(model, orgId);
+            return validated.ConsultationFee;
+        }
+
+        public async Task<Appointment> BookAppointmentAsync(AppointmentBookingViewModel model, int orgId, int? branchId, Payment? payment = null)
+        {
+            var validated = await ValidateAndResolveAsync(model, orgId);
+            var doctor = validated.Doctor;
+
+            // Insert Appointment & Status Log inside a transaction
             var appt = new Appointment
             {
                 OrganizationID = orgId,
@@ -201,9 +229,9 @@ namespace Pharma_Script.Services.Implementations
                 PatientID = model.PatientID,
                 AppointmentType = model.AppointmentType,
                 AppointmentDate = model.AppointmentDate,
-                StartTime = startTime,
-                EndTime = endTime,
-                ConsultationFee = consultationFee,
+                StartTime = validated.StartTime,
+                EndTime = validated.EndTime,
+                ConsultationFee = validated.ConsultationFee,
                 PriorityConsultation = model.PriorityConsultation,
                 Symptoms = model.Symptoms,
                 AppointmentReason = model.AppointmentReason,
@@ -231,6 +259,14 @@ namespace Pharma_Script.Services.Implementations
                     Remarks = "Appointment requested via Patient Portal."
                 };
                 await _uow.AppointmentStatusHistories.AddAsync(history);
+
+                if (payment != null)
+                {
+                    payment.AppointmentID = newId;
+                    payment.OrganizationID = orgId;
+                    await _uow.Payments.AddAsync(payment);
+                }
+
                 await _uow.CommitAsync();
 
                 // Notification is a best-effort side effect - the appointment is already

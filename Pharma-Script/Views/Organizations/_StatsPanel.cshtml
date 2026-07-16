@@ -1,0 +1,166 @@
+@model Pharma_Script.Models.Organization
+@{
+    int doctorsCount = ViewBag.DoctorsCount ?? 0;
+    int patientsCount = ViewBag.PatientsCount ?? 0;
+    int appointmentsCount = ViewBag.AppointmentsCount ?? 0;
+    int branchesCount = ViewBag.BranchesCount ?? 0;
+    decimal totalRevenue = ViewBag.TotalRevenue ?? 0m;
+}
+
+<style>
+    .org-stats-header {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        padding: 1.5rem;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .org-stats-header::before {
+        content: '';
+        position: absolute;
+        top: -30px; right: -30px;
+        width: 140px; height: 140px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+    }
+    .org-icon-lg {
+        width: 60px; height: 60px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.3);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.8rem; font-weight: 700; color: #fff;
+        position: relative; z-index: 1;
+    }
+    .org-stat-card {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 0.8rem;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.15);
+        backdrop-filter: blur(4px);
+        margin-bottom: 0.5rem;
+    }
+    .org-stat-value { font-size: 1.4rem; font-weight: 700; color: #fff; line-height: 1; }
+    .org-stat-label { font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .org-revenue-card {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        border: 1px solid #34d399;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .org-section-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+        padding: 1rem 1.25rem 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        margin: 0;
+        background: #f8fafc;
+    }
+    .info-row {
+        display: flex;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .info-label { width: 40%; font-size: 0.8rem; color: #64748b; font-weight: 600; }
+    .info-val { width: 60%; font-size: 0.85rem; color: #1e293b; font-weight: 500; }
+</style>
+
+<!-- Header -->
+<div class="org-stats-header">
+    <div class="d-flex align-items-center gap-3 mb-4" style="position:relative;z-index:1;">
+        <div class="org-icon-lg">@Model.OrganizationName[0]</div>
+        <div>
+            <div style="font-size:1.15rem; font-weight:700; color:#fff;">@Model.OrganizationName</div>
+            <div style="font-size:0.8rem; color:rgba(255,255,255,0.7); margin-top:2px;">@Model.OrganizationType</div>
+            <div style="font-size:0.75rem; color:rgba(255,255,255,0.5); margin-top:4px;">
+                <i class="bi bi-geo-alt me-1"></i>@(Model.City ?? "Unknown"), @(Model.Country ?? "Unknown")
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="row g-2" style="position:relative;z-index:1;">
+        <div class="col-6">
+            <a href="@Url.Action("Index", "Doctors", new { orgIdFilter = Model.OrganizationID })" class="text-decoration-none">
+                <div class="org-stat-card" style="transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                    <div class="org-stat-value">@doctorsCount</div>
+                    <div class="org-stat-label">Doctors</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="@Url.Action("Index", "Patients", new { orgIdFilter = Model.OrganizationID })" class="text-decoration-none">
+                <div class="org-stat-card" style="transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.2)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                    <div class="org-stat-value">@patientsCount</div>
+                    <div class="org-stat-label">Patients</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-6">
+            <div class="org-stat-card">
+                <div class="org-stat-value">@appointmentsCount</div>
+                <div class="org-stat-label">Appointments</div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="org-stat-card">
+                <div class="org-stat-value">@branchesCount</div>
+                <div class="org-stat-label">Branches</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="p-3">
+    <!-- Revenue Card -->
+    <div class="org-revenue-card">
+        <div style="font-size:0.8rem; color:rgba(255,255,255,0.8); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; margin-bottom:4px;">Total Revenue Collected</div>
+        <div style="font-size:1.8rem; font-weight:800; color:#fff;">₹@totalRevenue.ToString("N2")</div>
+    </div>
+</div>
+
+<div class="org-section-title">Organization Details</div>
+<div class="info-row">
+    <div class="info-label">Address</div>
+    <div class="info-val">@(Model.AddressLine1 ?? "N/A")</div>
+</div>
+<div class="info-row">
+    <div class="info-label">Email</div>
+    <div class="info-val">@Model.Email</div>
+</div>
+<div class="info-row">
+    <div class="info-label">Phone</div>
+    <div class="info-val">@(string.IsNullOrEmpty(Model.Phone) ? "N/A" : Model.Phone)</div>
+</div>
+<div class="info-row">
+    <div class="info-label">GST Number</div>
+    <div class="info-val">@(string.IsNullOrEmpty(Model.GSTNumber) ? "N/A" : Model.GSTNumber)</div>
+</div>
+<div class="info-row">
+    <div class="info-label">License Number</div>
+    <div class="info-val">@(string.IsNullOrEmpty(Model.LicenseNumber) ? "N/A" : Model.LicenseNumber)</div>
+</div>
+<div class="info-row">
+    <div class="info-label">Status</div>
+    <div class="info-val">
+        @if (Model.IsActive)
+        {
+            <span class="badge bg-success">Active</span>
+        }
+        else
+        {
+            <span class="badge bg-danger">Inactive</span>
+        }
+    </div>
+</div>
+<div class="info-row" style="border-bottom:none;">
+    <div class="info-label">Registered On</div>
+    <div class="info-val">@Model.CreatedAt.ToString("dd MMM yyyy")</div>
+</div>

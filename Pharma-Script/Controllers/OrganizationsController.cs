@@ -55,6 +55,34 @@ namespace Pharma_Script.Controllers
             return PartialView("_Details", org);
         }
 
+        // GET: /Organizations/StatsPanel/5 (Partial view - org stats)
+        [HttpGet]
+        public async Task<IActionResult> StatsPanel(int id)
+        {
+            var org = await _uow.Organizations.GetByIdAsync(id);
+            if (org == null)
+            {
+                return NotFound("Organization not found.");
+            }
+
+            var doctorsCount = await _uow.Doctors.GetSearchCountAsync(id, null, null, null, null, string.Empty);
+            var patientsCount = await _uow.Patients.GetSearchCountAsync(id, null, string.Empty);
+            var appointmentsCount = await _uow.Appointments.GetSearchCountAsync(id, null, null, null, null, null, null, null, null, string.Empty);
+            
+            var branches = await _uow.Branches.GetByOrganizationIdAsync(id);
+            var branchesCount = branches.Count();
+
+            var totalRevenue = await _uow.Payments.GetTotalByOrgIdAsync(id);
+
+            ViewBag.DoctorsCount = doctorsCount;
+            ViewBag.PatientsCount = patientsCount;
+            ViewBag.AppointmentsCount = appointmentsCount;
+            ViewBag.BranchesCount = branchesCount;
+            ViewBag.TotalRevenue = totalRevenue;
+
+            return PartialView("_StatsPanel", org);
+        }
+
         // GET: /Organizations/Create (Partial View for Modal)
         [HttpGet]
         public IActionResult Create()

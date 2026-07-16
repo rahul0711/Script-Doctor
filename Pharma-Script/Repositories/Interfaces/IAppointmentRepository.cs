@@ -14,5 +14,7 @@ namespace Pharma_Script.Repositories.Interfaces
         Task<bool> CheckSlotConflictAsync(int doctorId, DateTime date, TimeSpan startTime, TimeSpan endTime, int? excludeAppointmentId);
         Task<Appointment?> GetAppointmentDetailsByIdAsync(int id, int? orgId);
         Task<IEnumerable<Appointment>> GetUpcomingAppointmentsForRemindersAsync(DateTime date);
+        Task<IEnumerable<Appointment>> GetByDoctorIdAsync(int doctorId, int? orgId);
+        Task<IEnumerable<Appointment>> GetByPatientIdAsync(int patientId, int? orgId);
     }
 }

@@ -5,112 +5,94 @@
     ViewData["Title"] = "Appointments";
 }
 
-<div class="page-title-box">
+<div class="page-title-box d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-        <h4 class="page-title">Appointment Registry</h4>
-        <p class="text-muted small mb-0 font-medium">Browse, query, and monitor scheduled clinical consultations.</p>
+        <h4 class="page-title mb-1">Appointment Registry</h4>
+        <p class="text-muted small mb-0">Browse, query, and monitor scheduled clinical consultations.</p>
     </div>
-    <div>
+    <div class="d-flex align-items-center gap-2">
         @if (User.IsInRole("Patient") || User.IsInRole("Organization Admin") || User.IsInRole("Receptionist"))
         {
-            <a href="@Url.Action("Book", "Appointments")" class="btn btn-primary fw-medium px-3.5 py-2">
+            <a href="@Url.Action("Book", "Appointments")" class="btn btn-primary fw-medium px-4 shadow-sm" style="border-radius: 8px;">
                 <i class="bi bi-calendar-plus me-1.5"></i>Book Appointment
             </a>
         }
     </div>
 </div>
 
-<!-- Filters Panel -->
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body p-4">
-        <form method="get" action="@Url.Action("Index")" class="row g-3">
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-semibold text-secondary">Search</label>
-                <input type="text" name="searchTerm" class="form-control" placeholder="Search patient, symptoms..." value="@ViewBag.SearchTerm" />
+<!-- Modern Filter Bar -->
+<div class="table-card mb-4 p-4">
+    <form method="get" action="@Url.Action("Index")" class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold text-secondary mb-1">Search Patients/Symptoms</label>
+            <div class="input-group">
+                <span class="input-group-text bg-light border-light text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" name="searchTerm" class="form-control bg-light border-light" placeholder="Search..." value="@ViewBag.SearchTerm" />
             </div>
+        </div>
 
-            @if (User.IsPlatformOwner() || User.IsInRole("Organization Admin") || User.IsInRole("Receptionist"))
-            {
-                <div class="col-12 col-md-3">
-                    <label class="form-label small fw-semibold text-secondary">Doctor</label>
-                    <select name="doctorId" class="form-select" asp-items="@ViewBag.Doctors">
-                        <option value="">-- All Doctors --</option>
-                    </select>
-                </div>
-            }
-
+        @if (User.IsPlatformOwner() || User.IsInRole("Organization Admin") || User.IsInRole("Receptionist"))
+        {
             <div class="col-12 col-md-2">
-                <label class="form-label small fw-semibold text-secondary">Status</label>
-                <select name="status" class="form-select">
-                    <option value="">-- All Statuses --</option>
-                    @foreach (var s in new[] { "Pending", "Approved", "Rejected", "Rescheduled", "Completed", "Cancelled", "No Show" })
-                    {
-                        <option value="@s" selected="@(ViewBag.Status == s)">@s</option>
-                    }
+                <label class="form-label small fw-semibold text-secondary mb-1">Doctor</label>
+                <select name="doctorId" class="form-select bg-light border-light" asp-items="@ViewBag.Doctors">
+                    <option value="">All Doctors</option>
                 </select>
             </div>
+        }
 
-            <div class="col-12 col-md-2">
-                <label class="form-label small fw-semibold text-secondary">Type</label>
-                <select name="type" class="form-select">
-                    <option value="">-- All Types --</option>
-                    @foreach (var t in new[] { "Video", "Voice" })
-                    {
-                        <option value="@t" selected="@(ViewBag.Type == t)">@t</option>
-                    }
-                </select>
-            </div>
+        <!-- <div class="col-12 col-md-2">
+            <label class="form-label small fw-semibold text-secondary mb-1">Status</label>
+            <select name="status" class="form-select bg-light border-light">
+                <option value="">All Statuses</option>
+                @foreach (var s in new[] { "Pending", "Approved", "Rejected", "Rescheduled", "Completed", "Cancelled", "No Show" })
+                {
+                    <option value="@s" selected="@(ViewBag.Status == s)">@s</option>
+                }
+            </select>
+        </div> -->
 
-            <div class="col-12 col-md-2 d-flex align-items-end">
-                <div class="form-check form-check-inline pb-2">
-                    <input class="form-check-input" type="checkbox" name="isPriority" id="filterPriority" value="true" checked="@(ViewBag.IsPriority == true)" />
-                    <label class="form-check-label small fw-semibold text-danger" for="filterPriority">Priority Only</label>
-                </div>
-            </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label small fw-semibold text-secondary mb-1">Date Range</label>
+            <input type="date" name="startDate" class="form-control bg-light border-light mb-1" value="@ViewBag.StartDate" placeholder="Start Date" />
+        </div>
+        <div class="col-12 col-md-2">
+            <label class="form-label small fw-semibold text-secondary mb-1">&nbsp;</label>
+            <input type="date" name="endDate" class="form-control bg-light border-light" value="@ViewBag.EndDate" placeholder="End Date" />
+        </div>
 
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-semibold text-secondary">Start Date</label>
-                <input type="date" name="startDate" class="form-control" value="@ViewBag.StartDate" />
-            </div>
-
-            <div class="col-12 col-md-3">
-                <label class="form-label small fw-semibold text-secondary">End Date</label>
-                <input type="date" name="endDate" class="form-control" value="@ViewBag.EndDate" />
-            </div>
-
-            <div class="col-12 col-md-6 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-primary fw-medium px-4 py-2"><i class="bi bi-funnel me-1.5"></i>Apply Filters</button>
-                <a href="@Url.Action("Index")" class="btn btn-light fw-medium px-3 py-2"><i class="bi bi-arrow-counterclockwise me-1.5"></i>Reset</a>
-            </div>
-        </form>
+        <div class="col-12 col-md-1 d-flex gap-2 justify-content-end">
+            <button type="submit" class="btn btn-primary px-3 shadow-sm w-100" style="border-radius: 8px;" title="Apply Filters"><i class="bi bi-funnel"></i></button>
+        </div>
+    </form>
+    
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-4 pt-3 border-top border-light">
+        <span class="small text-muted fw-semibold me-2">Quick Views:</span>
+        <a href="@Url.Action("Index", new { status = "Pending" })" class="badge bg-warning text-dark bg-opacity-25 text-decoration-none px-3 py-2 rounded-pill">Pending Reviews</a>
+        <a href="@Url.Action("Index", new { startDate = DateTime.Today.ToString("yyyy-MM-dd"), endDate = DateTime.Today.ToString("yyyy-MM-dd") })" class="badge bg-primary text-primary bg-opacity-10 text-decoration-none px-3 py-2 rounded-pill">Today's Schedule</a>
+        <a href="@Url.Action("Index", new { isPriority = true })" class="badge bg-danger text-danger bg-opacity-10 text-decoration-none px-3 py-2 rounded-pill">Priority Alerts</a>
+        <a href="@Url.Action("Index")" class="btn btn-link text-muted small ms-auto text-decoration-none p-0"><i class="bi bi-x-circle me-1"></i>Clear Filters</a>
     </div>
-</div>
-
-<!-- Shortcuts Bar -->
-<div class="d-flex flex-wrap gap-2 mb-3">
-    <a href="@Url.Action("Index", new { status = "Pending" })" class="btn btn-sm btn-outline-warning rounded-pill">Pending Reviews</a>
-    <a href="@Url.Action("Index", new { startDate = DateTime.Today.ToString("yyyy-MM-dd"), endDate = DateTime.Today.ToString("yyyy-MM-dd") })" class="btn btn-sm btn-outline-primary rounded-pill">Today's Schedule</a>
-    <a href="@Url.Action("Index", new { isPriority = true })" class="btn btn-sm btn-outline-danger rounded-pill">Priority Alerts</a>
 </div>
 
 <!-- Registry Table Card -->
 <div class="table-card">
     <div class="table-card-header">
-        <h5 class="table-card-title mb-0">Scheduled Consultations</h5>
+        <h5 class="table-card-title mb-0"><i class="bi bi-card-list me-2 text-primary"></i>Scheduled Consultations</h5>
     </div>
 
     <div class="table-responsive">
-        <table class="table custom-table">
+        <table class="table custom-table align-middle">
             <thead>
                 <tr>
-                    <th>Date & Time</th>
+                    <th style="width: 150px;">Date & Time</th>
                     <th>Patient</th>
                     <th>Doctor</th>
-                    <th>Channel</th>
-                    <th>Fee (INR)</th>
-                    <th class="text-center">Urgency</th>
-                    <th class="text-center">Status</th>
-                    <th class="text-end">Actions</th>
+                    <th style="width: 120px;">Channel</th>
+                    <th style="width: 120px;">Fee (INR)</th>
+                    <th class="text-center" style="width: 120px;">Urgency</th>
+                    <th class="text-center" style="width: 120px;">Status</th>
+                    <th class="text-end" style="width: 180px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -120,13 +102,13 @@
                     {
                         var statusBadgeClass = appt.Status.ToUpper() switch
                         {
-                            "PENDING" => "bg-warning text-dark",
-                            "APPROVED" => "bg-success text-white",
-                            "REJECTED" => "bg-danger text-white",
-                            "RESCHEDULED" => "bg-info text-white",
-                            "COMPLETED" => "bg-secondary text-white",
-                            "CANCELLED" => "bg-dark text-white",
-                            "NO SHOW" => "bg-danger text-white",
+                            "PENDING" => "bg-warning text-dark bg-opacity-25",
+                            "APPROVED" => "bg-success text-success bg-opacity-10",
+                            "REJECTED" => "bg-danger text-danger bg-opacity-10",
+                            "RESCHEDULED" => "bg-info text-info bg-opacity-10",
+                            "COMPLETED" => "bg-secondary text-secondary bg-opacity-10",
+                            "CANCELLED" => "bg-dark text-dark bg-opacity-10",
+                            "NO SHOW" => "bg-danger text-danger bg-opacity-10",
                             _ => "bg-light text-dark"
                         };
 
@@ -141,15 +123,15 @@
                         <tr>
                             <td>
                                 <div class="fw-semibold text-dark">@appt.AppointmentDate.ToString("dd-MMM-yyyy")</div>
-                                <div class="text-muted small">@DateTime.Today.Add(appt.StartTime).ToString("hh:mm tt")</div>
+                                <div class="text-muted small" style="font-size:0.75rem;">@DateTime.Today.Add(appt.StartTime).ToString("hh:mm tt")</div>
                             </td>
                             <td>
                                 <div class="fw-semibold text-dark">@appt.PatientName</div>
-                                <div class="text-muted small">ID: PAT-@appt.PatientID</div>
+                                <div class="text-muted small" style="font-size:0.75rem;">ID: PAT-@appt.PatientID</div>
                             </td>
                             <td>
                                 <div class="fw-semibold text-dark">@appt.DoctorName</div>
-                                <div class="text-muted text-truncate" style="max-width: 150px;">Branch: @(appt.BranchName ?? "Global")</div>
+                                <div class="text-muted text-truncate" style="max-width: 150px; font-size:0.75rem;">Branch: @(appt.BranchName ?? "Global")</div>
                             </td>
                             <td>
                                 <i class="bi @channelIcon me-1.5"></i>@appt.AppointmentType
@@ -160,25 +142,25 @@
                             <td class="text-center">
                                 @if (appt.PriorityConsultation)
                                 {
-                                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2.5">Priority</span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2.5 py-1">Priority</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-light text-secondary rounded-pill px-2.5">Normal</span>
+                                    <span class="badge bg-light text-secondary rounded-pill px-2.5 py-1">Normal</span>
                                 }
                             </td>
                             <td class="text-center">
-                                <span class="badge @statusBadgeClass rounded-pill px-2.5">@appt.Status</span>
+                                <span class="badge @statusBadgeClass rounded-pill px-2.5 py-1 fw-semibold border-0">@appt.Status</span>
                             </td>
                             <td class="text-end">
                                 <div class="d-flex justify-content-end gap-1.5">
-                                    <a href="@Url.Action("Details", new { id = appt.AppointmentID })" class="btn btn-outline-primary btn-sm px-2.5">
-                                        <i class="bi bi-eye me-1"></i>View
+                                    <a href="@Url.Action("Details", new { id = appt.AppointmentID })" class="btn btn-light btn-sm px-2 border-0 text-primary bg-primary bg-opacity-10" title="View Details">
+                                        <i class="bi bi-eye"></i>
                                     </a>
                                     @if (User.IsInRole("Doctor") && appt.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
                                     {
-                                        <a href="@Url.Action("Workspace", "Consultation", new { id = appt.AppointmentID })" class="btn btn-success btn-sm px-2.5">
-                                            <i class="bi bi-stethoscope me-1"></i>Consult
+                                        <a href="@Url.Action("Workspace", "Consultation", new { id = appt.AppointmentID })" class="btn btn-success btn-sm px-2 border-0 bg-success bg-opacity-10 text-success fw-medium shadow-none" title="Consult Workspace">
+                                            <i class="bi bi-stethoscope"></i> Consult
                                         </a>
                                     }
                                 </div>
@@ -203,22 +185,22 @@
     <!-- Pagination Footer -->
     @if (ViewBag.TotalPages > 1)
     {
-        <div class="card-footer border-0 bg-transparent py-3">
+        <div class="card-footer border-0 bg-white py-3">
             <nav aria-label="Appointments pagination">
                 <ul class="pagination pagination-sm justify-content-center mb-0 gap-1">
                     <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                        <a class="page-link rounded-2" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1, doctorId = ViewBag.DoctorId, patientId = ViewBag.PatientId, status = ViewBag.Status, type = ViewBag.Type, startDate = ViewBag.StartDate, endDate = ViewBag.EndDate, isPriority = ViewBag.IsPriority, searchTerm = ViewBag.SearchTerm })">
+                        <a class="page-link rounded-2 border-0 bg-light text-dark" href="@Url.Action("Index", new { page = ViewBag.CurrentPage - 1, doctorId = ViewBag.DoctorId, patientId = ViewBag.PatientId, status = ViewBag.Status, type = ViewBag.Type, startDate = ViewBag.StartDate, endDate = ViewBag.EndDate, isPriority = ViewBag.IsPriority, searchTerm = ViewBag.SearchTerm })">
                             <i class="bi bi-chevron-left"></i>
                         </a>
                     </li>
                     @for (int p = 1; p <= ViewBag.TotalPages; p++)
                     {
                         <li class="page-item @(ViewBag.CurrentPage == p ? "active" : "")">
-                            <a class="page-link rounded-2" href="@Url.Action("Index", new { page = p, doctorId = ViewBag.DoctorId, patientId = ViewBag.PatientId, status = ViewBag.Status, type = ViewBag.Type, startDate = ViewBag.StartDate, endDate = ViewBag.EndDate, isPriority = ViewBag.IsPriority, searchTerm = ViewBag.SearchTerm })">@p</a>
+                            <a class="page-link rounded-2 border-0 @(ViewBag.CurrentPage == p ? "bg-primary text-white" : "bg-light text-dark")" href="@Url.Action("Index", new { page = p, doctorId = ViewBag.DoctorId, patientId = ViewBag.PatientId, status = ViewBag.Status, type = ViewBag.Type, startDate = ViewBag.StartDate, endDate = ViewBag.EndDate, isPriority = ViewBag.IsPriority, searchTerm = ViewBag.SearchTerm })">@p</a>
                         </li>
                     }
                     <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                        <a class="page-link rounded-2" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, doctorId = ViewBag.DoctorId, patientId = ViewBag.PatientId, status = ViewBag.Status, type = ViewBag.Type, startDate = ViewBag.StartDate, endDate = ViewBag.EndDate, isPriority = ViewBag.IsPriority, searchTerm = ViewBag.SearchTerm })">
+                        <a class="page-link rounded-2 border-0 bg-light text-dark" href="@Url.Action("Index", new { page = ViewBag.CurrentPage + 1, doctorId = ViewBag.DoctorId, patientId = ViewBag.PatientId, status = ViewBag.Status, type = ViewBag.Type, startDate = ViewBag.StartDate, endDate = ViewBag.EndDate, isPriority = ViewBag.IsPriority, searchTerm = ViewBag.SearchTerm })">
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     </li>

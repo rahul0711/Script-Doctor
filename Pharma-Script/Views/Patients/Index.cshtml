@@ -5,35 +5,45 @@
     ViewData["Title"] = "Patient Registry";
 }
 
-<div class="page-title-box">
+<div class="page-title-box d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-        <h4 class="page-title">Patient Registry</h4>
-        <p class="text-muted small mb-0 font-medium">Search, register, and manage electronic health records (EHR) of patients.</p>
+        <h4 class="page-title mb-1">Patient Registry</h4>
+        <p class="text-muted small mb-0">Search, register, and manage electronic health records (EHR) of patients.</p>
     </div>
-    <div>
-        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreatePatient">
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-primary fw-medium px-4 shadow-sm" style="border-radius: 8px;" id="btnCreatePatient">
             <i class="bi bi-plus-lg me-1.5"></i>Register Patient
         </button>
     </div>
 </div>
 
 <div class="table-card mb-4">
-    <div class="table-card-header flex-column flex-md-row gap-3">
-        <h5 class="table-card-title mb-0">EHR Profiles</h5>
+    <div class="table-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 bg-white">
+        <h5 class="table-card-title mb-0"><i class="bi bi-people me-2 text-primary"></i>EHR Profiles</h5>
         
         <!-- Filters Form -->
-        <form method="get" action="@Url.Action("Index")" class="d-flex gap-2">
-            <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Search patient..." value="@ViewBag.SearchTerm" style="width: 220px;" />
-            <select name="branchId" class="form-select form-select-sm" asp-items="@ViewBag.Branches" style="width: 180px;">
+        <form method="get" action="@Url.Action("Index")" class="d-flex flex-wrap gap-2">
+            <div class="input-group input-group-sm shadow-sm" style="width: 220px; border-radius: 6px; overflow: hidden;">
+                <span class="input-group-text bg-light border-light text-muted border-0"><i class="bi bi-search"></i></span>
+                <input type="text" name="searchTerm" class="form-control bg-light border-light border-0 shadow-none" placeholder="Search patient..." value="@ViewBag.SearchTerm" />
+            </div>
+            
+            @if (ViewBag.Organizations != null)
+            {
+                <select name="orgIdFilter" class="form-select form-select-sm bg-light border-light shadow-sm" asp-items="@ViewBag.Organizations" style="width: 180px; border-radius: 6px;">
+                    <option value="">All Organizations</option>
+                </select>
+            }
+            <select name="branchId" class="form-select form-select-sm bg-light border-light shadow-sm" asp-items="@ViewBag.Branches" style="width: 180px; border-radius: 6px;">
                 <option value="">All Branches</option>
             </select>
-            <button type="submit" class="btn btn-primary btn-sm px-2.5"><i class="bi bi-search"></i></button>
-            <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-2.5"><i class="bi bi-arrow-counterclockwise"></i></a>
+            <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm" style="border-radius: 6px;"><i class="bi bi-funnel"></i></button>
+            <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-3 shadow-sm text-secondary" style="border-radius: 6px;"><i class="bi bi-arrow-counterclockwise"></i></a>
         </form>
     </div>
 
     <div class="table-responsive">
-        <table class="table custom-table">
+        <table class="table custom-table align-middle">
             <thead>
                 <tr>
                     <th style="width: 80px;">ID</th>
@@ -42,7 +52,7 @@
                     <th>Gender / Blood</th>
                     <th>Contact details</th>
                     <th class="text-center" style="width: 100px;">Status</th>
-                    <th class="text-end" style="width: 200px;">Actions</th>
+                    <th class="text-end" style="width: 180px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -53,29 +63,31 @@
                         var age = DateTime.Today.Year - item.DateOfBirth.Year;
                         if (item.DateOfBirth.Date > DateTime.Today.AddYears(-age)) age--;
                         <tr>
-                            <td>@item.PatientID</td>
+                            <td class="text-muted small">@item.PatientID</td>
                             <td class="fw-semibold text-dark">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center border" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-weight: 700; font-size: 0.9rem;">
                                         @item.FirstName[0]
                                     </div>
                                     <div>
-                                        <div>@item.FirstName @item.LastName</div>
-                                        <div class="text-muted small" style="font-size: 0.72rem;">@(item.BranchName ?? "N/A")</div>
+                                        <div class="btnDoctorHistory text-primary text-decoration-none" data-id="@item.PatientID" style="cursor:pointer; font-weight:600; font-size:0.9rem;" title="View Doctors Visited">
+                                            @item.FirstName @item.LastName
+                                        </div>
+                                        <div class="text-muted text-truncate mt-0.5" style="font-size: 0.72rem; max-width:180px;"><i class="bi bi-geo-alt me-1 opacity-50"></i>@(item.BranchName ?? "Global")</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="small fw-semibold text-dark">
-                                @item.DateOfBirth.ToString("dd MMM yyyy")
-                                <div class="text-muted small fw-normal" style="font-size: 0.72rem;">@age Years Old</div>
+                            <td class="small text-dark">
+                                <div class="fw-medium">@item.DateOfBirth.ToString("dd MMM yyyy")</div>
+                                <div class="text-muted mt-0.5" style="font-size: 0.72rem;">@age Years Old</div>
                             </td>
                             <td class="small">
-                                <div class="fw-semibold text-secondary">@item.Gender</div>
-                                <div class="text-muted" style="font-size: 0.72rem;">Blood Group: @(item.BloodGroup ?? "Not Set")</div>
+                                <div class="fw-medium text-dark">@item.Gender</div>
+                                <div class="text-muted mt-0.5" style="font-size: 0.72rem;"><i class="bi bi-droplet me-1 text-danger opacity-50"></i>@(item.BloodGroup ?? "Not Set")</div>
                             </td>
                             <td class="small text-secondary">
-                                <div><i class="bi bi-envelope text-muted me-1.5"></i>@item.Email</div>
-                                <div><i class="bi bi-telephone text-muted me-1.5"></i>@item.Phone</div>
+                                <div class="text-truncate" style="max-width:160px;"><i class="bi bi-envelope text-muted me-1.5 opacity-50"></i>@item.Email</div>
+                                <div class="mt-0.5"><i class="bi bi-telephone text-muted me-1.5 opacity-50"></i>@item.Phone</div>
                             </td>
                             <td class="text-center">
                                 <div class="form-check form-switch d-inline-block">
@@ -83,15 +95,17 @@
                                 </div>
                             </td>
                             <td class="text-end">
-                                <a class="btn-action" href="@Url.Action("Details", "Patients", new { id = item.PatientID })" title="Electronic Health Record (EHR) Page">
-                                    <i class="bi bi-card-heading"></i>
-                                </a>
-                                <button class="btn-action btn-action-edit btnEdit" data-id="@item.PatientID" title="Edit Profile">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
-                                <button class="btn-action btn-action-delete btnDelete" data-id="@item.PatientID" title="Delete Profile">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <div class="d-flex justify-content-end gap-1.5">
+                                    <a class="btn btn-light btn-sm text-primary px-2 border-0 bg-primary bg-opacity-10 shadow-none" href="@Url.Action("Details", "Patients", new { id = item.PatientID })" title="Electronic Health Record (EHR) Page">
+                                        <i class="bi bi-card-heading"></i>
+                                    </a>
+                                    <button class="btn btn-light btn-sm text-secondary px-2 border-0 shadow-none btnEdit" data-id="@item.PatientID" title="Edit Profile">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="btn btn-light btn-sm text-danger px-2 border-0 bg-danger bg-opacity-10 shadow-none btnDelete" data-id="@item.PatientID" title="Delete Profile">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -99,7 +113,11 @@
                 else
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted small">No patient profiles found.</td>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="text-muted mb-2"><i class="bi bi-person-x" style="font-size: 3rem;"></i></div>
+                            <h6 class="text-dark">No patient profiles found.</h6>
+                            <p class="text-muted small">Register a new patient or adjust your search filters.</p>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -109,25 +127,25 @@
     <!-- Pagination -->
     @if (ViewBag.TotalPages > 1)
     {
-        <div class="pagination-container">
-            <div class="pagination-info">
+        <div class="card-footer border-0 bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+            <div class="small text-muted fw-medium">
                 Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems records)
             </div>
             <nav aria-label="Page navigation">
-                <ul class="pagination pagination-sm mb-0">
+                <ul class="pagination pagination-sm mb-0 gap-1">
                     <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
+                        <a class="page-link rounded-2 border-0 bg-light text-dark" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
                             <i class="bi bi-chevron-left"></i>
                         </a>
                     </li>
                     @for (int i = 1; i <= ViewBag.TotalPages; i++)
                     {
                         <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = i, pageSize = ViewBag.PageSize })">@i</a>
+                            <a class="page-link rounded-2 border-0 @(ViewBag.CurrentPage == i ? "bg-primary text-white" : "bg-light text-dark")" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = i, pageSize = ViewBag.PageSize })">@i</a>
                         </li>
                     }
                     <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
+                        <a class="page-link rounded-2 border-0 bg-light text-dark" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     </li>
@@ -148,6 +166,22 @@
             <div class="modal-body" id="patientModalBody">
                 <!-- Content loaded dynamically -->
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Doctor History Offcanvas Drawer -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="doctorHistoryDrawer" aria-labelledby="doctorHistoryLabel" style="width: 440px; max-width: 95vw;">
+    <div class="offcanvas-header" style="border-bottom: 1px solid #e2e8f0; padding: 0.9rem 1.25rem;">
+        <h6 class="offcanvas-title fw-semibold" id="doctorHistoryLabel" style="font-size:0.9rem;">
+            <i class="bi bi-person-lines-fill me-2 text-primary"></i>Doctors Visited
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0" id="doctorHistoryBody" style="overflow-y: auto;">
+        <div class="text-center py-5 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+            <p class="small mb-0">Loading history...</p>
         </div>
     </div>
 </div>
@@ -324,6 +358,20 @@
                             }
                         });
                     }
+                });
+            });
+
+            // Open Doctor History Drawer on patient name click
+            var historyDrawer = new bootstrap.Offcanvas(document.getElementById('doctorHistoryDrawer'));
+            $(document).on('click', '.btnDoctorHistory', function () {
+                var id = $(this).data('id');
+                $('#doctorHistoryLabel').html('<i class="bi bi-person-lines-fill me-2 text-primary"></i>Doctors Visited');
+                $('#doctorHistoryBody').html('<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><p class="small mb-0">Loading history...</p></div>');
+                historyDrawer.show();
+                $.get('@Url.Action("DoctorHistory", "Patients")/' + id, function (html) {
+                    $('#doctorHistoryBody').html(html);
+                }).fail(function () {
+                    $('#doctorHistoryBody').html('<div class="text-center py-5 text-danger small"><i class="bi bi-exclamation-circle d-block fs-3 mb-2"></i>Failed to load history.</div>');
                 });
             });
         });

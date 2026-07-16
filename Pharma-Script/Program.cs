@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Pharma_Script.Repositories.Interfaces;
 using Pharma_Script.Repositories.Implementations;
@@ -33,6 +34,7 @@ builder.Services.AddScoped<IPatientProvisioningService, PatientProvisioningServi
 builder.Services.AddScoped<IConsultationSessionService, ConsultationSessionService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
+builder.Services.AddHttpClient<IPaymentService, PaymentService>();
 
 // Configure Cookie Authentication
 // OnRedirectToLogin: when a patient hits a [Authorize(Roles="Patient")] public route,

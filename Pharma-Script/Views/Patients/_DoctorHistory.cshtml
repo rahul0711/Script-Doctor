@@ -1,0 +1,252 @@
+@model Pharma_Script.Models.Patient
+@using Pharma_Script.Models
+@{
+    var appointments = ViewBag.Appointments as List<Appointment> ?? new List<Appointment>();
+    var payments = ViewBag.Payments as List<Payment> ?? new List<Payment>();
+    decimal totalPaid = ViewBag.TotalPaid ?? 0m;
+    // DoctorGroups is a dynamic anonymous list passed via ViewBag
+    dynamic doctorGroups = ViewBag.DoctorGroups;
+    int totalAppts = appointments.Count;
+    int totalDoctors = appointments.Select(a => a.DoctorID).Distinct().Count();
+    int completedCount = appointments.Count(a => a.Status == "Completed");
+}
+
+<style>
+    .patient-panel-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1a2d4f 50%, #1e3a5f 100%);
+        padding: 1.5rem 1.25rem;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .patient-panel-header::before {
+        content: '';
+        position: absolute;
+        top: -50px; right: -50px;
+        width: 180px; height: 180px;
+        background: rgba(99,179,237,0.08);
+        border-radius: 50%;
+    }
+    .patient-avatar-lg {
+        width: 58px; height: 58px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.3);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; font-weight: 700; color: #fff;
+        position: relative; z-index: 1; flex-shrink: 0;
+    }
+    .ph-stat-pill {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        text-align: center;
+    }
+    .ph-stat-val { font-size: 1.2rem; font-weight: 700; color: #fff; line-height: 1; }
+    .ph-stat-lbl { font-size: 0.68rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+    .section-heading {
+        font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+        color: #64748b; padding: 0.9rem 1.25rem 0.45rem; border-bottom: 1px solid #f1f5f9; background: #fff;
+    }
+    .doc-visit-card {
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex; align-items: center; gap: 0.75rem;
+        transition: background 0.15s;
+    }
+    .doc-visit-card:hover { background: #f8fafc; }
+    .doc-circle {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 700; color: #1e40af;
+        flex-shrink: 0;
+    }
+    .doc-name-text { font-size: 0.83rem; font-weight: 600; color: #1e293b; }
+    .doc-sub-text  { font-size: 0.71rem; color: #94a3b8; }
+    .mini-tag {
+        font-size: 0.67rem; font-weight: 600; border-radius: 4px;
+        padding: 0.15em 0.45em;
+    }
+    .tag-blue { background: #dbeafe; color: #1d4ed8; }
+    .tag-green { background: #dcfce7; color: #166534; }
+    .tag-fee { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .appt-panel-row {
+        display: flex; align-items: flex-start; gap: 0.75rem;
+        padding: 0.6rem 1.25rem;
+        border-bottom: 1px solid #f8fafc;
+        transition: background 0.15s;
+    }
+    .appt-panel-row:hover { background: #f8fafc; }
+    .appt-dot {
+        width: 28px; height: 28px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+    }
+    .dot-completed { background: #dcfce7; color: #166534; }
+    .dot-pending   { background: #fef9c3; color: #854d0e; }
+    .dot-approved  { background: #dbeafe; color: #1e40af; }
+    .dot-cancelled { background: #fee2e2; color: #991b1b; }
+    .dot-noshow    { background: #f1f5f9; color: #475569; }
+    .empty-state-sm {
+        text-align: center; padding: 2.5rem 1rem; color: #94a3b8;
+    }
+    .empty-state-sm i { font-size: 2rem; opacity: 0.4; display: block; margin-bottom: 0.5rem; }
+    .empty-state-sm p { font-size: 0.78rem; margin: 0; }
+    .revenue-bar {
+        background: #f8fafc; padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+</style>
+
+<!-- Patient Header -->
+<div class="patient-panel-header">
+    <div class="d-flex align-items-center gap-3 mb-3" style="position:relative;z-index:1;">
+        <div class="patient-avatar-lg">@Model.FirstName[0]</div>
+        <div>
+            <div style="font-size:1.05rem;font-weight:700;color:#fff;">@Model.FirstName @Model.LastName</div>
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.65);margin-top:2px;">
+                @(Model.Gender ?? "—") &bull; @(Model.BloodGroup ?? "Blood N/A") &bull; @Model.DateOfBirth.ToString("dd MMM yyyy")
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Phone))
+            {
+                <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:2px;"><i class="bi bi-telephone me-1"></i>@Model.Phone</div>
+            }
+        </div>
+    </div>
+
+    <!-- Mini stats row -->
+    <div class="row g-2" style="position:relative;z-index:1;">
+        <div class="col-4">
+            <div class="ph-stat-pill">
+                <div class="ph-stat-val">@totalAppts</div>
+                <div class="ph-stat-lbl">Appointments</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="ph-stat-pill">
+                <div class="ph-stat-val">@totalDoctors</div>
+                <div class="ph-stat-lbl">Doctors Seen</div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="ph-stat-pill">
+                <div class="ph-stat-val">@completedCount</div>
+                <div class="ph-stat-lbl">Completed</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Total paid bar -->
+<div class="revenue-bar">
+    <div style="font-size:0.78rem;color:#64748b;"><i class="bi bi-receipt me-1 text-success"></i>Total Amount Paid</div>
+    <div style="font-size:1rem;font-weight:700;color:#059669;">₹@totalPaid.ToString("N2")</div>
+</div>
+
+<!-- Doctors Visited Summary -->
+<div class="section-heading"><i class="bi bi-person-badge me-1"></i>Doctors Visited</div>
+
+@if (doctorGroups != null)
+{
+    bool hasAny = false;
+    foreach (var grp in doctorGroups)
+    {
+        hasAny = true;
+        string docName = grp.DoctorName ?? "Unknown Doctor";
+        string initial = docName.Length > 0 ? docName[0].ToString().ToUpper() : "D";
+        <div class="doc-visit-card">
+            <div class="doc-circle">@initial</div>
+            <div style="flex:1;min-width:0;">
+                <div class="doc-name-text text-truncate">Dr. @docName</div>
+                <div class="doc-sub-text">Last visit: @((DateTime)grp.LastVisit).ToString("dd MMM yyyy")</div>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-1">
+                <span class="mini-tag tag-blue">@grp.AppointmentCount Visit@(grp.AppointmentCount == 1 ? "" : "s")</span>
+                <span class="mini-tag tag-green">@grp.CompletedCount Done</span>
+                <span class="mini-tag tag-fee">₹@((decimal)grp.TotalFee).ToString("N0")</span>
+            </div>
+        </div>
+    }
+    if (!hasAny)
+    {
+        <div class="empty-state-sm">
+            <i class="bi bi-person-x"></i>
+            <p>No doctors visited yet.</p>
+        </div>
+    }
+}
+else
+{
+    <div class="empty-state-sm">
+        <i class="bi bi-person-x"></i>
+        <p>No doctors visited yet.</p>
+    </div>
+}
+
+<!-- Full Appointment Timeline -->
+<div class="section-heading"><i class="bi bi-clock-history me-1"></i>Appointment Timeline (@totalAppts)</div>
+
+@if (appointments.Any())
+{
+    <div style="max-height:350px;overflow-y:auto;">
+        @foreach (var appt in appointments)
+        {
+            var dotCss = appt.Status switch
+            {
+                "Completed" => "dot-completed",
+                "Approved"  => "dot-approved",
+                "Pending"   => "dot-pending",
+                "Cancelled" => "dot-cancelled",
+                _           => "dot-noshow"
+            };
+            var statusColor = appt.Status switch
+            {
+                "Completed" => "#166534",
+                "Approved"  => "#1e40af",
+                "Pending"   => "#854d0e",
+                "Cancelled" => "#991b1b",
+                _           => "#475569"
+            };
+            <div class="appt-panel-row">
+                <div class="appt-dot @dotCss">
+                    <i class="bi bi-@(appt.Status == "Completed" ? "check" : appt.Status == "Cancelled" ? "x" : "clock")"></i>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:0.82rem;font-weight:600;color:#1e293b;" class="text-truncate">
+                        Dr. @(appt.DoctorName ?? "Unknown")
+                    </div>
+                    <div style="font-size:0.71rem;color:#94a3b8;">
+                        @appt.AppointmentDate.ToString("dd MMM yyyy") &bull; 
+                        @appt.StartTime.ToString(@"hh\:mm") – @appt.EndTime.ToString(@"hh\:mm")
+                        &bull; @appt.AppointmentType
+                        @if (!string.IsNullOrEmpty(appt.BranchName))
+                        {
+                            <span>&bull; @appt.BranchName</span>
+                        }
+                    </div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                    <span style="font-size:0.7rem;font-weight:600;color:@statusColor;">@appt.Status</span>
+                    <span style="font-size:0.75rem;font-weight:700;color:#059669;">₹@appt.ConsultationFee.ToString("N0")</span>
+                    @if (!string.IsNullOrEmpty(appt.PaymentStatus))
+                    {
+                        var pyColor = appt.PaymentStatus == "Paid" ? "#166534" : appt.PaymentStatus == "Failed" ? "#991b1b" : "#854d0e";
+                        var pyBg    = appt.PaymentStatus == "Paid" ? "#dcfce7" : appt.PaymentStatus == "Failed" ? "#fee2e2"  : "#fef9c3";
+                        <span style="font-size:0.65rem;font-weight:600;background:@pyBg;color:@pyColor;border-radius:4px;padding:1px 6px;">@appt.PaymentStatus</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="empty-state-sm">
+        <i class="bi bi-calendar-x"></i>
+        <p>No appointments found for this patient.</p>
+    </div>
+}

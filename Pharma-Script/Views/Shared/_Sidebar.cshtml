@@ -4,8 +4,8 @@
 
 <div class="sidebar-wrapper" id="sidebar">
     <div class="sidebar-header">
-        <a href="@Url.Action("Index", "Dashboard")" class="sidebar-logo">
-            <i class="bi bi-heart-pulse-fill"></i>Script<span>India</span>
+        <a href="@Url.Action("Index", "Dashboard")" class="sidebar-logo p-0 border-0" style="display: flex; align-items: center; width: 100%; height: 100%;">
+            <img src="~/assets/Cloud Doctor Logo.png" alt="Cloud Doctor" style="max-height: 52px; max-width: 212px; object-fit: contain; width: 100%; height: auto;" />
         </a>
     </div>
     @{
@@ -178,9 +178,9 @@
     </ul>
     
     <div class="sidebar-user-section">
-        <small class="text-muted d-block uppercase fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">Account Scope</small>
-        <span class="badge bg-light text-dark border py-1.5 px-2.5 rounded text-truncate w-100 text-start d-block" style="font-size: 0.75rem; font-weight: 500;">
-            <i class="bi bi-shield-lock me-1.5 text-primary"></i>@User.GetRoleName()
-        </span>
+        <div class="sidebar-role-badge">
+            <i class="bi bi-shield-check"></i>
+            <span class="text-truncate">@User.GetRoleName()</span>
+        </div>
     </div>
 </div>

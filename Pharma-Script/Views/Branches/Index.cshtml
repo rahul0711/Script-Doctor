@@ -5,29 +5,37 @@
     ViewData["Title"] = "Branches";
 }
 
-<div class="page-title-box">
+<div class="page-title-box d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-        <h4 class="page-title">Branches</h4>
+        <h4 class="page-title mb-1">Branches</h4>
         <p class="text-muted small mb-0 font-medium">Manage clinical branch locations and office nodes.</p>
     </div>
-    <div>
-        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreateBranch">
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-primary fw-medium px-4 shadow-sm" style="border-radius: 8px;" id="btnCreateBranch">
             <i class="bi bi-plus-lg me-1.5"></i>Add Branch
         </button>
     </div>
 </div>
 
-<div class="table-card">
-    <div class="table-card-header flex-column flex-md-row gap-3">
-        <h5 class="table-card-title mb-0">Active branches</h5>
+<div class="table-card mb-4">
+    <div class="table-card-header-premium">
+        <div class="d-flex align-items-center gap-2">
+            <span class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded" style="width: 32px; height: 32px;">
+                <i class="bi bi-geo" style="font-size: 1.1rem;"></i>
+            </span>
+            <h5 class="table-card-title mb-0" style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">Active Branches</h5>
+        </div>
         
         <!-- Search bar -->
-        <form method="get" action="@Url.Action("Index")" class="d-flex gap-2">
-            <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Search branch..." value="@ViewBag.SearchTerm" style="width: 250px;" />
-            <button type="submit" class="btn btn-primary btn-sm px-2.5"><i class="bi bi-search"></i></button>
+        <form method="get" action="@Url.Action("Index")" class="simple-filter-form justify-content-md-end">
+            <div class="filter-input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" name="searchTerm" class="form-control" placeholder="Search branch..." value="@ViewBag.SearchTerm" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-search shadow-sm">Search</button>
             @if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
             {
-                <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-2.5"><i class="bi bi-x-lg"></i></a>
+                <a href="@Url.Action("Index")" class="btn-clear" title="Clear search"><i class="bi bi-x-lg"></i></a>
             }
         </form>
     </div>

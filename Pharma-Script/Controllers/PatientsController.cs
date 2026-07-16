@@ -28,19 +28,23 @@ namespace Pharma_Script.Controllers
         }
 
         // GET: /Patients
-        public async Task<IActionResult> Index(int? branchId, string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(int? orgIdFilter, int? branchId, string searchTerm, int page = 1, int pageSize = 10)
         {
             var isPlatformOwner = User.IsPlatformOwner();
-            var orgId = User.GetOrganizationId();
+            var userOrgId = User.GetOrganizationId();
+            var activeOrgId = isPlatformOwner ? orgIdFilter : userOrgId;
 
             IEnumerable<Branch> branches;
             if (isPlatformOwner)
             {
-                branches = await _uow.Branches.GetAllAsync();
+                var organizations = await _uow.Organizations.GetAllAsync();
+                ViewBag.Organizations = new SelectList(organizations.Where(o => o.IsActive), "OrganizationID", "OrganizationName", orgIdFilter);
+
+                branches = activeOrgId.HasValue ? await _uow.Branches.GetByOrganizationIdAsync(activeOrgId.Value) : await _uow.Branches.GetAllAsync();
             }
-            else if (orgId.HasValue)
+            else if (userOrgId.HasValue)
             {
-                branches = await _uow.Branches.GetByOrganizationIdAsync(orgId.Value);
+                branches = await _uow.Branches.GetByOrganizationIdAsync(userOrgId.Value);
             }
             else
             {
@@ -49,10 +53,11 @@ namespace Pharma_Script.Controllers
 
             ViewBag.Branches = new SelectList(branches.Where(b => b.IsActive == true), "BranchID", "BranchName", branchId);
             ViewBag.SearchTerm = searchTerm;
+            ViewBag.SelectedOrg = orgIdFilter;
             ViewBag.SelectedBranch = branchId;
 
-            var patients = await _uow.Patients.SearchAndPaginateAsync(isPlatformOwner ? null : orgId, branchId, searchTerm, page, pageSize);
-            var totalItems = await _uow.Patients.GetSearchCountAsync(isPlatformOwner ? null : orgId, branchId, searchTerm);
+            var patients = await _uow.Patients.SearchAndPaginateAsync(activeOrgId, branchId, searchTerm, page, pageSize);
+            var totalItems = await _uow.Patients.GetSearchCountAsync(activeOrgId, branchId, searchTerm);
 
             ViewBag.CurrentPage = page;
             ViewBag.PageSize = pageSize;
@@ -84,6 +89,56 @@ namespace Pharma_Script.Controllers
             ViewBag.Documents = documents;
 
             return View(patient);
+        }
+
+        // GET: /Patients/DoctorHistory/5 (Partial view – doctors visited by this patient)
+        [HttpGet]
+        public async Task<IActionResult> DoctorHistory(int id)
+        {
+            var userOrgId = User.GetOrganizationId();
+            var isPlatformOwner = User.IsPlatformOwner();
+
+            var patient = await _uow.Patients.GetPatientDetailsByIdAsync(id, isPlatformOwner ? null : userOrgId);
+            if (patient == null)
+                return NotFound("Patient profile not found.");
+
+            var appointments = (await _uow.Appointments.GetByPatientIdAsync(id, isPlatformOwner ? null : userOrgId)).ToList();
+
+            // Group by doctor and compute per-doctor stats
+            var doctorGroups = appointments
+                .GroupBy(a => a.DoctorID)
+                .Select(g => new
+                {
+                    DoctorID = g.Key,
+                    DoctorName = g.First().DoctorName,
+                    AppointmentCount = g.Count(),
+                    CompletedCount = g.Count(a => a.Status == "Completed"),
+                    TotalFee = g.Sum(a => a.ConsultationFee),
+                    LastVisit = g.Max(a => a.AppointmentDate)
+                })
+                .OrderByDescending(x => x.LastVisit)
+                .ToList();
+
+            // Payments for this patient in the org
+            IEnumerable<Pharma_Script.Models.Payment> payments = new List<Pharma_Script.Models.Payment>();
+            if (userOrgId.HasValue && !isPlatformOwner)
+            {
+                payments = await _uow.Payments.GetByPatientAndOrgAsync(id, userOrgId.Value);
+            }
+            else if (isPlatformOwner && appointments.Any())
+            {
+                // For platform owner, aggregate across all orgs the patient belongs to
+                var orgId = appointments.First().OrganizationID;
+                payments = await _uow.Payments.GetByPatientAndOrgAsync(id, orgId);
+            }
+
+            ViewBag.Patient = patient;
+            ViewBag.Appointments = appointments;
+            ViewBag.DoctorGroups = doctorGroups;
+            ViewBag.Payments = payments.ToList();
+            ViewBag.TotalPaid = payments.Where(p => p.PaymentStatus == "Paid").Sum(p => p.Amount);
+
+            return PartialView("_DoctorHistory", patient);
         }
 
         // GET: /Patients/Create (Partial View Modal)

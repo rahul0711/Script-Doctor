@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
     --tenant-primary: #2563eb;
@@ -6,450 +7,509 @@
     --tenant-primary-soft: color-mix(in srgb, var(--tenant-primary) 10%, white);
     --tenant-secondary-soft: color-mix(in srgb, var(--tenant-secondary) 10%, white);
     --ink: #0f172a;
-    --ink-muted: #64748b;
-    --line: #e5e9f0;
+    --ink-muted: #475569;
+    --line: #e2e8f0;
     --surface: #ffffff;
     --surface-soft: #f8fafc;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --shadow-sm: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.06), 0 8px 10px -6px rgb(0 0 0 / 0.05);
 }
 
 .pub-body {
-    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-family: 'bootstrap-icons';
     color: var(--ink);
     background: var(--surface);
     margin: 0;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 
-.pub-body img { max-width: 100%; }
+.pub-body img {
+    max-width: 100%;
+}
 
 /* ---------- Header ---------- */
 .pub-header {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: saturate(180%) blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid var(--line);
+    transition: all 0.3s ease;
+}
+
+@media (min-width: 1200px) {
+
+    .pub-header .container,
+    .pub-header .container-lg,
+    .pub-header .container-md,
+    .pub-header .container-sm,
+    .pub-header .container-xl {
+        max-width: 1244px;
+    }
 }
 
 .pub-header .navbar-brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     font-weight: 800;
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     color: var(--ink);
+    letter-spacing: -0.02em;
 }
 
 .pub-header .navbar-brand img {
-    height: 38px;
-    width: 38px;
+    height: 64px;
+    width: auto;
+    max-width: 250px;
     object-fit: contain;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
 }
 
 .pub-nav-link {
     font-weight: 600;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     color: var(--ink-muted);
-    padding: 0.5rem 0.9rem !important;
+    padding: 0.5rem 1rem !important;
+    transition: color 0.2s ease;
 }
 
-.pub-nav-link:hover, .pub-nav-link.active {
+.pub-nav-link:hover,
+.pub-nav-link.active {
     color: var(--tenant-primary);
 }
 
+/* ---------- Buttons ---------- */
 .pub-btn-cta {
     background: var(--tenant-primary);
     border: none;
     color: #fff;
     font-weight: 700;
-    padding: 0.6rem 1.4rem;
-    border-radius: 10px;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--tenant-primary) 60%, transparent);
+    padding: 0.75rem 1.75rem;
+    border-radius: var(--radius-md);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--tenant-primary) 30%, transparent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-decoration: none;
 }
 
 .pub-btn-cta:hover {
-    background: color-mix(in srgb, var(--tenant-primary) 88%, black);
+    background: color-mix(in srgb, var(--tenant-primary) 85%, black);
     color: #fff;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px color-mix(in srgb, var(--tenant-primary) 40%, transparent);
 }
 
 .pub-btn-outline {
     border: 1.5px solid var(--line);
     color: var(--ink);
     font-weight: 600;
-    border-radius: 10px;
-    padding: 0.55rem 1.3rem;
+    border-radius: var(--radius-md);
+    padding: 0.7rem 1.6rem;
     background: #fff;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .pub-btn-outline:hover {
     border-color: var(--tenant-primary);
     color: var(--tenant-primary);
+    background: var(--tenant-primary-soft);
 }
 
 /* ---------- Sections ---------- */
-.pub-section { padding: 5rem 0; }
-.pub-section-soft { background: var(--surface-soft); }
-.pub-section-tight { padding: 3.5rem 0; }
+.pub-section {
+    padding: 4rem 0;
+}
+
+.pub-section-soft {
+    background: var(--surface-soft);
+}
+
+.pub-section-tight {
+    padding: 4rem 0;
+}
 
 .pub-eyebrow {
     color: var(--tenant-primary);
     font-weight: 700;
-    font-size: 0.8rem;
-    letter-spacing: 0.06em;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.5rem;
 }
 
 .pub-heading {
     font-weight: 800;
-    letter-spacing: -0.02em;
-    font-size: 2.1rem;
-    margin-bottom: 0.5rem;
+    letter-spacing: -0.03em;
+    font-size: clamp(2.2rem, 5vw, 3rem);
+    line-height: 1.15;
+    margin-bottom: 1rem;
+    color: var(--ink);
 }
 
 .pub-subheading {
     color: var(--ink-muted);
-    font-size: 1.05rem;
-    max-width: 640px;
-}
-
-/* ---------- Hero ---------- */
-.pub-hero {
-    position: relative;
-    padding: 5.5rem 0;
-    background: linear-gradient(160deg, var(--tenant-primary-soft), #ffffff 60%);
-    overflow: hidden;
-}
-
-.pub-hero-title {
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    font-size: clamp(2rem, 4vw, 3.1rem);
-    line-height: 1.1;
-}
-
-.pub-hero-subtitle {
-    color: var(--ink-muted);
     font-size: 1.15rem;
-    max-width: 560px;
-    margin: 1.25rem 0 2rem;
+    max-width: 680px;
+    line-height: 1.6;
 }
 
-.pub-hero-image {
-    border-radius: 24px;
-    box-shadow: 0 30px 60px -20px rgba(15,23,42,0.25);
-}
-
-/* ---------- Quick Appointment Bar ---------- */
-.pub-quickbar {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    box-shadow: 0 20px 45px -25px rgba(15,23,42,0.25);
-    padding: 1.5rem;
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 5;
-}
-
-/* ---------- Department pills ---------- */
-.pub-dept-pill {
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 1.25rem 1rem;
-    text-align: center;
+/* ---------- Search & Specializations ---------- */
+.pub-search-container {
     background: #fff;
-    height: 100%;
-    transition: all 0.15s ease;
-    text-decoration: none;
-    color: var(--ink);
-    display: block;
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--line);
+    margin-top: 3rem;
+    margin-bottom: 4rem;
+    position: relative;
+    z-index: 10;
 }
 
-.pub-dept-pill:hover {
+.pub-search-input {
+    border: 2px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem 1.25rem 3.5rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    width: 100%;
+    transition: all 0.2s ease;
+    background: var(--surface-soft);
+}
+
+.pub-search-input:focus {
+    outline: none;
     border-color: var(--tenant-primary);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px -14px rgba(15,23,42,0.2);
+    background: #fff;
+    box-shadow: 0 0 0 4px var(--tenant-primary-soft);
 }
 
-.pub-dept-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: var(--tenant-primary-soft);
-    color: var(--tenant-primary);
+.pub-search-icon {
+    position: absolute;
+    left: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.3rem;
+    color: var(--ink-muted);
+}
+
+.pub-chips-container {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    margin: 0 auto 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
 }
 
-/* ---------- Doctor cards ---------- */
+.pub-chip {
+    padding: 0.6rem 1.25rem;
+    border-radius: 100px;
+    background: var(--surface-soft);
+    color: var(--ink-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.pub-chip:hover,
+.pub-chip.active {
+    background: var(--tenant-primary);
+    color: #fff;
+    border-color: var(--tenant-primary);
+    box-shadow: 0 4px 10px color-mix(in srgb, var(--tenant-primary) 30%, transparent);
+}
+
+/* ---------- Doctor Cards ---------- */
 .pub-doctor-card {
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
     background: #fff;
     height: 100%;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .pub-doctor-card:hover {
-    box-shadow: 0 20px 40px -22px rgba(15,23,42,0.25);
-    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--line) 50%, var(--tenant-primary));
 }
 
 .pub-doctor-photo {
     width: 100%;
-    height: 220px;
+    height: 240px;
     object-fit: cover;
     background: var(--surface-soft);
 }
 
-.pub-doctor-body { padding: 1.1rem 1.25rem 1.25rem; }
-.pub-doctor-name { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.15rem; }
-.pub-doctor-meta { color: var(--ink-muted); font-size: 0.85rem; }
-
-.pub-fee-badge {
-    background: var(--tenant-secondary-soft);
-    color: var(--tenant-secondary);
-    font-weight: 700;
-    font-size: 0.8rem;
-    border-radius: 8px;
-    padding: 0.25rem 0.6rem;
-}
-
-/* ---------- Service cards ---------- */
-.pub-service-card {
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: #fff;
-    height: 100%;
+.pub-doctor-body {
     padding: 1.5rem;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.pub-service-card:hover {
-    box-shadow: 0 20px 40px -22px rgba(15,23,42,0.2);
-    transform: translateY(-2px);
+.pub-doctor-name {
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.01em;
 }
 
-.pub-service-image {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 12px;
+.pub-doctor-meta {
+    color: var(--tenant-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
     margin-bottom: 1rem;
 }
 
+.pub-badge {
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 100px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.pub-badge-available {
+    background: #dcfce7;
+    border-color: #bbf7d0;
+    color: #166534;
+}
+
+.pub-doctor-fees {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+}
+
+.pub-fee-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.pub-fee-label {
+    font-size: 0.7rem;
+    color: var(--ink-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.pub-fee-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+/* ---------- Services & About Cards ---------- */
+.pub-service-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: #fff;
+    height: 100%;
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.pub-service-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
+    border-color: var(--tenant-primary-soft);
+}
+
 .pub-service-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-md);
     background: var(--tenant-primary-soft);
     color: var(--tenant-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
 }
 
-/* ---------- Why Choose Us ---------- */
-.pub-stat {
-    text-align: center;
-    padding: 1.5rem;
-}
-
-.pub-stat-value {
-    font-weight: 800;
-    font-size: 2.2rem;
-    color: var(--tenant-primary);
-}
-
-.pub-stat-label {
-    color: var(--ink-muted);
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-/* ---------- Gallery ---------- */
-.pub-gallery-item {
-    border-radius: 14px;
-    overflow: hidden;
-    aspect-ratio: 4/3;
-}
-
-.pub-gallery-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.pub-gallery-item:hover img {
-    transform: scale(1.05);
-}
-
-/* ---------- FAQ ---------- */
-.pub-accordion .accordion-item {
-    border: 1px solid var(--line);
-    border-radius: 14px !important;
-    margin-bottom: 0.75rem;
-    overflow: hidden;
-}
-
-.pub-accordion .accordion-button {
-    font-weight: 700;
+/* ---------- Contact Section ---------- */
+.pub-contact-form {
     background: #fff;
-}
-
-.pub-accordion .accordion-button:not(.collapsed) {
-    color: var(--tenant-primary);
-    background: var(--tenant-primary-soft);
-    box-shadow: none;
-}
-
-.pub-accordion .accordion-button:focus { box-shadow: none; }
-
-/* ---------- Contact CTA ---------- */
-.pub-contact-cta {
-    background: linear-gradient(135deg, var(--tenant-primary), color-mix(in srgb, var(--tenant-primary) 60%, var(--tenant-secondary)));
-    border-radius: 24px;
-    color: #fff;
+    border-radius: var(--radius-xl);
     padding: 3rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--line);
 }
 
-.pub-contact-cta .btn {
+.pub-input {
+    border: 2px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: var(--surface-soft);
+}
+
+.pub-input:focus {
     background: #fff;
-    color: var(--tenant-primary);
-    font-weight: 700;
-    border-radius: 10px;
+    border-color: var(--tenant-primary);
+    box-shadow: 0 0 0 4px var(--tenant-primary-soft);
+    outline: none;
 }
 
 /* ---------- Footer ---------- */
 .pub-footer {
-    background: #0f172a;
-    color: #cbd5e1;
-    padding: 3.5rem 0 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid var(--line);
+    padding: 5rem 0 2rem;
 }
 
 .pub-footer h6 {
-    color: #fff;
-    font-weight: 700;
-    margin-bottom: 1rem;
+    color: var(--ink);
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
 }
 
 .pub-footer a {
-    color: #cbd5e1;
+    color: var(--ink-muted);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 500;
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s ease;
 }
 
-.pub-footer a:hover { color: #fff; }
+.pub-footer a:hover {
+    color: var(--tenant-primary);
+}
 
 .pub-footer-social a {
     display: inline-flex;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.08);
+    background: #fff;
+    border: 1px solid var(--line);
     align-items: center;
     justify-content: center;
     margin-right: 0.5rem;
+    color: var(--ink);
+}
+
+.pub-footer-social a:hover {
+    background: var(--tenant-primary-soft);
+    color: var(--tenant-primary);
+    border-color: var(--tenant-primary-soft);
 }
 
 .pub-footer-bottom {
-    border-top: 1px solid rgba(255,255,255,0.1);
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    font-size: 0.82rem;
-    color: #94a3b8;
+    border-top: 1px solid var(--line);
+    margin-top: 4rem;
+    padding-top: 2rem;
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+    font-weight: 500;
 }
 
 /* ---------- Mobile ---------- */
 @media (max-width: 767.98px) {
-    .pub-hero { padding: 3rem 0; text-align: center; }
-    .pub-hero-subtitle { margin-left: auto; margin-right: auto; }
-    .pub-section { padding: 3rem 0; }
-    .pub-section-tight { padding: 2.5rem 0; }
+    .pub-section {
+        padding: 4rem 0;
+    }
 
-    .pub-heading { font-size: 1.65rem; }
-    .pub-subheading { font-size: 0.98rem; }
+    .pub-search-container {
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
 
-    .pub-doctor-photo { height: 190px; }
-    .pub-doctor-body { padding: 1rem; }
+    .pub-search-input {
+        padding-left: 3rem;
+        font-size: 1rem;
+    }
 
-    .pub-service-card { padding: 1.25rem; }
-    .pub-contact-cta { padding: 2rem 1.5rem; }
+    .pub-heading {
+        font-size: 1.8rem;
+    }
 
-    .pub-stat { padding: 1rem 0.5rem; }
-    .pub-stat-value { font-size: 1.7rem; }
-
-    .pub-dept-pill { padding: 1rem 0.5rem; }
-
-    .pub-quickbar { text-align: center; }
-    .pub-quickbar .pub-btn-cta { margin-top: 0.5rem; }
+    .pub-contact-form {
+        padding: 1.5rem;
+    }
 }
 
-/* ---------- Consultation Type Cards ---------- */
+/* ==========================================================
+   PATIENT PORTAL & CONSULTATION
+   ========================================================== */
 .consult-type-card {
     position: relative;
     border: 2px solid var(--line);
-    border-radius: 16px;
-    padding: 1.4rem 1rem;
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1rem;
     text-align: center;
     cursor: pointer;
     background: #fff;
-    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
 }
 
 .consult-type-card:hover {
     border-color: var(--tenant-primary);
-    box-shadow: 0 6px 24px -8px rgba(0,0,0,0.12);
+    box-shadow: var(--shadow-md);
     transform: translateY(-2px);
 }
 
 .consult-type-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 14px;
-    background: var(--tenant-primary-soft, #eef2ff);
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    background: var(--tenant-primary-soft);
     color: var(--tenant-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    margin: 0 auto 0.75rem;
-    transition: background 0.2s ease, color 0.2s ease;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+    transition: all 0.2s ease;
 }
 
 .consult-type-fee {
-    font-size: 0.82rem;
-    color: #64748b;
-    margin-top: 0.25rem;
-    transition: color 0.2s ease;
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+    margin-top: 0.5rem;
+    font-weight: 600;
 }
 
-/* Selected / active state */
 .consult-type-card.consult-type-selected {
     border-color: var(--tenant-primary);
     background: var(--tenant-primary);
-    box-shadow: 0 8px 28px -6px rgba(0,0,0,0.25);
-    transform: translateY(-3px);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--tenant-primary) 30%, transparent);
+    transform: translateY(-4px);
     color: #fff;
 }
 
 .consult-type-card.consult-type-selected .consult-type-icon {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.2);
     color: #fff;
 }
 
@@ -458,26 +518,22 @@
 }
 
 .consult-type-card.consult-type-selected .consult-type-fee {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
 }
 
-/* ==========================================================
-   PATIENT PORTAL — Appointment Cards
-   ========================================================== */
 .pub-appt-card {
     border: 1px solid var(--line);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     background: #fff;
-    padding: 1.25rem 1.5rem;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
 }
 
 .pub-appt-card:hover {
-    box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.2);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
 }
 
-/* Status badges */
 .pub-badge-approved,
 .pub-badge-pending,
 .pub-badge-completed,
@@ -486,36 +542,58 @@
 .pub-badge-prescription {
     display: inline-flex;
     align-items: center;
-    padding: 0.3rem 0.75rem;
-    border-radius: 50px;
-    font-size: 0.78rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
     font-weight: 700;
     white-space: nowrap;
 }
 
-.pub-badge-approved  { background: #d1fae5; color: #065f46; }
-.pub-badge-completed { background: #dbeafe; color: #1d4ed8; }
+.pub-badge-approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.pub-badge-completed {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
 .pub-badge-cancelled,
-.pub-badge-rejected  { background: #fee2e2; color: #991b1b; }
-.pub-badge-pending   { background: #fef3c7; color: #92400e; }
-.pub-badge-prescription { background: var(--tenant-primary-soft); color: var(--tenant-primary); }
+.pub-badge-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
 
-/* Generic badge for use with dynamic status names (pub-badge-{status.ToLower()}) */
-.pub-badge-rescheduled { background: #ede9fe; color: #6d28d9; }
-.pub-badge-no { background: #f1f5f9; color: #475569; } /* "No Show" */
+.pub-badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
 
-/* ==========================================================
-   PATIENT PORTAL — Medical Timeline
-   ========================================================== */
+.pub-badge-prescription {
+    background: var(--tenant-primary-soft);
+    color: var(--tenant-primary);
+}
+
+.pub-badge-rescheduled {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+.pub-badge-no {
+    background: #f1f5f9;
+    color: #475569;
+}
+
 .pub-timeline {
     position: relative;
-    padding-left: 2rem;
+    padding-left: 2.5rem;
 }
 
 .pub-timeline::before {
     content: '';
     position: absolute;
-    left: 0.55rem;
+    left: 0.75rem;
     top: 0.5rem;
     bottom: 0.5rem;
     width: 2px;
@@ -525,15 +603,15 @@
 
 .pub-timeline-item {
     position: relative;
-    margin-bottom: 2.5rem;
+    margin-bottom: 3rem;
 }
 
 .pub-timeline-dot {
     position: absolute;
-    left: -1.6rem;
-    top: 0.35rem;
-    width: 14px;
-    height: 14px;
+    left: -2.1rem;
+    top: 0.25rem;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: var(--tenant-primary);
     border: 3px solid #fff;
@@ -541,29 +619,24 @@
 }
 
 .pub-timeline-date {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     font-weight: 700;
     color: var(--tenant-primary);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
 }
 
-.pub-timeline-content { /* wraps the card */ }
-
-/* ==========================================================
-   PATIENT PORTAL — Medicine List
-   ========================================================== */
 .pub-medicine-list {
     background: var(--surface-soft);
-    border-radius: 12px;
-    padding: 0.75rem 1rem;
-    margin-top: 0.5rem;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    margin-top: 0.75rem;
 }
 
 .pub-medicine-item {
-    padding: 0.25rem 0;
-    font-size: 0.88rem;
+    padding: 0.5rem 0;
+    font-size: 0.95rem;
     border-bottom: 1px solid var(--line);
 }
 
@@ -571,22 +644,19 @@
     border-bottom: none;
 }
 
-/* ==========================================================
-   PATIENT PORTAL — Nav avatar button & dropdown
-   ========================================================== */
 .pub-patient-avatar-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
     background: var(--tenant-primary-soft);
     color: var(--tenant-primary);
-    border: 1.5px solid color-mix(in srgb, var(--tenant-primary) 25%, transparent);
-    border-radius: 50px;
-    padding: 0.45rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--tenant-primary) 20%, transparent);
+    border-radius: 100px;
+    padding: 0.5rem 1.25rem;
     font-weight: 700;
-    font-size: 0.88rem;
+    font-size: 0.95rem;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition: all 0.2s ease;
 }
 
 .pub-patient-avatar-btn:hover,
@@ -597,26 +667,26 @@
     outline: none;
 }
 
-/* Remove Bootstrap default dropdown arrow styling */
 .pub-patient-avatar-btn::after {
-    margin-left: 0.3rem;
-    opacity: 0.6;
+    margin-left: 0.4rem;
+    opacity: 0.7;
 }
 
 .pub-patient-dropdown {
-    border-radius: 16px;
+    border-radius: var(--radius-md);
     border: 1px solid var(--line);
-    min-width: 200px;
-    padding: 0.25rem 0;
+    box-shadow: var(--shadow-lg);
+    min-width: 220px;
+    padding: 0.5rem 0;
     overflow: hidden;
 }
 
 .pub-patient-dropdown .dropdown-item {
-    font-size: 0.88rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    padding: 0.55rem 1.1rem;
+    padding: 0.65rem 1.25rem;
     color: var(--ink);
-    transition: background 0.1s ease;
+    transition: background 0.15s ease;
 }
 
 .pub-patient-dropdown .dropdown-item:hover {
@@ -628,14 +698,3 @@
     background: #fee2e2;
     color: #991b1b;
 }
-
-/* ==========================================================
-   MOBILE — Patient Portal responsive tweaks
-   ========================================================== */
-@media (max-width: 767.98px) {
-    .pub-timeline { padding-left: 1.25rem; }
-    .pub-timeline::before { left: 0.3rem; }
-    .pub-timeline-dot { left: -1.1rem; }
-    .pub-appt-card { padding: 1rem; }
-}
-

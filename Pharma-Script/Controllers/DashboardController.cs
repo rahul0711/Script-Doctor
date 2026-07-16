@@ -87,12 +87,24 @@ namespace Pharma_Script.Controllers
                     startDate: null, endDate: null,
                     isPriority: null, searchTerm: null);
 
+                // Current calendar month's appointments - feeds the mini calendar (day highlighting +
+                // click-to-filter) and the "next appointment" widget when it falls after today.
+                var monthStart = new DateTime(today.Year, today.Month, 1);
+                var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+                var monthAppointments = (await _uow.Appointments.SearchAndPaginateAsync(
+                    orgId: null, branchId: null, doctorId: doctorId, patientId: null,
+                    status: null, type: null,
+                    startDate: monthStart, endDate: monthEnd,
+                    isPriority: null, searchTerm: null,
+                    page: 1, pageSize: 500)).ToList();
+
                 ViewBag.Doctor               = doctor;
                 ViewBag.TodayAppointments    = todayAppointments;
                 ViewBag.TodayCount           = todayAppointments.Count;
                 ViewBag.UpcomingCount        = upcomingAppointments;
                 ViewBag.PendingCount         = pendingCount;
                 ViewBag.CompletedCount       = completedCount;
+                ViewBag.MonthAppointments    = monthAppointments;
 
                 return View("DoctorDashboard");
             }
@@ -103,6 +115,8 @@ namespace Pharma_Script.Controllers
             int deptsCount   = 0;
             int usersCount   = 0;
             int specsCount   = 0;
+            int doctorsCount = 0;
+            int patientsCount = 0;
 
             if (isPlatformOwner)
             {
@@ -117,6 +131,9 @@ namespace Pharma_Script.Controllers
 
                 var userList = await _uow.Users.GetAllAsync();
                 usersCount = userList.Count();
+                
+                doctorsCount = await _uow.Doctors.GetSearchCountAsync(null, null, null, null, null, string.Empty);
+                patientsCount = await _uow.Patients.GetSearchCountAsync(null, null, string.Empty);
             }
             else if (orgId.HasValue)
             {
@@ -130,6 +147,9 @@ namespace Pharma_Script.Controllers
 
                 var userList = await _uow.Users.GetByOrganizationIdAsync(orgId.Value);
                 usersCount = userList.Count();
+                
+                doctorsCount = await _uow.Doctors.GetSearchCountAsync(orgId.Value, null, null, null, null, string.Empty);
+                patientsCount = await _uow.Patients.GetSearchCountAsync(orgId.Value, null, string.Empty);
             }
 
             var specList = await _uow.Specializations.GetAllAsync();
@@ -140,6 +160,8 @@ namespace Pharma_Script.Controllers
             ViewBag.DeptsCount    = deptsCount;
             ViewBag.UsersCount    = usersCount;
             ViewBag.SpecsCount    = specsCount;
+            ViewBag.DoctorsCount  = doctorsCount;
+            ViewBag.PatientsCount = patientsCount;
 
             return View();
         }

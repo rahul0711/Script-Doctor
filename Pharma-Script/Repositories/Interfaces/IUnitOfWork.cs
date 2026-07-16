@@ -12,6 +12,7 @@ namespace Pharma_Script.Repositories.Interfaces
         IUserRepository Users { get; }
         ISpecializationRepository Specializations { get; }
         IDoctorRepository Doctors { get; }
+        IDoctorPaymentGatewayRepository DoctorPaymentGateways { get; }
         IDoctorAvailabilityRepository DoctorAvailabilities { get; }
         IDoctorLeaveRepository DoctorLeaves { get; }
         IReceptionistRepository Receptionists { get; }

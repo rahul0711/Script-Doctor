@@ -7,17 +7,19 @@
     var slug = org.OrganizationSlug;
     string PubUrl(string path) => $"/{slug}/{path}".TrimEnd('/');
     var primaryHero = Model.HeroSections.FirstOrDefault();
-    string Excerpt(string? text, int len = 110) =>
-        string.IsNullOrWhiteSpace(text) ? "" : (text.Length > len ? text.Substring(0, len).TrimEnd() + "…" : text);
 }
 
-<!-- Doctors (first thing visitors see) -->
-<section class="pub-section-tight pub-section-soft">
+
+
+<!-- Featured Doctors Section -->
+<section class="pub-section pub-section-soft" id="doctors">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="pub-eyebrow">Welcome to @(cms?.WebsiteTitle ?? org.OrganizationName)</span>
-            <h1 class="pub-heading mt-2">@(primaryHero?.Title ?? "Meet Our Doctors")</h1>
-            <p class="pub-subheading mx-auto">@(primaryHero?.Subtitle ?? "Book appointments with trusted, verified specialists - all in one place.")</p>
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <span class="pub-eyebrow">Our Specialists</span>
+                <h2 class="pub-heading mb-0">Featured Doctors</h2>
+            </div>
+            <a href="@PubUrl("doctors")" class="pub-btn-outline d-none d-md-flex">View All Doctors <i class="bi bi-arrow-right ms-2"></i></a>
         </div>
 
         @if (Model.FeaturedDoctors.Any())
@@ -25,110 +27,189 @@
             <div class="row g-4">
                 @foreach (var doc in Model.FeaturedDoctors)
                 {
-                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                        <div class="pub-doctor-card h-100 d-flex flex-column">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="pub-doctor-card d-flex flex-column">
                             @if (!string.IsNullOrEmpty(doc.ProfileImage))
                             {
-                                <img src="@doc.ProfileImage" alt="Dr. @doc.FirstName @doc.LastName" class="pub-doctor-photo" loading="eager" />
+                                <img src="@doc.ProfileImage" alt="Dr. @doc.FirstName @doc.LastName" class="pub-doctor-photo" loading="lazy" />
                             }
                             else
                             {
                                 <div class="pub-doctor-photo d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-person-badge" style="font-size:3rem;color:var(--ink-muted);"></i>
+                                    <i class="bi bi-person-fill text-secondary" style="font-size:5rem; opacity:0.2;"></i>
                                 </div>
                             }
+                            
                             <div class="pub-doctor-body d-flex flex-column flex-grow-1">
-                                <div class="pub-doctor-name">Dr. @doc.FirstName @doc.LastName</div>
-                                <div class="pub-doctor-meta">@doc.DepartmentName &middot; @doc.ExperienceYears yrs</div>
-
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h3 class="pub-doctor-name">Dr. @doc.FirstName @doc.LastName</h3>
+                                        <div class="pub-doctor-meta">
+                                            @(doc.Qualification ?? doc.DepartmentName) &middot; @doc.ExperienceYears yrs exp.
+                                        </div>
+                                    </div>
+                                    <div class="pub-badge pub-badge-available">
+                                        <i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> Today
+                                    </div>
+                                </div>
+                                
                                 @if (doc.SpecializationNames.Any())
                                 {
-                                    <div class="mt-2 mb-1">
+                                    <div class="mb-3">
                                         @foreach (var spec in doc.SpecializationNames.Take(2))
                                         {
-                                            <span class="badge rounded-pill text-bg-light border me-1 mb-1 small">@spec</span>
+                                            <span class="badge rounded-pill bg-light text-dark border me-1 fw-normal">@spec</span>
                                         }
                                     </div>
                                 }
 
-                                @if (!string.IsNullOrWhiteSpace(doc.Biography))
-                                {
-                                    <p class="text-muted small mb-2">@Excerpt(doc.Biography)</p>
-                                }
+                                <div class="pub-doctor-fees mt-auto">
+                                    @if (doc.VideoConsultationFee > 0)
+                                    {
+                                        <div class="pub-fee-item">
+                                            <span class="pub-fee-label"><i class="bi bi-camera-video me-1"></i>Video</span>
+                                            <span class="pub-fee-value">₹@doc.VideoConsultationFee</span>
+                                        </div>
+                                    }
+                                    @if (doc.VoiceConsultationFee > 0)
+                                    {
+                                        <div class="pub-fee-item">
+                                            <span class="pub-fee-label"><i class="bi bi-telephone me-1"></i>Voice</span>
+                                            <span class="pub-fee-value">₹@doc.VoiceConsultationFee</span>
+                                        </div>
+                                    }
+                                    @if (doc.ConsultationFee > 0)
+                                    {
+                                        <div class="pub-fee-item">
+                                            <span class="pub-fee-label"><i class="bi bi-building me-1"></i>Clinic</span>
+                                            <span class="pub-fee-value">₹@doc.ConsultationFee</span>
+                                        </div>
+                                    }
+                                </div>
 
-                                <div class="mt-auto">
-                                    <span class="pub-fee-badge d-inline-block mb-2">₹@(Math.Min(doc.VideoConsultationFee, doc.VoiceConsultationFee)) onwards</span>
-                                    <div class="d-flex gap-2">
-                                        <a href="@PubUrl($"doctors/{doc.DoctorID}")" class="pub-btn-outline btn-sm flex-fill text-center">View Profile</a>
-                                        <a href="@PubUrl($"doctors/{doc.DoctorID}/book")" class="pub-btn-cta btn-sm flex-fill text-center">Book</a>
-                                    </div>
+                                <div class="d-flex gap-2">
+                                    <a href="@PubUrl($"doctors/{doc.DoctorID}")" class="pub-btn-outline flex-fill" style="padding: 0.6rem 1rem;">View Profile</a>
+                                    <a href="@PubUrl($"doctors/{doc.DoctorID}/book")" class="pub-btn-cta flex-fill" style="padding: 0.6rem 1rem;">Book</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 }
             </div>
-            <div class="text-center mt-4">
-                <a href="@PubUrl("doctors")" class="pub-btn-outline">View All Doctors <i class="bi bi-arrow-right ms-1"></i></a>
+            <div class="text-center mt-5 d-md-none">
+                <a href="@PubUrl("doctors")" class="pub-btn-outline w-100">View All Doctors</a>
             </div>
         }
         else
         {
-            <div class="text-center text-muted">Our doctor listings will be available here shortly.</div>
+            <div class="text-center text-muted p-5 bg-white rounded shadow-sm">
+                <i class="bi bi-calendar-x fs-1 text-secondary mb-3"></i>
+                <p>Our doctor listings will be available here shortly.</p>
+            </div>
         }
     </div>
 </section>
 
-<!-- Quick Appointment CTA -->
-<div class="container">
-    <div class="pub-quickbar">
-        <div class="row align-items-center g-3">
-            <div class="col-12 col-md-8">
-                <h5 class="mb-1 fw-bold">Ready to see a doctor?</h5>
-                <p class="mb-0 text-muted small">Search by specialty or browse our full list of doctors to book an appointment in minutes.</p>
+
+<!-- Search & Specializations Filter -->
+<section class="pub-section" style=" padding-bottom:3rem;">
+    <div class="container">
+        <div class="pub-search-container">
+            <h2 class="pub-heading text-center mb-4">Find & Book Top Doctors</h2>
+            <div class="position-relative">
+                <i class="bi bi-search pub-search-icon"></i>
+                <input type="text" class="pub-search-input" id="doctorSearch" placeholder="Search Doctor, Specialty or Symptoms..." />
             </div>
-            <div class="col-12 col-md-4 text-md-end">
-                <a href="@PubUrl("doctors")" class="pub-btn-cta w-100 w-md-auto d-inline-block text-center">
-                    <i class="bi bi-calendar-check me-1"></i>Book Appointment
-                </a>
+            
+            <div class="pub-chips-container justify-content-center">
+                <a href="@PubUrl("doctors")" class="pub-chip active">All</a>
+                @foreach (var dept in Model.Departments.Take(8))
+                {
+                    <a href="@PubUrl($"doctors?departmentId={dept.DepartmentID}")" class="pub-chip">@dept.DepartmentName</a>
+                }
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<!-- About -->
+
+
+
+<!-- Services Section -->
+@if (Model.Services.Any())
+{
+    <section class="pub-section" id="services">
+        <div class="container">
+            <div class="text-center mb-5">
+                <span class="pub-eyebrow">Excellence in Healthcare</span>
+                <h2 class="pub-heading">Our Services</h2>
+            </div>
+            
+            <div class="row g-4">
+                @foreach (var svc in Model.Services)
+                {
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <div class="pub-service-card">
+                            <div class="pub-service-icon">
+                                <!-- Fallback icon logic if needed, or static for premium feel -->
+                                @if(svc.ServiceName.Contains("Video", StringComparison.OrdinalIgnoreCase)) { <i class="bi bi-camera-video"></i> }
+                                else if(svc.ServiceName.Contains("Voice", StringComparison.OrdinalIgnoreCase)) { <i class="bi bi-telephone"></i> }
+                                else if(svc.ServiceName.Contains("Clinic", StringComparison.OrdinalIgnoreCase)) { <i class="bi bi-hospital"></i> }
+                                else if(svc.ServiceName.Contains("Prescription", StringComparison.OrdinalIgnoreCase)) { <i class="bi bi-file-medical"></i> }
+                                else if(svc.ServiceName.Contains("Report", StringComparison.OrdinalIgnoreCase)) { <i class="bi bi-clipboard2-pulse"></i> }
+                                else { <i class="bi bi-heart-pulse"></i> }
+                            </div>
+                            <h4 class="fw-bold mb-3">@svc.ServiceName</h4>
+                            <p class="text-muted mb-0">@svc.Description</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- About Section -->
 @if (!string.IsNullOrWhiteSpace(cms?.AboutUs) || !string.IsNullOrWhiteSpace(cms?.Mission) || !string.IsNullOrWhiteSpace(cms?.Vision))
 {
-    <section class="pub-section" id="about">
+    <section class="pub-section pub-section-soft" id="about">
         <div class="container">
-            <div class="row g-5 align-items-start">
+            <div class="row g-5 align-items-center">
                 <div class="col-lg-6">
-                    <span class="pub-eyebrow">About Us</span>
-                    <h2 class="pub-heading mt-2">Caring for you and your family</h2>
+                    <span class="pub-eyebrow">About Hospital</span>
+                    <h2 class="pub-heading mb-4">Caring for you and your family</h2>
                     @if (!string.IsNullOrWhiteSpace(cms?.AboutUs))
                     {
-                        <p class="pub-subheading">@cms.AboutUs</p>
+                        <p class="pub-subheading mb-0 text-muted">@cms.AboutUs</p>
                     }
                 </div>
                 <div class="col-lg-6">
-                    <div class="row g-3">
+                    <div class="row g-4">
                         @if (!string.IsNullOrWhiteSpace(cms?.Mission))
                         {
                             <div class="col-12">
-                                <div class="pub-service-card">
-                                    <div class="pub-service-icon"><i class="bi bi-bullseye"></i></div>
-                                    <h6 class="fw-bold">Our Mission</h6>
-                                    <p class="text-muted small mb-0">@cms.Mission</p>
+                                <div class="bg-white p-4 rounded-4 shadow-sm border">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="text-primary fs-2 lh-1"><i class="bi bi-bullseye"></i></div>
+                                        <div>
+                                            <h5 class="fw-bold mb-2">Our Mission</h5>
+                                            <p class="text-muted mb-0">@cms.Mission</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         }
                         @if (!string.IsNullOrWhiteSpace(cms?.Vision))
                         {
                             <div class="col-12">
-                                <div class="pub-service-card">
-                                    <div class="pub-service-icon"><i class="bi bi-eye"></i></div>
-                                    <h6 class="fw-bold">Our Vision</h6>
-                                    <p class="text-muted small mb-0">@cms.Vision</p>
+                                <div class="bg-white p-4 rounded-4 shadow-sm border">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="text-success fs-2 lh-1"><i class="bi bi-eye"></i></div>
+                                        <div>
+                                            <h5 class="fw-bold mb-2">Our Vision</h5>
+                                            <p class="text-muted mb-0">@cms.Vision</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -139,190 +220,67 @@
     </section>
 }
 
-<!-- Departments -->
-@if (Model.Departments.Any())
-{
-    <section class="pub-section pub-section-soft">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="pub-eyebrow">Specialties</span>
-                <h2 class="pub-heading mt-2">Our Departments</h2>
-            </div>
-            <div class="row g-3">
-                @foreach (var dept in Model.Departments)
-                {
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <a href="@PubUrl($"doctors?departmentId={dept.DepartmentID}")" class="pub-dept-pill">
-                            <div class="pub-dept-icon"><i class="bi bi-hospital"></i></div>
-                            <div class="fw-semibold small">@dept.DepartmentName</div>
-                        </a>
-                    </div>
-                }
-            </div>
-        </div>
-    </section>
-}
-
-<!-- Services -->
-@if (Model.Services.Any())
-{
-    <section class="pub-section pub-section-soft" id="services">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="pub-eyebrow">What We Offer</span>
-                <h2 class="pub-heading mt-2">Our Services</h2>
-            </div>
-            <div class="row g-4">
-                @foreach (var service in Model.Services)
-                {
-                    <div class="col-md-6 col-lg-4">
-                        <div class="pub-service-card">
-                            @if (!string.IsNullOrEmpty(service.ServiceImage))
-                            {
-                                <img src="@service.ServiceImage" alt="@service.ServiceName" class="pub-service-image" loading="lazy" />
-                            }
-                            else
-                            {
-                                <div class="pub-service-icon"><i class="bi bi-clipboard2-pulse"></i></div>
-                            }
-                            <h6 class="fw-bold">@service.ServiceName</h6>
-                            <p class="text-muted small mb-0">@service.Description</p>
-                        </div>
-                    </div>
-                }
-            </div>
-        </div>
-    </section>
-}
-
-<!-- Why Choose Us -->
-<section class="pub-section">
-    <div class="container">
-        <div class="text-center mb-5">
-            <span class="pub-eyebrow">Why Choose Us</span>
-            <h2 class="pub-heading mt-2">Trusted by Patients Every Day</h2>
-        </div>
-        <div class="row g-4">
-            <div class="col-6 col-lg-3">
-                <div class="pub-stat">
-                    <div class="pub-stat-value">@Model.TotalDoctorCount+</div>
-                    <div class="pub-stat-label">Expert Doctors</div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="pub-stat">
-                    <div class="pub-stat-value">@Model.Departments.Count+</div>
-                    <div class="pub-stat-label">Specialties</div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="pub-stat">
-                    <div class="pub-stat-value">24/7</div>
-                    <div class="pub-stat-label">Emergency Support</div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="pub-stat">
-                    <div class="pub-stat-value"><i class="bi bi-shield-check"></i></div>
-                    <div class="pub-stat-label">Verified Specialists</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Contact CTA -->
+<!-- Contact Section -->
 <section class="pub-section" id="contact">
     <div class="container">
-        <div class="row g-5">
-            <div class="col-lg-6">
-                <div class="pub-contact-cta h-100">
-                    <h3 class="fw-bold mb-3">Get in Touch</h3>
-                    <p class="mb-4">Have a question or need help booking? Reach out and our team will get back to you shortly.</p>
-                    @if (!string.IsNullOrEmpty(cms?.ContactPhone))
-                    {
-                        <p class="mb-1"><i class="bi bi-telephone-fill me-2"></i>@cms.ContactPhone</p>
-                    }
-                    @if (!string.IsNullOrEmpty(cms?.ContactEmail))
-                    {
-                        <p class="mb-3"><i class="bi bi-envelope-fill me-2"></i>@cms.ContactEmail</p>
-                    }
-                    <a href="@PubUrl("doctors")" class="btn">Book Appointment Instead</a>
-                </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center mb-5">
+                <span class="pub-eyebrow">Get In Touch</span>
+                <h2 class="pub-heading">Have Questions? We're Here.</h2>
+                <p class="pub-subheading mx-auto">Fill out the form below and our support team will get back to you shortly.</p>
             </div>
-            <div class="col-lg-6">
-                <form id="contactForm" asp-route-slug="@slug" asp-controller="PublicContact" asp-action="Submit" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="text" name="Website" class="d-none" tabindex="-1" autocomplete="off" />
-                    <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                            <input name="Name" class="form-control" placeholder="Your Name" required />
+        </div>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="pub-contact-form">
+                    <form method="post" action="@PubUrl("contact")">
+                        @Html.AntiForgeryToken()
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control pub-input border-0" id="contactName" name="Name" placeholder="Your Name" required>
+                                    <label for="contactName" class="text-muted">Your Name</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="email" class="form-control pub-input border-0" id="contactEmail" name="Email" placeholder="Email Address" required>
+                                    <label for="contactEmail" class="text-muted">Email Address</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control pub-input border-0" id="contactSubject" name="Subject" placeholder="Subject" required>
+                                    <label for="contactSubject" class="text-muted">Subject</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control pub-input border-0" id="contactMessage" name="Message" placeholder="Your Message" style="height: 150px" required></textarea>
+                                    <label for="contactMessage" class="text-muted">Your Message</label>
+                                </div>
+                            </div>
+                            <div class="col-12 text-center mt-4">
+                                <button type="submit" class="pub-btn-cta px-5 py-3">
+                                    Send Message <i class="bi bi-send ms-2"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-12 col-md-6">
-                            <input name="Phone" class="form-control" placeholder="Phone Number" />
-                        </div>
-                        <div class="col-12">
-                            <input name="Email" type="email" class="form-control" placeholder="Email Address" />
-                        </div>
-                        <div class="col-12">
-                            <input name="Subject" class="form-control" placeholder="Subject" />
-                        </div>
-                        <div class="col-12">
-                            <textarea name="Message" class="form-control" rows="4" placeholder="How can we help?" required></textarea>
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="pub-btn-cta w-100">Send Message</button>
-                        </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </section>
-
-@if (!string.IsNullOrEmpty(cms?.GoogleMapEmbed))
-{
-    <section class="pub-section-tight">
-        <div class="container">
-            <div class="ratio ratio-21x9 rounded-4 overflow-hidden">
-                <iframe src="@cms.GoogleMapEmbed" style="border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            </div>
-        </div>
-    </section>
-}
 
 @section Scripts {
     <script>
-        $(document).ready(function () {
-            $('#contactForm').on('submit', function (e) {
-                e.preventDefault();
-                var form = $(this);
-                var btn = form.find('button[type="submit"]');
-                var originalHtml = btn.html();
-                btn.prop('disabled', true).text('Sending...');
-
-                $.ajax({
-                    url: form.attr('action'),
-                    type: 'POST',
-                    data: form.serialize(),
-                    success: function (res) {
-                        btn.prop('disabled', false).html(originalHtml);
-                        if (res.success) {
-                            Swal.fire({ icon: 'success', title: 'Message Sent', text: res.message });
-                            form[0].reset();
-                        } else {
-                            var msg = res.message;
-                            if (res.errors && res.errors.length) msg += '\n' + res.errors.join('\n');
-                            Swal.fire({ icon: 'error', title: 'Could not send', text: msg });
-                        }
-                    },
-                    error: function () {
-                        btn.prop('disabled', false).html(originalHtml);
-                        Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.' });
-                    }
-                });
-            });
+        // Smooth scroll for nav links if needed, and simple client-side search logic if desired
+        document.getElementById('doctorSearch')?.addEventListener('keyup', function(e) {
+            if(e.key === 'Enter' && this.value.trim() !== '') {
+                window.location.href = '@PubUrl("doctors")?query=' + encodeURIComponent(this.value);
+            }
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 }

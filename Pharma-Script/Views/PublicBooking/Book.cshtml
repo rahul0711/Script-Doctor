@@ -33,11 +33,22 @@
             <div class="alert alert-danger">@TempData["Error"]</div>
         }
 
+        @if (!Model.PaymentGatewayAvailable)
+        {
+            <div class="alert alert-warning d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>Online payment is currently unavailable for Dr. @doc.FirstName @doc.LastName. Please contact the clinic directly to book this appointment.</div>
+            </div>
+        }
+
         <form id="pubBookingForm" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Booking.DoctorID" id="hfDoctorID" value="@doc.DoctorID" />
             <input type="hidden" asp-for="Booking.AppointmentType" id="hfApptType" value="Video" />
             <input type="hidden" asp-for="Booking.SelectedSlot" id="hfSelectedSlot" />
+            <input type="hidden" asp-for="Booking.RazorpayOrderId" id="hfRazorpayOrderId" />
+            <input type="hidden" asp-for="Booking.RazorpayPaymentId" id="hfRazorpayPaymentId" />
+            <input type="hidden" asp-for="Booking.RazorpaySignature" id="hfRazorpaySignature" />
 
             <div class="pub-service-card mb-4">
                 <h6 class="fw-bold mb-3">1. Consultation Type</h6>
@@ -105,7 +116,14 @@
             </div>
 
             <button type="submit" class="pub-btn-cta w-100 py-3" id="btnConfirm" disabled>
-                <i class="bi bi-calendar-check me-1"></i>Confirm Appointment
+                @if (Model.PaymentGatewayAvailable)
+                {
+                    <text><i class="bi bi-calendar-check me-1"></i>Pay &amp; Confirm Appointment</text>
+                }
+                else
+                {
+                    <text><i class="bi bi-exclamation-triangle me-1"></i>Online Payment Unavailable</text>
+                }
             </button>
         </form>
     </div>
@@ -113,7 +131,10 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
     <script>
+        var paymentGatewayAvailable = @(Model.PaymentGatewayAvailable ? "true" : "false");
+
         function selectConsultType(type) {
             $('.consult-type-card').removeClass('consult-type-selected');
             $('#hfApptType').val(type);
@@ -160,14 +181,89 @@
             $('.slot-btn').removeClass('btn-primary').addClass('btn-outline-secondary');
             $(btn).removeClass('btn-outline-secondary').addClass('btn-primary');
             $('#hfSelectedSlot').val(time);
-            $('#btnConfirm').prop('disabled', false);
+            if (paymentGatewayAvailable) {
+                $('#btnConfirm').prop('disabled', false);
+            }
         }
+
+        var paymentVerified = false;
 
         $('#pubBookingForm').on('submit', function (e) {
             if (!$('#hfSelectedSlot').val()) {
                 e.preventDefault();
                 Swal.fire({ icon: 'warning', title: 'Select a slot', text: 'Please choose an available time slot before confirming.' });
+                return;
             }
+
+            // Once Razorpay's handler has filled the hidden payment fields and re-triggered
+            // submit, let the real POST through to the server for verification + booking.
+            if (paymentVerified) {
+                return;
+            }
+
+            e.preventDefault();
+            startPayment();
         });
+
+        function startPayment() {
+            var $btn = $('#btnConfirm');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Processing...');
+
+            $.ajax({
+                url: '@Url.Action("CreateOrder", "PublicBooking", new { slug = Model.Tenant.Organization.OrganizationSlug, doctorId = Model.Doctor.DoctorID })',
+                type: 'POST',
+                data: $('#pubBookingForm').serialize(),
+                success: function (res) {
+                    if (!res.success) {
+                        $btn.prop('disabled', false).html('<i class="bi bi-calendar-check me-1"></i>Pay &amp; Confirm Appointment');
+                        Swal.fire({ icon: 'error', title: 'Unable to start payment', text: res.message || 'Please try again.' });
+                        return;
+                    }
+
+                    var options = {
+                        key: res.keyId,
+                        amount: res.amount,
+                        currency: res.currency,
+                        name: '@Model.Tenant.Organization.OrganizationName',
+                        description: 'Consultation with Dr. @doc.FirstName @doc.LastName',
+                        order_id: res.orderId,
+                        prefill: {
+                            name: res.name,
+                            email: res.email,
+                            contact: res.contact
+                        },
+                        handler: function (response) {
+                            $('#hfRazorpayOrderId').val(response.razorpay_order_id);
+                            $('#hfRazorpayPaymentId').val(response.razorpay_payment_id);
+                            $('#hfRazorpaySignature').val(response.razorpay_signature);
+                            paymentVerified = true;
+                            $btn.html('<span class="spinner-border spinner-border-sm me-1"></span>Payment successful! Confirming appointment...');
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: 'Payment successful', timer: 2500, showConfirmButton: false
+                            });
+                            $('#pubBookingForm').trigger('submit');
+                        },
+                        modal: {
+                            ondismiss: function () {
+                                $btn.prop('disabled', false).html('<i class="bi bi-calendar-check me-1"></i>Pay &amp; Confirm Appointment');
+                                Swal.fire({ icon: 'info', title: 'Payment cancelled', text: 'You can try again whenever you\'re ready.' });
+                            }
+                        }
+                    };
+
+                    var rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function () {
+                        $btn.prop('disabled', false).html('<i class="bi bi-calendar-check me-1"></i>Pay &amp; Confirm Appointment');
+                        Swal.fire({ icon: 'error', title: 'Payment failed', text: 'Please try again.' });
+                    });
+                    rzp.open();
+                },
+                error: function () {
+                    $btn.prop('disabled', false).html('<i class="bi bi-calendar-check me-1"></i>Pay &amp; Confirm Appointment');
+                    Swal.fire({ icon: 'error', title: 'Unable to start payment', text: 'Please try again.' });
+                }
+            });
+        }
     </script>
 }

@@ -180,6 +180,114 @@ namespace Pharma_Script.Helpers
                 }
             }
 
+            // 2d. Ensure Razorpay-related columns/tweaks exist on Payments table (safe to run every startup)
+            using (var conn = new MySqlConnection("server=120.138.7.130;uid=scriptindia;pwd=India@4321;database=ScriptIndia_Healthcare;"))
+            {
+                await conn.OpenAsync();
+
+                (string Column, string Definition)[] columnsToAdd =
+                {
+                    ("RazorpayOrderId", "VARCHAR(64) NULL"),
+                    ("RazorpaySignature", "VARCHAR(128) NULL"),
+                    ("Currency", "VARCHAR(10) NOT NULL DEFAULT 'INR'")
+                };
+
+                foreach (var (column, definition) in columnsToAdd)
+                {
+                    bool columnExists;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = $@"
+                            SELECT COUNT(*)
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = 'ScriptIndia_Healthcare'
+                              AND TABLE_NAME = 'Payments'
+                              AND COLUMN_NAME = '{column}';";
+                        columnExists = Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
+                    }
+
+                    if (!columnExists)
+                    {
+                        try
+                        {
+                            using (var cmd = conn.CreateCommand())
+                            {
+                                cmd.CommandText = $"ALTER TABLE `Payments` ADD COLUMN `{column}` {definition};";
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[DbInitializer] Failed to add {column} to Payments: {ex.Message}");
+                        }
+                    }
+                }
+
+                // Allow AppointmentID to be NULL so a successfully-charged Razorpay payment can
+                // still be recorded (for manual reconciliation) even if the booking itself fails
+                // afterwards (e.g. a slot conflict discovered at insert time).
+                try
+                {
+                    bool appointmentIdNullable;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                            SELECT IS_NULLABLE
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = 'ScriptIndia_Healthcare'
+                              AND TABLE_NAME = 'Payments'
+                              AND COLUMN_NAME = 'AppointmentID';";
+                        var result = await cmd.ExecuteScalarAsync();
+                        appointmentIdNullable = result != null && result.ToString() == "YES";
+                    }
+
+                    if (!appointmentIdNullable)
+                    {
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.CommandText = "ALTER TABLE `Payments` MODIFY COLUMN `AppointmentID` INT NULL;";
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[DbInitializer] Failed to make Payments.AppointmentID nullable: {ex.Message}");
+                }
+
+                // Add a 'Razorpay' bucket to the PaymentMethod enum for gateway payment methods
+                // (e.g. wallet/EMI) that don't map cleanly to the existing Cash/UPI/Card/NetBanking values.
+                try
+                {
+                    string columnType;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"
+                            SELECT COLUMN_TYPE
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = 'ScriptIndia_Healthcare'
+                              AND TABLE_NAME = 'Payments'
+                              AND COLUMN_NAME = 'PaymentMethod';";
+                        columnType = (await cmd.ExecuteScalarAsync())?.ToString() ?? string.Empty;
+                    }
+
+                    if (!string.IsNullOrEmpty(columnType) && !columnType.Contains("'Razorpay'"))
+                    {
+                        using (var cmd = conn.CreateCommand())
+                        {
+                            cmd.CommandText = @"
+                                ALTER TABLE `Payments`
+                                MODIFY COLUMN `PaymentMethod` ENUM('Cash','UPI','Credit Card','Debit Card','Net Banking','Razorpay') NOT NULL;";
+                            await cmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[DbInitializer] Failed to extend Payments.PaymentMethod enum: {ex.Message}");
+                }
+            }
+
             // 3. Seed Roles if missing
             var existingRoles = await uow.Roles.GetAllAsync();
             var requiredRoles = new[] { "Platform Owner", "Organization Admin", "Doctor", "Patient", "Receptionist" };

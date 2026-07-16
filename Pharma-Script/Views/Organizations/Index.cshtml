@@ -4,29 +4,37 @@
     ViewData["Title"] = "Organizations";
 }
 
-<div class="page-title-box">
+<div class="page-title-box d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-        <h4 class="page-title">Organizations</h4>
+        <h4 class="page-title mb-1">Organizations</h4>
         <p class="text-muted small mb-0 font-medium">Manage clinical, hospital, and diagnostic center records.</p>
     </div>
-    <div>
-        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreateOrg">
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-primary fw-medium px-4 shadow-sm" style="border-radius: 8px;" id="btnCreateOrg">
             <i class="bi bi-plus-lg me-1.5"></i>Add Organization
         </button>
     </div>
 </div>
 
-<div class="table-card">
-    <div class="table-card-header flex-column flex-md-row gap-3">
-        <h5 class="table-card-title mb-0">Platform tenants</h5>
+<div class="table-card mb-4">
+    <div class="table-card-header-premium">
+        <div class="d-flex align-items-center gap-2">
+            <span class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded" style="width: 32px; height: 32px;">
+                <i class="bi bi-building-gear" style="font-size: 1.1rem;"></i>
+            </span>
+            <h5 class="table-card-title mb-0" style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">Platform Tenants</h5>
+        </div>
         
         <!-- Search bar -->
-        <form method="get" action="@Url.Action("Index")" class="d-flex gap-2">
-            <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Search by name, type, city..." value="@ViewBag.SearchTerm" style="width: 250px;" />
-            <button type="submit" class="btn btn-primary btn-sm px-2.5"><i class="bi bi-search"></i></button>
+        <form method="get" action="@Url.Action("Index")" class="simple-filter-form justify-content-md-end">
+            <div class="filter-input-group">
+                <i class="bi bi-search"></i>
+                <input type="text" name="searchTerm" class="form-control" placeholder="Search by name, type, city..." value="@ViewBag.SearchTerm" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-search shadow-sm">Search</button>
             @if (!string.IsNullOrEmpty(ViewBag.SearchTerm))
             {
-                <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-2.5"><i class="bi bi-x-lg"></i></a>
+                <a href="@Url.Action("Index")" class="btn-clear" title="Clear search"><i class="bi bi-x-lg"></i></a>
             }
         </form>
     </div>
@@ -51,7 +59,12 @@
                     {
                         <tr>
                             <td>@item.OrganizationID</td>
-                            <td class="fw-semibold text-dark">@item.OrganizationName</td>
+                            <td class="fw-semibold text-dark">
+                                <div class="btnOrgStats" data-id="@item.OrganizationID" style="cursor:pointer; color:#3b82f6; text-decoration:none;" title="View Organization Stats">
+                                    @item.OrganizationName
+                                    <i class="bi bi-bar-chart-line ms-1" style="font-size:0.75rem; opacity:0.6;"></i>
+                                </div>
+                            </td>
                             <td><span class="badge bg-light text-secondary border rounded px-2.5 py-1 small">@item.OrganizationType</span></td>
                             <td>
                                 <div class="small"><i class="bi bi-envelope text-muted me-1.5"></i>@item.Email</div>
@@ -133,6 +146,22 @@
     </div>
 </div>
 
+<!-- Stats Offcanvas Drawer -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="orgStatsDrawer" aria-labelledby="orgStatsLabel" style="width: 420px; max-width: 95vw;">
+    <div class="offcanvas-header" style="border-bottom: 1px solid #e2e8f0; padding: 0.9rem 1.25rem;">
+        <h6 class="offcanvas-title fw-semibold" id="orgStatsLabel" style="font-size:0.9rem;">
+            <i class="bi bi-building me-2 text-primary"></i>Organization Statistics
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0" id="orgStatsBody" style="overflow-y: auto;">
+        <div class="text-center py-5 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+            <p class="small mb-0">Loading stats...</p>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -172,6 +201,20 @@
 
                 $.get('@Url.Action("Details")/' + id, function (html) {
                     $('#commonModalBody').html(html);
+                });
+            });
+
+            // Open Org Stats Drawer on organization name click
+            var orgStatsDrawer = new bootstrap.Offcanvas(document.getElementById('orgStatsDrawer'));
+            $(document).on('click', '.btnOrgStats', function () {
+                var id = $(this).data('id');
+                $('#orgStatsLabel').html('<i class="bi bi-building me-2 text-primary"></i>Organization Statistics');
+                $('#orgStatsBody').html('<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><p class="small mb-0">Loading stats...</p></div>');
+                orgStatsDrawer.show();
+                $.get('@Url.Action("StatsPanel")/' + id, function (html) {
+                    $('#orgStatsBody').html(html);
+                }).fail(function () {
+                    $('#orgStatsBody').html('<div class="text-center py-5 text-danger small"><i class="bi bi-exclamation-circle d-block fs-3 mb-2"></i>Failed to load stats.</div>');
                 });
             });
 

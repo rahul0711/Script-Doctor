@@ -49,7 +49,7 @@
 
         <div class="col-12 col-md-6">
             <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
-            <input asp-for="Phone" class="form-control" placeholder="+91 9988776655" required />
+            <input asp-for="Phone" type="tel" class="form-control" placeholder="+91 9988776655" required />
             <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
         </div>
 
@@ -174,6 +174,32 @@
                 <label asp-for="IsActive" class="form-check-label small fw-semibold text-secondary">Active Status</label>
             </div>
         </div>
+
+        @if (User.IsInRole("Organization Admin"))
+        {
+            <h6 class="text-primary border-bottom pb-2 mb-2 mt-4"><i class="bi bi-credit-card me-2"></i>Payment Gateway</h6>
+            <div class="col-12">
+                <div class="form-check form-switch mb-3">
+                    <input asp-for="PaymentGatewayIsActive" class="form-check-input" type="checkbox" />
+                    <label asp-for="PaymentGatewayIsActive" class="form-check-label small fw-semibold text-secondary">Enable Online Payments (Razorpay)</label>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="RazorpayKeyId" class="form-label small fw-semibold text-secondary"></label>
+                <input asp-for="RazorpayKeyId" class="form-control" placeholder="rzp_live_xxxxxxxxxxxx" autocomplete="off" />
+                <span asp-validation-for="RazorpayKeyId" class="text-danger small" style="font-size: 0.75rem;"></span>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <label asp-for="RazorpayKeySecret" class="form-label small fw-semibold text-secondary"></label>
+                <input asp-for="RazorpayKeySecret" class="form-control" type="password" placeholder="Key Secret" autocomplete="new-password" />
+                <span asp-validation-for="RazorpayKeySecret" class="text-danger small" style="font-size: 0.75rem;"></span>
+            </div>
+            <div class="col-12">
+                <span class="form-text small">Both fields are required to enable online payments for this doctor. Patients booking with this doctor won't be able to pay online until this is configured.</span>
+            </div>
+        }
     </div>
 
     <div class="modal-footer px-0 pb-0 mt-4 border-0">

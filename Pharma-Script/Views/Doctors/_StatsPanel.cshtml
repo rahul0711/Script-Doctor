@@ -1,0 +1,245 @@
+@model Pharma_Script.Models.Doctor
+@using Pharma_Script.Models
+@{
+    var appointments = ViewBag.Appointments as List<Appointment> ?? new List<Appointment>();
+    decimal totalRevenue = ViewBag.TotalRevenue ?? 0m;
+    int uniquePatients = ViewBag.UniquePatients ?? 0;
+    int completedCount = ViewBag.CompletedCount ?? 0;
+    int pendingCount = appointments.Count(a => a.Status == "Pending");
+    int totalCount = appointments.Count;
+}
+
+<style>
+    .stats-panel-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f4c75 100%);
+        padding: 1.5rem;
+        border-radius: 0;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .stats-panel-header::before {
+        content: '';
+        position: absolute;
+        top: -40px; right: -40px;
+        width: 160px; height: 160px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+    }
+    .stats-panel-header::after {
+        content: '';
+        position: absolute;
+        bottom: -30px; left: -30px;
+        width: 120px; height: 120px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 50%;
+    }
+    .doc-avatar-lg {
+        width: 62px; height: 62px;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,0.3);
+        object-fit: cover;
+        position: relative; z-index: 1;
+    }
+    .doc-avatar-lg-fallback {
+        width: 62px; height: 62px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: 2px solid rgba(255,255,255,0.3);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; font-weight: 700; color: #fff;
+        position: relative; z-index: 1;
+    }
+    .stat-mini {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 0.6rem 0.8rem;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.12);
+        backdrop-filter: blur(4px);
+    }
+    .stat-mini-value { font-size: 1.3rem; font-weight: 700; color: #fff; line-height: 1; }
+    .stat-mini-label { font-size: 0.7rem; color: rgba(255,255,255,0.65); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-section-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #64748b;
+        padding: 1rem 1.25rem 0.5rem;
+        border-bottom: 1px solid #f1f5f9;
+        margin: 0;
+    }
+    .appt-row {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.65rem 1.25rem;
+        border-bottom: 1px solid #f8fafc;
+        transition: background 0.15s;
+    }
+    .appt-row:hover { background: #f8fafc; }
+    .appt-avatar {
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e0f2fe, #bfdbfe);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.78rem; font-weight: 700; color: #1e40af;
+        flex-shrink: 0;
+    }
+    .appt-name { font-size: 0.82rem; font-weight: 600; color: #1e293b; }
+    .appt-meta { font-size: 0.72rem; color: #94a3b8; }
+    .badge-status {
+        font-size: 0.68rem; font-weight: 600;
+        padding: 0.2em 0.55em;
+        border-radius: 4px;
+    }
+    .badge-completed { background: #dcfce7; color: #166534; }
+    .badge-pending   { background: #fef9c3; color: #854d0e; }
+    .badge-approved  { background: #dbeafe; color: #1e40af; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; }
+    .badge-rejected  { background: #fce7f3; color: #9d174d; }
+    .badge-noshow    { background: #f1f5f9; color: #475569; }
+    .revenue-pill {
+        font-size: 0.75rem; font-weight: 700;
+        color: #059669;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 5px;
+        padding: 0.15em 0.45em;
+        white-space: nowrap;
+    }
+    .pay-badge-paid     { background: #dcfce7; color: #166534; font-size: 0.65rem; font-weight: 600; border-radius: 4px; padding: 0.15em 0.4em; }
+    .pay-badge-pending  { background: #fef9c3; color: #854d0e; font-size: 0.65rem; font-weight: 600; border-radius: 4px; padding: 0.15em 0.4em; }
+    .pay-badge-failed   { background: #fee2e2; color: #991b1b; font-size: 0.65rem; font-weight: 600; border-radius: 4px; padding: 0.15em 0.4em; }
+    .pay-badge-refunded { background: #f3e8ff; color: #6b21a8; font-size: 0.65rem; font-weight: 600; border-radius: 4px; padding: 0.15em 0.4em; }
+    .empty-state-sm {
+        text-align: center; padding: 2.5rem 1rem; color: #94a3b8;
+    }
+    .empty-state-sm i { font-size: 2.2rem; opacity: 0.4; display: block; margin-bottom: 0.5rem; }
+    .empty-state-sm p { font-size: 0.78rem; margin: 0; }
+</style>
+
+<!-- Header -->
+<div class="stats-panel-header">
+    <div class="d-flex align-items-center gap-3 mb-3" style="position:relative;z-index:1;">
+        @if (!string.IsNullOrEmpty(Model.ProfileImage))
+        {
+            <img src="@Model.ProfileImage" class="doc-avatar-lg" alt="Dr. @Model.FirstName" />
+        }
+        else
+        {
+            <div class="doc-avatar-lg-fallback">@Model.FirstName[0]</div>
+        }
+        <div>
+            <div style="font-size:1.05rem; font-weight:700; color:#fff;">Dr. @Model.FirstName @Model.LastName</div>
+            <div style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-top:1px;">@Model.Qualification &bull; @Model.ExperienceYears yrs exp.</div>
+            @if (Model.SpecializationNames?.Any() == true)
+            {
+                <div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">
+                    @foreach (var spec in Model.SpecializationNames.Take(3))
+                    {
+                        <span style="font-size:0.65rem; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:20px; padding:1px 8px;">@spec</span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Mini stat row -->
+    <div class="row g-2" style="position:relative;z-index:1;">
+        <div class="col-3">
+            <div class="stat-mini">
+                <div class="stat-mini-value">@totalCount</div>
+                <div class="stat-mini-label">Total</div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-mini">
+                <div class="stat-mini-value">@uniquePatients</div>
+                <div class="stat-mini-label">Patients</div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-mini">
+                <div class="stat-mini-value">@completedCount</div>
+                <div class="stat-mini-label">Done</div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-mini">
+                <div class="stat-mini-value" style="font-size:0.95rem;">₹@((totalRevenue / 1000m).ToString("F0"))k</div>
+                <div class="stat-mini-label">Revenue</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue summary bar -->
+<div style="background:#f8fafc; padding:0.75rem 1.25rem; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between;">
+    <div style="font-size:0.78rem; color:#64748b;">
+        <i class="bi bi-currency-rupee text-success me-1"></i>
+        Total Revenue Collected
+    </div>
+    <div style="font-size:1rem; font-weight:700; color:#059669;">₹@totalRevenue.ToString("N2")</div>
+</div>
+
+<!-- Appointment List -->
+<div class="panel-section-title">
+    <i class="bi bi-calendar-check me-1"></i>Appointment History (@totalCount)
+</div>
+
+@if (appointments.Any())
+{
+    <div style="max-height: 420px; overflow-y: auto;">
+        @foreach (var appt in appointments)
+        {
+            var initials = appt.PatientName?.Length > 0 ? appt.PatientName[0].ToString().ToUpper() : "P";
+            var statusCss = appt.Status switch
+            {
+                "Completed"    => "badge-completed",
+                "Pending"      => "badge-pending",
+                "Approved"     => "badge-approved",
+                "Cancelled"    => "badge-cancelled",
+                "Rejected"     => "badge-rejected",
+                "No Show"      => "badge-noshow",
+                _              => "badge-noshow"
+            };
+            var payBadgeCss = appt.PaymentStatus switch
+            {
+                "Paid"     => "pay-badge-paid",
+                "Failed"   => "pay-badge-failed",
+                "Refunded" => "pay-badge-refunded",
+                _          => "pay-badge-pending"
+            };
+
+            <div class="appt-row">
+                <div class="appt-avatar">@initials</div>
+                <div style="flex:1; min-width:0;">
+                    <div class="appt-name text-truncate">@(appt.PatientName ?? "Unknown Patient")</div>
+                    <div class="appt-meta">
+                        @appt.AppointmentDate.ToString("dd MMM yyyy")
+                        &bull; @appt.AppointmentType
+                        @if (!string.IsNullOrEmpty(appt.BranchName))
+                        {
+                            <span>&bull; @appt.BranchName</span>
+                        }
+                    </div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                    <span class="badge-status @statusCss">@appt.Status</span>
+                    <span class="revenue-pill">₹@appt.ConsultationFee.ToString("N0")</span>
+                    @if (!string.IsNullOrEmpty(appt.PaymentStatus))
+                    {
+                        <span class="@payBadgeCss">@appt.PaymentStatus</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="empty-state-sm">
+        <i class="bi bi-calendar-x"></i>
+        <p>No appointments found for this doctor.</p>
+    </div>
+}

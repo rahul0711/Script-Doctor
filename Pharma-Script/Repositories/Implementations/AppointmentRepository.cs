@@ -109,6 +109,10 @@ namespace Pharma_Script.Repositories.Implementations
                 {
                     appointment.OrganizationName = reader.IsDBNull(i) ? null : reader.GetString(i);
                 }
+                else if (col.Equals("PaymentStatus", StringComparison.OrdinalIgnoreCase))
+                {
+                    appointment.PaymentStatus = reader.IsDBNull(i) ? null : reader.GetString(i);
+                }
             }
 
             return appointment;
@@ -251,7 +255,7 @@ namespace Pharma_Script.Repositories.Implementations
 
         public async Task<Appointment?> GetAppointmentDetailsByIdAsync(int id, int? orgId)
         {
-            var query = $@"SELECT a.*, 
+            var query = $@"SELECT a.*,
                                   CONCAT(ud.FirstName, ' ', IFNULL(ud.LastName, '')) AS DoctorName,
                                   ud.Email AS DoctorEmail,
                                   ud.Phone AS DoctorPhone,
@@ -260,7 +264,8 @@ namespace Pharma_Script.Repositories.Implementations
                                   p.BloodGroup AS PatientBloodGroup,
                                   p.DateOfBirth AS PatientDOB,
                                   b.BranchName,
-                                  o.OrganizationName
+                                  o.OrganizationName,
+                                  (SELECT pay.PaymentStatus FROM Payments pay WHERE pay.AppointmentID = a.AppointmentID ORDER BY pay.PaymentID DESC LIMIT 1) AS PaymentStatus
                            FROM {TableName} a
                            INNER JOIN Doctors d ON a.DoctorID = d.DoctorID
                            INNER JOIN Users ud ON d.UserID = ud.UserID
@@ -301,10 +306,11 @@ namespace Pharma_Script.Repositories.Implementations
             bool? isPriority, string? searchTerm, int page, int pageSize)
         {
             var list = new List<Appointment>();
-            var sb = new StringBuilder($@"SELECT a.*, 
+            var sb = new StringBuilder($@"SELECT a.*,
                                                 CONCAT(ud.FirstName, ' ', IFNULL(ud.LastName, '')) AS DoctorName,
                                                 CONCAT(up.FirstName, ' ', IFNULL(up.LastName, '')) AS PatientName,
-                                                b.BranchName
+                                                b.BranchName,
+                                                (SELECT pay.PaymentStatus FROM Payments pay WHERE pay.AppointmentID = a.AppointmentID ORDER BY pay.PaymentID DESC LIMIT 1) AS PaymentStatus
                                          FROM {TableName} a
                                          INNER JOIN Doctors d ON a.DoctorID = d.DoctorID
                                          INNER JOIN Users ud ON d.UserID = ud.UserID
@@ -421,6 +427,84 @@ namespace Pharma_Script.Repositories.Implementations
                 sb.Append(" AND (ud.FirstName LIKE @Term OR ud.LastName LIKE @Term OR up.FirstName LIKE @Term OR up.LastName LIKE @Term OR a.Symptoms LIKE @Term OR a.AppointmentReason LIKE @Term)");
                 cmd.Parameters.AddWithValue("@Term", $"%{searchTerm}%");
             }
+        }
+
+        public async Task<IEnumerable<Appointment>> GetByDoctorIdAsync(int doctorId, int? orgId)
+        {
+            var list = new List<Appointment>();
+            var query = $@"SELECT a.*,
+                                   CONCAT(ud.FirstName, ' ', IFNULL(ud.LastName, '')) AS DoctorName,
+                                   CONCAT(up.FirstName, ' ', IFNULL(up.LastName, '')) AS PatientName,
+                                   pat.Gender AS PatientGender,
+                                   pat.BloodGroup AS PatientBloodGroup,
+                                   pat.DateOfBirth AS PatientDOB,
+                                   b.BranchName,
+                                   o.OrganizationName,
+                                   py.PaymentStatus
+                            FROM Appointments a
+                            INNER JOIN Doctors d ON a.DoctorID = d.DoctorID
+                            INNER JOIN Users ud ON d.UserID = ud.UserID
+                            INNER JOIN Patients pat ON a.PatientID = pat.PatientID
+                            INNER JOIN Users up ON pat.UserID = up.UserID
+                            LEFT JOIN Branches b ON a.BranchID = b.BranchID
+                            LEFT JOIN Organizations o ON a.OrganizationID = o.OrganizationID
+                            LEFT JOIN Payments py ON py.AppointmentID = a.AppointmentID
+                            WHERE a.DoctorID = @DoctorID";
+
+            if (orgId.HasValue)
+                query += " AND a.OrganizationID = @OrgID";
+
+            query += " ORDER BY a.AppointmentDate DESC";
+
+            await EnsureConnectionOpenAsync();
+            using var cmd = CreateCommand(query);
+            cmd.Parameters.AddWithValue("@DoctorID", doctorId);
+            if (orgId.HasValue)
+                cmd.Parameters.AddWithValue("@OrgID", orgId.Value);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                list.Add(Map(reader));
+            return list;
+        }
+
+        public async Task<IEnumerable<Appointment>> GetByPatientIdAsync(int patientId, int? orgId)
+        {
+            var list = new List<Appointment>();
+            var query = $@"SELECT a.*,
+                                   CONCAT(ud.FirstName, ' ', IFNULL(ud.LastName, '')) AS DoctorName,
+                                   CONCAT(up.FirstName, ' ', IFNULL(up.LastName, '')) AS PatientName,
+                                   pat.Gender AS PatientGender,
+                                   pat.BloodGroup AS PatientBloodGroup,
+                                   pat.DateOfBirth AS PatientDOB,
+                                   b.BranchName,
+                                   o.OrganizationName,
+                                   py.PaymentStatus
+                            FROM Appointments a
+                            INNER JOIN Doctors d ON a.DoctorID = d.DoctorID
+                            INNER JOIN Users ud ON d.UserID = ud.UserID
+                            INNER JOIN Patients pat ON a.PatientID = pat.PatientID
+                            INNER JOIN Users up ON pat.UserID = up.UserID
+                            LEFT JOIN Branches b ON a.BranchID = b.BranchID
+                            LEFT JOIN Organizations o ON a.OrganizationID = o.OrganizationID
+                            LEFT JOIN Payments py ON py.AppointmentID = a.AppointmentID
+                            WHERE a.PatientID = @PatientID";
+
+            if (orgId.HasValue)
+                query += " AND a.OrganizationID = @OrgID";
+
+            query += " ORDER BY a.AppointmentDate DESC";
+
+            await EnsureConnectionOpenAsync();
+            using var cmd = CreateCommand(query);
+            cmd.Parameters.AddWithValue("@PatientID", patientId);
+            if (orgId.HasValue)
+                cmd.Parameters.AddWithValue("@OrgID", orgId.Value);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                list.Add(Map(reader));
+            return list;
         }
     }
 }

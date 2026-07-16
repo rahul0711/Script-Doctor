@@ -5,58 +5,70 @@
     ViewData["Title"] = "Doctor Management";
 }
 
-<div class="page-title-box">
+<div class="page-title-box d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-        <h4 class="page-title">Doctor Management</h4>
-        <p class="text-muted small mb-0 font-medium">Manage clinical practitioners, specializations, schedules, and leaves.</p>
+        <h4 class="page-title mb-1">Doctor Management</h4>
+        <p class="text-muted small mb-0">Manage clinical practitioners, specializations, schedules, and leaves.</p>
     </div>
-    <div>
-        <button class="btn btn-primary fw-medium px-3.5 py-2" id="btnCreateDoctor">
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-primary fw-medium px-4 shadow-sm" style="border-radius: 8px;" id="btnCreateDoctor">
             <i class="bi bi-plus-lg me-1.5"></i>Add Doctor
         </button>
     </div>
 </div>
 
 <div class="table-card mb-4">
-    <div class="table-card-header flex-column gap-3">
-        <div class="d-flex justify-content-between align-items-center w-100">
-            <h5 class="table-card-title mb-0">Doctors List</h5>
+    <div class="table-card-header d-flex flex-column align-items-center gap-3 bg-white p-4">
+        <div class="d-flex align-items-center justify-content-center gap-2 w-100 mb-1">
+            <span class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded" style="width: 32px; height: 32px;">
+                <i class="bi bi-person-badge" style="font-size: 1.15rem;"></i>
+            </span>
+            <h5 class="table-card-title mb-0" style="font-size: 1.15rem; font-weight: 700; color: #1e293b;">Doctors List</h5>
         </div>
         
         <!-- Filters Form -->
-        <form method="get" action="@Url.Action("Index")" class="row g-2 w-100 m-0">
-            <div class="col-12 col-md-3">
-                <input type="text" name="searchTerm" class="form-control form-control-sm" placeholder="Search doctor..." value="@ViewBag.SearchTerm" />
+        <form method="get" action="@Url.Action("Index")" class="doctor-filter-form">
+            <div class="filter-search-wrap">
+                <i class="bi bi-search"></i>
+                <input type="text" name="searchTerm" class="form-control shadow-none" placeholder="Search doctor..." value="@ViewBag.SearchTerm" />
             </div>
-            <div class="col-6 col-md-2">
-                <select name="branchId" class="form-select form-select-sm" asp-items="@ViewBag.Branches">
+            @if (ViewBag.Organizations != null)
+            {
+                <div class="filter-select-wrap">
+                    <select name="orgIdFilter" class="form-select shadow-none" asp-items="@ViewBag.Organizations">
+                        <option value="">All Organizations</option>
+                    </select>
+                </div>
+            }
+            <div class="filter-select-wrap">
+                <select name="branchId" class="form-select shadow-none" asp-items="@ViewBag.Branches">
                     <option value="">All Branches</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <select name="departmentId" class="form-select form-select-sm" asp-items="@ViewBag.Departments">
+            <div class="filter-select-wrap">
+                <select name="departmentId" class="form-select shadow-none" asp-items="@ViewBag.Departments">
                     <option value="">All Departments</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <select name="specializationId" class="form-select form-select-sm" asp-items="@ViewBag.Specializations">
+            <div class="filter-select-wrap">
+                <select name="specializationId" class="form-select shadow-none" asp-items="@ViewBag.Specializations">
                     <option value="">All Specializations</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <select name="isActive" class="form-select form-select-sm" asp-items="@ViewBag.ActiveStatusList">
+            <!-- <div class="filter-select-wrap">
+                <select name="isActive" class="form-select shadow-none" asp-items="@ViewBag.ActiveStatusList">
                     <option value="">All Statuses</option>
                 </select>
-            </div>
-            <div class="col-12 col-md-1 d-flex gap-1.5">
-                <button type="submit" class="btn btn-primary btn-sm px-2.5 w-100"><i class="bi bi-funnel"></i></button>
-                <a href="@Url.Action("Index")" class="btn btn-light btn-sm px-2.5"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div> -->
+            <div class="filter-buttons-wrap">
+                <button type="submit" class="btn btn-filter" title="Filter"><i class="bi bi-funnel"></i></button>
+                <a href="@Url.Action("Index")" class="btn btn-reset text-secondary" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
             </div>
         </form>
     </div>
 
     <div class="table-responsive">
-        <table class="table custom-table">
+        <table class="table custom-table align-middle">
             <thead>
                 <tr>
                     <th style="width: 80px;">ID</th>
@@ -64,9 +76,9 @@
                     <th>Qualification</th>
                     <th>Branch / Department</th>
                     <th>Specializations</th>
-                    <th class="text-end">Reg. Fee</th>
-                    <th class="text-center" style="width: 90px;">Status</th>
-                    <th class="text-end" style="width: 250px;">Actions</th>
+                    <th class="text-end" style="width: 120px;">Reg. Fee</th>
+                    <th class="text-center" style="width: 100px;">Status</th>
+                    <th class="text-end" style="width: 220px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -75,32 +87,35 @@
                     foreach (var item in Model)
                     {
                         <tr>
-                            <td>@item.DoctorID</td>
+                            <td class="text-muted" style="font-size: 0.875rem;">@item.DoctorID</td>
                             <td class="fw-semibold text-dark">
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-2.5">
                                     @if (!string.IsNullOrEmpty(item.ProfileImage))
                                     {
-                                        <img src="@item.ProfileImage" class="rounded-circle border" style="width: 32px; height: 32px; object-fit: cover;" alt="@item.FirstName" />
+                                        <img src="@item.ProfileImage" class="rounded-circle border" style="width: 36px; height: 36px; object-fit: cover;" alt="@item.FirstName" />
                                     }
                                     else
                                     {
-                                        <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center border" style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-weight: 700; font-size: 0.9rem;">
                                             @item.FirstName[0]
                                         </div>
                                     }
                                     <div>
-                                        <div>Dr. @item.FirstName @item.LastName</div>
-                                        <div class="text-muted small" style="font-size: 0.75rem;">@item.Email</div>
+                                        <div class="btnStats text-primary text-decoration-none" data-id="@item.DoctorID" style="cursor:pointer; font-weight:600; font-size:0.9rem;" title="View Stats & Appointments">
+                                            Dr. @item.FirstName @item.LastName
+                                            <i class="bi bi-bar-chart-line ms-1 opacity-75" style="font-size:0.75rem;"></i>
+                                        </div>
+                                        <div class="text-muted small mt-0.5" style="font-size: 0.75rem;">@item.Email</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="small fw-semibold text-dark">
-                                @item.Qualification
-                                <div class="text-muted small fw-normal" style="font-size: 0.75rem;">@item.ExperienceYears Years Exp.</div>
+                            <td>
+                                <div class="fw-semibold text-dark" style="font-size: 0.875rem;">@item.Qualification</div>
+                                <div class="text-muted mt-0.5" style="font-size: 0.75rem;">@item.ExperienceYears Years Exp.</div>
                             </td>
-                            <td class="small">
-                                <div class="fw-semibold text-secondary">@(item.BranchName ?? "N/A")</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">@(item.DepartmentName ?? "N/A")</div>
+                            <td>
+                                <div class="fw-semibold text-dark" style="font-size: 0.875rem;">@(item.BranchName ?? "Global")</div>
+                                <div class="text-muted mt-0.5" style="font-size: 0.75rem;">@(item.DepartmentName ?? "N/A")</div>
                             </td>
                             <td>
                                 <div class="d-flex flex-wrap gap-1">
@@ -108,30 +123,35 @@
                                     {
                                         foreach (var spec in item.SpecializationNames)
                                         {
-                                            <span class="badge bg-light text-primary border rounded-pill px-2.5 py-0.5" style="font-size: 0.7rem; font-weight: 500;">@spec</span>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 border-0" style="font-size: 0.7rem; font-weight: 500;">@spec</span>
                                         }
                                     }
                                 </div>
                             </td>
-                            <td class="text-end fw-bold text-dark text-nowrap">₹@item.ConsultationFee.ToString("F2")</td>
+                            <td class="text-end fw-semibold text-dark text-nowrap">₹@item.ConsultationFee.ToString("F2")</td>
                             <td class="text-center">
                                 <div class="form-check form-switch d-inline-block">
                                     <input class="form-check-input status-toggle" type="checkbox" data-id="@item.DoctorID" @(item.IsActive ? "checked" : "") style="cursor: pointer;" />
                                 </div>
                             </td>
                             <td class="text-end">
-                                <a class="btn-action" href="@Url.Action("Schedule", "DoctorAvailability", new { doctorId = item.DoctorID })" title="Weekly Availability">
-                                    <i class="bi bi-clock"></i>
-                                </a>
-                                <a class="btn-action" href="@Url.Action("Index", "DoctorLeave", new { doctorId = item.DoctorID })" title="Leaves Schedule">
-                                    <i class="bi bi-calendar-event"></i>
-                                </a>
-                                <button class="btn-action btnView" data-id="@item.DoctorID" title="View Details">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn-action btn-action-edit btnEdit" data-id="@item.DoctorID" title="Edit">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
+                                <div class="d-flex justify-content-end gap-1.5">
+                                    <a class="btn btn-light btn-sm text-primary px-2 border-0 bg-primary bg-opacity-10 shadow-none" href="@Url.Action("Schedule", "DoctorAvailability", new { doctorId = item.DoctorID })" title="Weekly Availability">
+                                        <i class="bi bi-clock"></i>
+                                    </a>
+                                    <a class="btn btn-light btn-sm text-warning px-2 border-0 bg-warning bg-opacity-10 shadow-none" href="@Url.Action("Index", "DoctorLeave", new { doctorId = item.DoctorID })" title="Leaves Schedule">
+                                        <i class="bi bi-calendar-event"></i>
+                                    </a>
+                                    <button class="btn btn-light btn-sm text-secondary px-2 border-0 shadow-none btnView" data-id="@item.DoctorID" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-light btn-sm text-dark px-2 border-0 bg-light shadow-none btnEdit" data-id="@item.DoctorID" title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="btn btn-light btn-sm text-danger px-2 border-0 bg-danger bg-opacity-10 shadow-none btnDelete" data-id="@item.DoctorID" title="Delete Doctor">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -139,7 +159,11 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted small">No doctors found matching filters.</td>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="text-muted mb-2"><i class="bi bi-person-x" style="font-size: 3rem;"></i></div>
+                            <h6 class="text-dark">No doctors found matching filters.</h6>
+                            <p class="text-muted small">Register a new practitioner or adjust search settings.</p>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -149,25 +173,25 @@
     <!-- Pagination -->
     @if (ViewBag.TotalPages > 1)
     {
-        <div class="pagination-container">
-            <div class="pagination-info">
+        <div class="card-footer border-0 bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+            <div class="small text-muted fw-medium">
                 Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems records)
             </div>
             <nav aria-label="Page navigation">
-                <ul class="pagination pagination-sm mb-0">
+                <ul class="pagination pagination-sm mb-0 gap-1">
                     <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
-                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
+                        <a class="page-link rounded-2 border-0 bg-light text-dark" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = ViewBag.CurrentPage - 1, pageSize = ViewBag.PageSize })">
                             <i class="bi bi-chevron-left"></i>
                         </a>
                     </li>
                     @for (int i = 1; i <= ViewBag.TotalPages; i++)
                     {
                         <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = i, pageSize = ViewBag.PageSize })">@i</a>
+                            <a class="page-link rounded-2 border-0 @(ViewBag.CurrentPage == i ? "bg-primary text-white" : "bg-light text-dark")" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = i, pageSize = ViewBag.PageSize })">@i</a>
                         </li>
                     }
                     <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
-                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
+                        <a class="page-link rounded-2 border-0 bg-light text-dark" href="@Url.Action("Index", new { searchTerm = ViewBag.SearchTerm, branchId = ViewBag.SelectedBranch, departmentId = ViewBag.SelectedDepartment, specializationId = ViewBag.SelectedSpecialization, isActive = ViewBag.SelectedStatus, page = ViewBag.CurrentPage + 1, pageSize = ViewBag.PageSize })">
                             <i class="bi bi-chevron-right"></i>
                         </a>
                     </li>
@@ -188,6 +212,22 @@
             <div class="modal-body" id="doctorModalBody">
                 <!-- Content loaded dynamically -->
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Offcanvas Drawer -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="statsPanelDrawer" aria-labelledby="statsPanelLabel" style="width: 420px; max-width: 95vw;">
+    <div class="offcanvas-header" style="border-bottom: 1px solid #e2e8f0; padding: 0.9rem 1.25rem;">
+        <h6 class="offcanvas-title fw-semibold" id="statsPanelLabel" style="font-size:0.9rem;">
+            <i class="bi bi-bar-chart-line me-2 text-primary"></i>Doctor Stats & History
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0" id="statsPanelBody" style="overflow-y: auto;">
+        <div class="text-center py-5 text-muted">
+            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+            <p class="small mb-0">Loading stats...</p>
         </div>
     </div>
 </div>
@@ -328,6 +368,71 @@
                             icon: 'error',
                             title: 'Connection Error',
                             text: 'Failed to update doctor status.'
+                        });
+                    }
+                });
+            });
+
+            // Open Stats Panel Drawer on doctor name click
+            var statsDrawer = new bootstrap.Offcanvas(document.getElementById('statsPanelDrawer'));
+            $(document).on('click', '.btnStats', function () {
+                var id = $(this).data('id');
+                var docName = $(this).text().trim();
+                $('#statsPanelLabel').html('<i class="bi bi-bar-chart-line me-2 text-primary"></i>Stats &amp; History');
+                $('#statsPanelBody').html('<div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><p class="small mb-0">Loading stats...</p></div>');
+                statsDrawer.show();
+                $.get('@Url.Action("StatsPanel")/' + id, function (html) {
+                    $('#statsPanelBody').html(html);
+                }).fail(function () {
+                    $('#statsPanelBody').html('<div class="text-center py-5 text-danger small"><i class="bi bi-exclamation-circle d-block fs-3 mb-2"></i>Failed to load stats.</div>');
+                });
+            });
+
+            // Delete Doctor Handler
+            $(document).on('click', '.btnDelete', function () {
+                var id = $(this).data('id');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You are about to delete this doctor's profile and user account. This action cannot be undone!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '@Url.Action("Delete")/' + id,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (res) {
+                                if (res.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Deleted!',
+                                        text: res.message,
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(function () {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Failed',
+                                        text: res.message
+                                    });
+                                }
+                            },
+                            error: function () {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'System Error',
+                                    text: 'An unexpected error occurred.'
+                                });
+                            }
                         });
                     }
                 });

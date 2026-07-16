@@ -26,23 +26,27 @@ namespace Pharma_Script.Controllers
         }
 
         // GET: /Doctors
-        public async Task<IActionResult> Index(int? branchId, int? departmentId, int? specializationId, bool? isActive, string searchTerm, int page = 1, int pageSize = 10)
+        public async Task<IActionResult> Index(int? orgIdFilter, int? branchId, int? departmentId, int? specializationId, bool? isActive, string searchTerm, int page = 1, int pageSize = 10)
         {
             var isPlatformOwner = User.IsPlatformOwner();
-            var orgId = User.GetOrganizationId();
+            var userOrgId = User.GetOrganizationId();
+            var activeOrgId = isPlatformOwner ? orgIdFilter : userOrgId;
 
             // Load filters metadata
             IEnumerable<Branch> branches;
             IEnumerable<Department> departments;
             if (isPlatformOwner)
             {
-                branches = await _uow.Branches.GetAllAsync();
-                departments = await _uow.Departments.GetAllAsync();
+                var organizations = await _uow.Organizations.GetAllAsync();
+                ViewBag.Organizations = new SelectList(organizations.Where(o => o.IsActive), "OrganizationID", "OrganizationName", orgIdFilter);
+                
+                branches = activeOrgId.HasValue ? await _uow.Branches.GetByOrganizationIdAsync(activeOrgId.Value) : await _uow.Branches.GetAllAsync();
+                departments = activeOrgId.HasValue ? await _uow.Departments.GetByOrganizationIdAsync(activeOrgId.Value) : await _uow.Departments.GetAllAsync();
             }
-            else if (orgId.HasValue)
+            else if (userOrgId.HasValue)
             {
-                branches = await _uow.Branches.GetByOrganizationIdAsync(orgId.Value);
-                departments = await _uow.Departments.GetByOrganizationIdAsync(orgId.Value);
+                branches = await _uow.Branches.GetByOrganizationIdAsync(userOrgId.Value);
+                departments = await _uow.Departments.GetByOrganizationIdAsync(userOrgId.Value);
             }
             else
             {
@@ -62,14 +66,15 @@ namespace Pharma_Script.Controllers
             }, "Value", "Text", isActive?.ToString().ToLower());
 
             ViewBag.SearchTerm = searchTerm;
+            ViewBag.SelectedOrg = orgIdFilter;
             ViewBag.SelectedBranch = branchId;
             ViewBag.SelectedDepartment = departmentId;
             ViewBag.SelectedSpecialization = specializationId;
             ViewBag.SelectedStatus = isActive;
 
             // Fetch and Paginate
-            var doctors = await _uow.Doctors.SearchAndPaginateAsync(isPlatformOwner ? null : orgId, branchId, departmentId, specializationId, isActive, searchTerm, page, pageSize);
-            var totalItems = await _uow.Doctors.GetSearchCountAsync(isPlatformOwner ? null : orgId, branchId, departmentId, specializationId, isActive, searchTerm);
+            var doctors = await _uow.Doctors.SearchAndPaginateAsync(activeOrgId, branchId, departmentId, specializationId, isActive, searchTerm, page, pageSize);
+            var totalItems = await _uow.Doctors.GetSearchCountAsync(activeOrgId, branchId, departmentId, specializationId, isActive, searchTerm);
 
             ViewBag.CurrentPage = page;
             ViewBag.PageSize = pageSize;
@@ -93,11 +98,37 @@ namespace Pharma_Script.Controllers
             return PartialView("_Details", doc);
         }
 
+        // GET: /Doctors/StatsPanel/5 (Partial view – doctor patient & revenue stats)
+        [HttpGet]
+        public async Task<IActionResult> StatsPanel(int id)
+        {
+            var userOrgId = User.GetOrganizationId();
+            var isPlatformOwner = User.IsPlatformOwner();
+
+            var doc = await _uow.Doctors.GetDoctorDetailsByIdAsync(id, isPlatformOwner ? null : userOrgId);
+            if (doc == null)
+                return NotFound("Doctor profile not found.");
+
+            var appointments = (await _uow.Appointments.GetByDoctorIdAsync(id, isPlatformOwner ? null : userOrgId)).ToList();
+            var totalRevenue = await _uow.Payments.GetTotalByDoctorIdAsync(id, isPlatformOwner ? null : userOrgId);
+
+            var uniquePatients = appointments.Select(a => a.PatientID).Distinct().Count();
+            var completedCount = appointments.Count(a => a.Status == "Completed");
+
+            ViewBag.Doctor = doc;
+            ViewBag.Appointments = appointments;
+            ViewBag.TotalRevenue = totalRevenue;
+            ViewBag.UniquePatients = uniquePatients;
+            ViewBag.CompletedCount = completedCount;
+
+            return PartialView("_StatsPanel", doc);
+        }
+
         // GET: /Doctors/Create (Partial View for Modal)
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var model = new DoctorViewModel();
+            var model = new DoctorViewModel { PaymentGatewayIsActive = true };
             var isPlatformOwner = User.IsPlatformOwner();
             var userOrgId = User.GetOrganizationId();
 
@@ -173,6 +204,18 @@ namespace Pharma_Script.Controllers
                 return Json(new { success = false, message = "Email address is already in use by another user." });
             }
 
+            // Payment Gateway (Razorpay) - only Organization Admin may configure credentials.
+            // Doctors have no access to this controller at all, so they can never view/edit this.
+            var canManagePaymentGateway = User.IsInRole("Organization Admin");
+            var razorpayKeyId = canManagePaymentGateway ? model.RazorpayKeyId?.Trim() : null;
+            var razorpayKeySecret = canManagePaymentGateway ? model.RazorpayKeySecret?.Trim() : null;
+            if (canManagePaymentGateway
+                && (model.PaymentGatewayIsActive || !string.IsNullOrEmpty(razorpayKeyId) || !string.IsNullOrEmpty(razorpayKeySecret))
+                && (string.IsNullOrEmpty(razorpayKeyId) || string.IsNullOrEmpty(razorpayKeySecret)))
+            {
+                return Json(new { success = false, message = "Enter both Razorpay Key ID and Key Secret to enable online payments for this doctor." });
+            }
+
             // Find Doctor role
             var roles = await _uow.Roles.GetAllAsync();
             var doctorRole = roles.FirstOrDefault(r => r.RoleName.Equals("Doctor", StringComparison.OrdinalIgnoreCase));
@@ -233,6 +276,19 @@ namespace Pharma_Script.Controllers
                 // Assign specializations
                 await _uow.Doctors.AddDoctorSpecializationsAsync(doctorId, model.SpecializationIDs);
 
+                if (canManagePaymentGateway && !string.IsNullOrEmpty(razorpayKeyId) && !string.IsNullOrEmpty(razorpayKeySecret))
+                {
+                    await _uow.DoctorPaymentGateways.AddAsync(new DoctorPaymentGateway
+                    {
+                        OrganizationID = model.OrganizationID,
+                        DoctorID = doctorId,
+                        PaymentProvider = "Razorpay",
+                        KeyID = razorpayKeyId,
+                        KeySecret = razorpayKeySecret,
+                        IsActive = model.PaymentGatewayIsActive
+                    });
+                }
+
                 await _uow.CommitAsync();
                 return Json(new { success = true, message = "Doctor created successfully." });
             }
@@ -285,6 +341,22 @@ namespace Pharma_Script.Controllers
                 ExistingProfileImage = doc.ProfileImage,
                 SpecializationIDs = doc.SpecializationIDs
             };
+
+            if (User.IsInRole("Organization Admin"))
+            {
+                var gateway = await _uow.DoctorPaymentGateways.GetByDoctorIdAsync(doc.DoctorID);
+                if (gateway != null)
+                {
+                    model.HasPaymentGateway = true;
+                    model.RazorpayKeyId = gateway.KeyID;
+                    model.RazorpayKeySecretMasked = MaskSecret(gateway.KeySecret);
+                    model.PaymentGatewayIsActive = gateway.IsActive;
+                }
+                else
+                {
+                    model.PaymentGatewayIsActive = true;
+                }
+            }
 
             var isPlatformOwner = User.IsPlatformOwner();
             if (isPlatformOwner)
@@ -364,6 +436,27 @@ namespace Pharma_Script.Controllers
                 return Json(new { success = false, message = "Doctor profile not found." });
             }
 
+            // Payment Gateway (Razorpay) - only Organization Admin may configure credentials.
+            // A blank Key Secret means "keep the existing one" (it's never sent back to the browser);
+            // a blank Key ID means "leave the stored config untouched, just apply the Active toggle".
+            var canManagePaymentGateway = User.IsInRole("Organization Admin");
+            DoctorPaymentGateway? existingGateway = null;
+            string? razorpayKeyId = null;
+            string? razorpayKeySecretInput = null;
+            if (canManagePaymentGateway)
+            {
+                existingGateway = await _uow.DoctorPaymentGateways.GetByDoctorIdAsync(model.DoctorID);
+                razorpayKeyId = model.RazorpayKeyId?.Trim();
+                razorpayKeySecretInput = model.RazorpayKeySecret?.Trim();
+                var willHaveSecret = !string.IsNullOrEmpty(razorpayKeySecretInput) || !string.IsNullOrEmpty(existingGateway?.KeySecret);
+
+                if ((model.PaymentGatewayIsActive || !string.IsNullOrEmpty(razorpayKeyId) || !string.IsNullOrEmpty(razorpayKeySecretInput))
+                    && (string.IsNullOrEmpty(razorpayKeyId) || !willHaveSecret))
+                {
+                    return Json(new { success = false, message = "Enter both Razorpay Key ID and Key Secret to enable online payments for this doctor." });
+                }
+            }
+
             await _uow.BeginTransactionAsync();
             try
             {
@@ -408,6 +501,31 @@ namespace Pharma_Script.Controllers
                 // Update specializations
                 await _uow.Doctors.ClearDoctorSpecializationsAsync(model.DoctorID);
                 await _uow.Doctors.AddDoctorSpecializationsAsync(model.DoctorID, model.SpecializationIDs);
+
+                if (canManagePaymentGateway)
+                {
+                    if (!string.IsNullOrEmpty(razorpayKeyId))
+                    {
+                        var keySecretToStore = !string.IsNullOrEmpty(razorpayKeySecretInput)
+                            ? razorpayKeySecretInput
+                            : existingGateway?.KeySecret ?? string.Empty;
+
+                        await _uow.DoctorPaymentGateways.UpsertAsync(new DoctorPaymentGateway
+                        {
+                            OrganizationID = model.OrganizationID,
+                            DoctorID = model.DoctorID,
+                            PaymentProvider = "Razorpay",
+                            KeyID = razorpayKeyId,
+                            KeySecret = keySecretToStore,
+                            IsActive = model.PaymentGatewayIsActive
+                        });
+                    }
+                    else if (existingGateway != null)
+                    {
+                        existingGateway.IsActive = model.PaymentGatewayIsActive;
+                        await _uow.DoctorPaymentGateways.UpdateAsync(existingGateway);
+                    }
+                }
 
                 await _uow.CommitAsync();
                 return Json(new { success = true, message = "Doctor profile updated successfully." });
@@ -472,6 +590,55 @@ namespace Pharma_Script.Controllers
                 branches = branches.Where(b => b.IsActive == true).Select(b => new { id = b.BranchID, name = b.BranchName }),
                 departments = departments.Where(d => d.IsActive == true).Select(d => new { id = d.DepartmentID, name = d.DepartmentName })
             });
+        }
+
+        // POST: /Doctors/Delete/5
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var isPlatformOwner = User.IsPlatformOwner();
+                var userOrgId = User.GetOrganizationId();
+
+                var doctor = await _uow.Doctors.GetByIdAsync(id);
+                if (doctor == null)
+                {
+                    return Json(new { success = false, message = "Doctor profile not found." });
+                }
+
+                // If not Platform Owner, check if Doctor belongs to the same Organization
+                if (!isPlatformOwner && doctor.OrganizationID != userOrgId)
+                {
+                    return Json(new { success = false, message = "Unauthorized access to delete this doctor." });
+                }
+
+                // Delete image if exists
+                var user = await _uow.Users.GetByIdAsync(doctor.UserID);
+                if (user != null && !string.IsNullOrEmpty(user.ProfileImage))
+                {
+                    CmsImageUploadHelper.DeleteIfExists(_env.WebRootPath, user.ProfileImage);
+                }
+
+                // Delete Doctor and User
+                await _uow.Doctors.DeleteAsync(id);
+                await _uow.Users.DeleteAsync(doctor.UserID);
+
+                return Json(new { success = true, message = "Doctor profile and user account deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
+        }
+
+        // Never returns the real secret - only the last 4 characters, for the admin to recognize
+        // which credential is on file without re-exposing the full value to the browser.
+        private static string MaskSecret(string secret)
+        {
+            if (string.IsNullOrEmpty(secret)) return string.Empty;
+            var visible = secret.Length > 4 ? secret[^4..] : secret;
+            return new string('•', 8) + visible;
         }
     }
 }

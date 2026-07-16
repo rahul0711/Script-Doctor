@@ -31,19 +31,19 @@
 
         <div class="col-12 col-md-6">
             <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
-            <input asp-for="Email" class="form-control" placeholder="contact@maxhealthcare.com" />
+            <input asp-for="Email" type="email" class="form-control" placeholder="contact@maxhealthcare.com" />
             <span asp-validation-for="Email" class="text-danger small" style="font-size: 0.75rem;"></span>
         </div>
 
         <div class="col-12 col-md-6">
             <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
-            <input asp-for="Phone" class="form-control" placeholder="+91 9876543210" />
+            <input asp-for="Phone" type="tel" class="form-control" placeholder="+91 9876543210" />
             <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
         </div>
 
         <div class="col-12 col-md-6">
             <label asp-for="AlternatePhone" class="form-label small fw-semibold text-secondary"></label>
-            <input asp-for="AlternatePhone" class="form-control" placeholder="+91 1122334455 (Optional)" />
+            <input asp-for="AlternatePhone" type="tel" class="form-control" placeholder="+91 1122334455 (Optional)" />
             <span asp-validation-for="AlternatePhone" class="text-danger small" style="font-size: 0.75rem;"></span>
         </div>
 

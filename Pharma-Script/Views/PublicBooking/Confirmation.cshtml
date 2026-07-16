@@ -1,6 +1,8 @@
 @model Pharma_Script.Models.Appointment
 @{
     Layout = "~/Views/Public/Shared/_PublicLayout.cshtml";
+    var payment = ViewBag.Payment as Pharma_Script.Models.Payment;
+    var paymentSucceeded = payment?.PaymentStatus == "Paid";
 }
 
 <section class="pub-section">
@@ -10,6 +12,17 @@
         </div>
         <h2 class="pub-heading">Appointment Confirmed</h2>
         <p class="text-muted">Your appointment with <strong>Dr. @Model.DoctorName</strong> has been booked successfully.</p>
+
+        @if (payment != null)
+        {
+            <div class="alert @(paymentSucceeded ? "alert-success" : "alert-warning") d-flex align-items-center gap-2 text-start mt-3 mb-0">
+                <i class="bi @(paymentSucceeded ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill") fs-5"></i>
+                <div>
+                    <div class="fw-bold">@(paymentSucceeded ? "Payment Successful" : $"Payment {payment.PaymentStatus}")</div>
+                    <div class="small">₹@payment.Amount.ToString("0.##") paid via @payment.PaymentMethod &middot; Ref: @payment.TransactionReference</div>
+                </div>
+            </div>
+        }
 
         <div class="pub-service-card text-start mt-4">
             <div class="row g-3">
@@ -32,6 +45,6 @@
             </div>
         </div>
 
-        <a href="/@ViewContext.RouteData.Values["slug"]" class="pub-btn-cta d-inline-block mt-4">Return to Homepage</a>
+        <a href="/@ViewContext.RouteData.Values["slug"]/my/appointments" class="pub-btn-cta d-inline-block mt-4">View My Appointments</a>
     </div>
 </section>

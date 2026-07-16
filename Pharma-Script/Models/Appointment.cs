@@ -33,5 +33,6 @@ namespace Pharma_Script.Models
         public DateTime? PatientDOB { get; set; }
         public string? BranchName { get; set; }
         public string? OrganizationName { get; set; }
+        public string? PaymentStatus { get; set; } // Pending, Paid, Failed, Refunded - from most recent linked Payment, if any
     }
 }

@@ -27,5 +27,11 @@ namespace Pharma_Script.ViewModels.Appointment
         public string? AppointmentReason { get; set; }
 
         public int PatientID { get; set; }
+
+        // Populated client-side by Razorpay Checkout's success handler after payment;
+        // verified server-side before an appointment is ever created.
+        public string? RazorpayOrderId { get; set; }
+        public string? RazorpayPaymentId { get; set; }
+        public string? RazorpaySignature { get; set; }
     }
 }

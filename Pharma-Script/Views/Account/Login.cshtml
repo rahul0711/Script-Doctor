@@ -7,9 +7,9 @@
 <div class="login-bg">
     <div class="login-card">
         <div class="text-center mb-4">
-            <h4 class="fw-bold text-dark mb-1" style="letter-spacing: -0.5px;">
-                <i class="bi bi-heart-pulse-fill text-primary me-2"></i>Script<span>India</span>
-            </h4>
+            <a href="/" class="d-inline-block mb-2 text-decoration-none" style="max-width: 100%;">
+                <img src="~/assets/Cloud Doctor Logo.png" alt="Cloud Doctor" style="max-height: 115px; max-width: 260px; width: 100%; height: auto; object-fit: contain;" />
+            </a>
             <p class="text-muted small">Sign in to your healthcare console</p>
         </div>
 
@@ -22,7 +22,7 @@
                 <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted" style="padding-right: 5px;"><i class="bi bi-envelope fs-6"></i></span>
-                    <input asp-for="Email" class="form-control border-start-0 ps-2" placeholder="name@company.com" required />
+                    <input asp-for="Email" type="email" class="form-control border-start-0 ps-2" placeholder="name@company.com" required />
                 </div>
                 <span asp-validation-for="Email" class="text-danger small mt-1 d-block" style="font-size: 0.75rem;"></span>
             </div>
@@ -33,7 +33,7 @@
                 </div>
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0 text-muted" style="padding-right: 5px;"><i class="bi bi-lock fs-6"></i></span>
-                    <input asp-for="Password" class="form-control border-start-0 ps-2" placeholder="••••••••" required />
+                    <input asp-for="Password" type="password" class="form-control border-start-0 ps-2" placeholder="••••••••" required />
                 </div>
                 <span asp-validation-for="Password" class="text-danger small mt-1 d-block" style="font-size: 0.75rem;"></span>
             </div>

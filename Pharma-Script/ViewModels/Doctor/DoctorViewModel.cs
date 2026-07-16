@@ -104,5 +104,24 @@ namespace Pharma_Script.ViewModels.Doctor
         [Required(ErrorMessage = "Please select at least one specialization.")]
         [Display(Name = "Specializations")]
         public List<int> SpecializationIDs { get; set; } = new List<int>();
+
+        // Payment Gateway (Razorpay) - Organization Admin only, see DoctorsController.
+        // KeyID is a public identifier and safe to round-trip through the form; KeySecret is never
+        // sent back to the browser once saved - a blank submission means "keep the existing secret".
+        [StringLength(255, ErrorMessage = "Key ID cannot exceed 255 characters.")]
+        [Display(Name = "Razorpay Key ID")]
+        public string? RazorpayKeyId { get; set; }
+
+        [StringLength(255, ErrorMessage = "Key Secret cannot exceed 255 characters.")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Razorpay Key Secret")]
+        public string? RazorpayKeySecret { get; set; }
+
+        [Display(Name = "Enable Online Payments")]
+        public bool PaymentGatewayIsActive { get; set; }
+
+        // Display-only, populated on GET Edit - never bound back from the form.
+        public bool HasPaymentGateway { get; set; }
+        public string? RazorpayKeySecretMasked { get; set; }
     }
 }
