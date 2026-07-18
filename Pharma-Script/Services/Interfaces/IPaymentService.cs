@@ -19,9 +19,9 @@ namespace Pharma_Script.Services.Interfaces
         public string? PaymentMethod { get; set; }
     }
 
-    // Every call takes the KeyId/KeySecret explicitly - each doctor has their own Razorpay
-    // credentials (Repositories/Implementations/DoctorPaymentGatewayRepository), so there is no
-    // single global key to bake into the service at construction time.
+    // Every call takes the KeyId/KeySecret explicitly rather than baking them in at construction
+    // time - the platform's single Razorpay account (Services/Implementations/PlatformPaymentSettings)
+    // is the only caller today, but the service itself stays gateway-account-agnostic.
     public interface IPaymentService
     {
         Task<RazorpayOrder> CreateOrderAsync(string keyId, string keySecret, decimal amountRupees, string receipt);

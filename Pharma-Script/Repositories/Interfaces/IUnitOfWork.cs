@@ -12,7 +12,6 @@ namespace Pharma_Script.Repositories.Interfaces
         IUserRepository Users { get; }
         ISpecializationRepository Specializations { get; }
         IDoctorRepository Doctors { get; }
-        IDoctorPaymentGatewayRepository DoctorPaymentGateways { get; }
         IDoctorAvailabilityRepository DoctorAvailabilities { get; }
         IDoctorLeaveRepository DoctorLeaves { get; }
         IReceptionistRepository Receptionists { get; }
@@ -33,6 +32,7 @@ namespace Pharma_Script.Repositories.Interfaces
         IContactMessageRepository ContactMessages { get; }
         IConsultationSessionRepository ConsultationSessions { get; }
         INotificationRepository Notifications { get; }
+        ISettlementRepository Settlements { get; }
 
         Task OpenConnectionAsync();
         Task BeginTransactionAsync();

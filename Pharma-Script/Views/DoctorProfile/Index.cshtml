@@ -1,0 +1,181 @@
+@model Pharma_Script.ViewModels.Doctor.DoctorProfileViewModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Profile";
+}
+
+<div class="page-title-box">
+    <div>
+        <h4 class="page-title">My Profile</h4>
+        <p class="text-muted small mb-0 font-medium">Manage your personal, professional, and account details.</p>
+    </div>
+</div>
+
+<form asp-action="Update" asp-controller="DoctorProfile" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="DoctorID" />
+    <input type="hidden" asp-for="UserID" />
+    <input type="hidden" asp-for="ExistingProfileImage" />
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <!-- Account & Identity -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-person-badge text-primary me-2"></i>Account & Identity</h5>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label asp-for="ProfileImageFile" class="form-label small fw-semibold text-secondary"></label>
+                            @if (!string.IsNullOrEmpty(Model.ExistingProfileImage))
+                            {
+                                <div class="mb-2">
+                                    <img src="@Model.ExistingProfileImage" alt="Current profile image" class="rounded-circle border" style="width: 72px; height: 72px; object-fit: cover;" />
+                                </div>
+                            }
+                            <input asp-for="ProfileImageFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+                            <span class="form-text small">Upload a new image to replace the current one. JPG, PNG, or WEBP. Max 3MB.</span>
+                            <span asp-validation-for="ProfileImageFile" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="FirstName" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="FirstName" class="form-control" required />
+                            <span asp-validation-for="FirstName" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="LastName" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Email" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="Email" class="form-control" type="email" required />
+                            <span asp-validation-for="Email" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Phone" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="Phone" type="tel" class="form-control" required />
+                            <span asp-validation-for="Phone" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Info -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-file-medical text-primary me-2"></i>Professional Info</h5>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label asp-for="Qualification" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="Qualification" class="form-control" placeholder="MBBS, MD" required />
+                            <span asp-validation-for="Qualification" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="ExperienceYears" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="ExperienceYears" class="form-control" type="number" min="0" required />
+                            <span asp-validation-for="ExperienceYears" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="MedicalRegistrationNumber" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="MedicalRegistrationNumber" class="form-control" required />
+                            <span asp-validation-for="MedicalRegistrationNumber" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="ConsultationFee" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="ConsultationFee" class="form-control" type="number" step="0.01" min="0" required />
+                            <span asp-validation-for="ConsultationFee" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="VideoConsultationFee" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="VideoConsultationFee" class="form-control" type="number" step="0.01" min="0" required />
+                            <span asp-validation-for="VideoConsultationFee" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label asp-for="VoiceConsultationFee" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="VoiceConsultationFee" class="form-control" type="number" step="0.01" min="0" required />
+                            <span asp-validation-for="VoiceConsultationFee" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Biography" class="form-label small fw-semibold text-secondary"></label>
+                            <textarea asp-for="Biography" class="form-control" rows="3" placeholder="Brief professional description..."></textarea>
+                            <span asp-validation-for="Biography" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+                    </div>
+
+                    <h6 class="text-primary border-bottom pb-2 mb-2 mt-4"><i class="bi bi-stethoscope me-2"></i>Specializations</h6>
+                    <div class="d-flex flex-wrap gap-2 py-1">
+                        @if (ViewBag.Specializations != null)
+                        {
+                            foreach (var spec in (IEnumerable<Pharma_Script.Models.Specialization>)ViewBag.Specializations)
+                            {
+                                var isChecked = Model.SpecializationIDs != null && Model.SpecializationIDs.Contains(spec.SpecializationID) ? "checked" : "";
+                                <div>
+                                    <input type="checkbox" class="btn-check" id="spec_@spec.SpecializationID" name="SpecializationIDs" value="@spec.SpecializationID" autocomplete="off" @isChecked />
+                                    <label class="btn btn-outline-primary btn-sm rounded-pill px-3" for="spec_@spec.SpecializationID">@spec.SpecializationName</label>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-dark border-bottom pb-3 mb-3"><i class="bi bi-shield-lock text-primary me-2"></i>Change Password</h5>
+                    <p class="text-muted small">Leave these fields blank to keep your current password.</p>
+
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label asp-for="CurrentPassword" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="CurrentPassword" class="form-control" type="password" autocomplete="current-password" />
+                            <span asp-validation-for="CurrentPassword" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="NewPassword" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="NewPassword" class="form-control" type="password" autocomplete="new-password" />
+                            <span asp-validation-for="NewPassword" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label asp-for="ConfirmNewPassword" class="form-label small fw-semibold text-secondary"></label>
+                            <input asp-for="ConfirmNewPassword" class="form-control" type="password" autocomplete="new-password" />
+                            <span asp-validation-for="ConfirmNewPassword" class="text-danger small" style="font-size: 0.75rem;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4 text-center">
+                    @if (!string.IsNullOrEmpty(Model.ExistingProfileImage))
+                    {
+                        <img src="@Model.ExistingProfileImage" alt="Profile" class="rounded-circle border mb-3" style="width: 96px; height: 96px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle border mb-3 mx-auto d-flex align-items-center justify-content-center bg-light" style="width: 96px; height: 96px;">
+                            <i class="bi bi-person-badge-fill text-secondary" style="font-size: 2.2rem;"></i>
+                        </div>
+                    }
+                    <h5 class="text-dark mb-1">Dr. @Model.FirstName @Model.LastName</h5>
+                    <p class="text-muted small mb-3">@Model.Qualification</p>
+                    <button type="submit" class="btn btn-primary w-100 py-2"><i class="bi bi-check-circle me-1.5"></i>Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

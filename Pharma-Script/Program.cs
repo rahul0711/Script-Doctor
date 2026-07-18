@@ -33,8 +33,10 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IPatientProvisioningService, PatientProvisioningService>();
 builder.Services.AddScoped<IConsultationSessionService, ConsultationSessionService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
 builder.Services.AddHttpClient<IPaymentService, PaymentService>();
+builder.Services.AddSingleton<IPlatformPaymentSettings, PlatformPaymentSettings>();
 
 // Configure Cookie Authentication
 // OnRedirectToLogin: when a patient hits a [Authorize(Roles="Patient")] public route,

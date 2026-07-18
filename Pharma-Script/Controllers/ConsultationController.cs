@@ -18,12 +18,14 @@ namespace Pharma_Script.Controllers
         private readonly IUnitOfWork _uow;
         private readonly IAppointmentService _appointmentService;
         private readonly IConsultationSessionService _sessionService;
+        private readonly IEmailService _emailService;
 
-        public ConsultationController(IUnitOfWork uow, IAppointmentService appointmentService, IConsultationSessionService sessionService)
+        public ConsultationController(IUnitOfWork uow, IAppointmentService appointmentService, IConsultationSessionService sessionService, IEmailService emailService)
         {
             _uow = uow;
             _appointmentService = appointmentService;
             _sessionService = sessionService;
+            _emailService = emailService;
         }
 
         // GET: /Consultation
@@ -185,6 +187,36 @@ namespace Pharma_Script.Controllers
             {
                 await _sessionService.UpdateVideoLinkAsync(appointmentId, meetingProvider, meetingUrl, orgId.Value);
                 TempData["Success"] = "Video link saved successfully.";
+
+                var appt = await _uow.Appointments.GetAppointmentDetailsByIdAsync(appointmentId, orgId.Value);
+                if (appt != null
+                    && appt.AppointmentType.Equals("Video", StringComparison.OrdinalIgnoreCase)
+                    && appt.PaymentStatus != null && appt.PaymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase))
+                {
+                    var patient = await _uow.Patients.GetPatientDetailsByIdAsync(appt.PatientID, orgId.Value);
+                    if (patient != null && !string.IsNullOrWhiteSpace(patient.Email))
+                    {
+                        int? age = appt.PatientDOB.HasValue ? DateTime.Today.Year - appt.PatientDOB.Value.Year : null;
+
+                        // Best-effort: an email failure should not undo the already-saved link.
+                        try
+                        {
+                            await _emailService.SendVideoConsultationLinkEmailAsync(
+                                patient.Email, appt.PatientName ?? "Patient", age, appt.DoctorName ?? "Doctor",
+                                meetingUrl, meetingProvider, appt.AppointmentDate, appt.StartTime);
+                            TempData["Success"] = $"Video link saved and emailed to {patient.Email}.";
+                        }
+                        catch (Exception emailEx)
+                        {
+                            Console.WriteLine($"Failed to email video link for AppointmentID {appointmentId}: {emailEx}");
+                            TempData["Error"] = $"Link was saved, but the email to the patient failed: {emailEx.Message}";
+                        }
+                    }
+                    else
+                    {
+                        TempData["Error"] = "Link was saved, but the patient has no email address on file, so no email was sent.";
+                    }
+                }
             }
             catch (Exception ex)
             {

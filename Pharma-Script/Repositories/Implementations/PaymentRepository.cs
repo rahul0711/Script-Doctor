@@ -35,7 +35,10 @@ namespace Pharma_Script.Repositories.Implementations
                 CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
                 Currency = reader.IsDBNull(reader.GetOrdinal("Currency")) ? "INR" : reader.GetString(reader.GetOrdinal("Currency")),
                 RazorpayOrderId = reader.IsDBNull(reader.GetOrdinal("RazorpayOrderId")) ? null : reader.GetString(reader.GetOrdinal("RazorpayOrderId")),
-                RazorpaySignature = reader.IsDBNull(reader.GetOrdinal("RazorpaySignature")) ? null : reader.GetString(reader.GetOrdinal("RazorpaySignature"))
+                RazorpaySignature = reader.IsDBNull(reader.GetOrdinal("RazorpaySignature")) ? null : reader.GetString(reader.GetOrdinal("RazorpaySignature")),
+                PlatformCommission = reader.IsDBNull(reader.GetOrdinal("PlatformCommission")) ? null : (decimal?)reader.GetDecimal(reader.GetOrdinal("PlatformCommission")),
+                OrganizationAmount = reader.IsDBNull(reader.GetOrdinal("OrganizationAmount")) ? null : (decimal?)reader.GetDecimal(reader.GetOrdinal("OrganizationAmount")),
+                RefundStatus = reader.IsDBNull(reader.GetOrdinal("RefundStatus")) ? "None" : reader.GetString(reader.GetOrdinal("RefundStatus"))
             };
 
             for (int i = 0; i < reader.FieldCount; i++)
@@ -70,14 +73,17 @@ namespace Pharma_Script.Repositories.Implementations
             cmd.Parameters.AddWithValue("@Currency", entity.Currency);
             cmd.Parameters.AddWithValue("@RazorpayOrderId", (object?)entity.RazorpayOrderId ?? DBNull.Value);
             cmd.Parameters.AddWithValue("@RazorpaySignature", (object?)entity.RazorpaySignature ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PlatformCommission", (object?)entity.PlatformCommission ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@OrganizationAmount", (object?)entity.OrganizationAmount ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@RefundStatus", entity.RefundStatus);
         }
 
         public override async Task<int> AddAsync(Payment entity)
         {
             var query = $@"INSERT INTO {TableName}
-                (AppointmentID, OrganizationID, Amount, PaymentMethod, TransactionReference, PaymentStatus, PaidAt, Currency, RazorpayOrderId, RazorpaySignature)
+                (AppointmentID, OrganizationID, Amount, PaymentMethod, TransactionReference, PaymentStatus, PaidAt, Currency, RazorpayOrderId, RazorpaySignature, PlatformCommission, OrganizationAmount, RefundStatus)
                 VALUES
-                (@AppointmentID, @OrganizationID, @Amount, @PaymentMethod, @TransactionReference, @PaymentStatus, @PaidAt, @Currency, @RazorpayOrderId, @RazorpaySignature);
+                (@AppointmentID, @OrganizationID, @Amount, @PaymentMethod, @TransactionReference, @PaymentStatus, @PaidAt, @Currency, @RazorpayOrderId, @RazorpaySignature, @PlatformCommission, @OrganizationAmount, @RefundStatus);
                 SELECT LAST_INSERT_ID();";
 
             await EnsureConnectionOpenAsync();
@@ -100,7 +106,10 @@ namespace Pharma_Script.Repositories.Implementations
                 PaidAt = @PaidAt,
                 Currency = @Currency,
                 RazorpayOrderId = @RazorpayOrderId,
-                RazorpaySignature = @RazorpaySignature
+                RazorpaySignature = @RazorpaySignature,
+                PlatformCommission = @PlatformCommission,
+                OrganizationAmount = @OrganizationAmount,
+                RefundStatus = @RefundStatus
                 WHERE PaymentID = @PaymentID";
 
             await EnsureConnectionOpenAsync();
@@ -285,6 +294,68 @@ namespace Pharma_Script.Repositories.Implementations
             using var cmd = CreateCommand(query);
             cmd.Parameters.AddWithValue("@OrgID", orgId);
 
+            var result = await cmd.ExecuteScalarAsync();
+            return result == null || result == DBNull.Value ? 0m : Convert.ToDecimal(result);
+        }
+
+        public async Task<decimal> GetTotalRevenueAsync()
+        {
+            var query = $"SELECT IFNULL(SUM(Amount), 0) FROM {TableName} WHERE PaymentStatus = 'Paid'";
+            await EnsureConnectionOpenAsync();
+            using var cmd = CreateCommand(query);
+            var result = await cmd.ExecuteScalarAsync();
+            return result == null || result == DBNull.Value ? 0m : Convert.ToDecimal(result);
+        }
+
+        public async Task<decimal> GetTodayRevenueAsync()
+        {
+            var query = $"SELECT IFNULL(SUM(Amount), 0) FROM {TableName} WHERE PaymentStatus = 'Paid' AND DATE(PaidAt) = CURDATE()";
+            await EnsureConnectionOpenAsync();
+            using var cmd = CreateCommand(query);
+            var result = await cmd.ExecuteScalarAsync();
+            return result == null || result == DBNull.Value ? 0m : Convert.ToDecimal(result);
+        }
+
+        public async Task<IEnumerable<(DateTime Date, decimal Amount)>> GetDailyRevenueAsync(int days)
+        {
+            var list = new List<(DateTime Date, decimal Amount)>();
+            var query = $@"SELECT DATE(PaidAt) AS RevenueDate, SUM(Amount) AS Total
+                           FROM {TableName}
+                           WHERE PaymentStatus = 'Paid' AND PaidAt >= @Since
+                           GROUP BY DATE(PaidAt)
+                           ORDER BY RevenueDate";
+
+            await EnsureConnectionOpenAsync();
+            using var cmd = CreateCommand(query);
+            cmd.Parameters.AddWithValue("@Since", DateTime.Today.AddDays(-(days - 1)));
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                list.Add((reader.GetDateTime(0), reader.GetDecimal(1)));
+            }
+            return list;
+        }
+
+        public async Task<decimal> GetTotalOrganizationEarningsAsync(int orgId)
+        {
+            var query = $@"SELECT IFNULL(SUM(OrganizationAmount), 0)
+                           FROM {TableName}
+                           WHERE OrganizationID = @OrgID AND PaymentStatus = 'Paid'";
+            await EnsureConnectionOpenAsync();
+            using var cmd = CreateCommand(query);
+            cmd.Parameters.AddWithValue("@OrgID", orgId);
+            var result = await cmd.ExecuteScalarAsync();
+            return result == null || result == DBNull.Value ? 0m : Convert.ToDecimal(result);
+        }
+
+        public async Task<decimal> GetTodayOrganizationEarningsAsync(int orgId)
+        {
+            var query = $@"SELECT IFNULL(SUM(OrganizationAmount), 0)
+                           FROM {TableName}
+                           WHERE OrganizationID = @OrgID AND PaymentStatus = 'Paid' AND DATE(PaidAt) = CURDATE()";
+            await EnsureConnectionOpenAsync();
+            using var cmd = CreateCommand(query);
+            cmd.Parameters.AddWithValue("@OrgID", orgId);
             var result = await cmd.ExecuteScalarAsync();
             return result == null || result == DBNull.Value ? 0m : Convert.ToDecimal(result);
         }

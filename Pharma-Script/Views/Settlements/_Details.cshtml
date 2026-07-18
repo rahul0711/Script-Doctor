@@ -1,0 +1,88 @@
+@model Pharma_Script.Models.OrganizationSettlement
+@{
+    var transactions = (IEnumerable<Pharma_Script.Models.SettlementTransaction>)ViewBag.Transactions;
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="small text-muted">Organization</div>
+        <div class="fw-semibold">@Model.OrganizationName</div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="small text-muted">Status</div>
+        <div class="fw-semibold">
+            @if (Model.SettlementStatus == "Paid")
+            {
+                <span class="badge bg-success-subtle text-success border">Paid</span>
+            }
+            else
+            {
+                <span class="badge bg-warning-subtle text-warning border">Pending</span>
+            }
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="small text-muted">Generated</div>
+        <div class="fw-semibold">@Model.GeneratedAt.ToString("dd MMM yyyy")</div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="small text-muted">Settled</div>
+        <div class="fw-semibold">@(Model.SettledAt?.ToString("dd MMM yyyy") ?? "—")</div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-4">
+        <div class="small text-muted">Gross Amount</div>
+        <div class="fw-bold">₹@Model.TotalGrossAmount.ToString("N2")</div>
+    </div>
+    <div class="col-4">
+        <div class="small text-muted">Platform Commission</div>
+        <div class="fw-bold text-danger">₹@Model.TotalCommission.ToString("N2")</div>
+    </div>
+    <div class="col-4">
+        <div class="small text-muted">Net Payable</div>
+        <div class="fw-bold text-success">₹@Model.TotalNetAmount.ToString("N2")</div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.PaymentReference))
+{
+    <p class="small text-muted">Payment reference: <strong>@Model.PaymentReference</strong></p>
+}
+
+<h6 class="text-primary border-bottom pb-2 mb-2 mt-3">Included Payments</h6>
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Paid On</th>
+                <th class="text-end">Gross</th>
+                <th class="text-end">Commission</th>
+                <th class="text-end">Net</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (transactions != null && transactions.Any())
+            {
+                foreach (var t in transactions)
+                {
+                    <tr>
+                        <td>@t.PatientName</td>
+                        <td>@t.DoctorName</td>
+                        <td class="small">@(t.PaidAt?.ToString("dd MMM yyyy") ?? "—")</td>
+                        <td class="text-end">₹@t.GrossAmount.ToString("N2")</td>
+                        <td class="text-end text-muted">₹@t.CommissionAmount.ToString("N2")</td>
+                        <td class="text-end fw-semibold">₹@t.NetAmount.ToString("N2")</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="6" class="text-center text-muted small py-3">No transactions found.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

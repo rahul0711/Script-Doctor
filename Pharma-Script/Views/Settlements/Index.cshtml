@@ -1,0 +1,232 @@
+@model IEnumerable<Pharma_Script.Models.OrganizationSettlement>
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Settlements";
+    bool isPlatformOwner = ViewBag.IsPlatformOwner;
+}
+
+<div class="page-title-box d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h4 class="page-title mb-1">Settlements</h4>
+        <p class="text-muted small mb-0 font-medium">
+            @if (isPlatformOwner)
+            {
+                <text>Generate and pay out organization settlements from the platform's collected revenue.</text>
+            }
+            else
+            {
+                <text>Track how much the platform owes your organization and when it was last paid.</text>
+            }
+        </p>
+    </div>
+    @if (isPlatformOwner)
+    {
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-primary fw-medium px-4 shadow-sm" style="border-radius: 8px;" id="btnGenerateSettlement">
+                <i class="bi bi-plus-lg me-1.5"></i>Generate Settlement
+            </button>
+        </div>
+    }
+</div>
+
+<div class="table-card mb-4">
+    <div class="table-card-header-premium">
+        <div class="d-flex align-items-center gap-2">
+            <span class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded" style="width: 32px; height: 32px;">
+                <i class="bi bi-cash-stack" style="font-size: 1.1rem;"></i>
+            </span>
+            <h5 class="table-card-title mb-0" style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">Settlement History</h5>
+        </div>
+
+        <form method="get" action="@Url.Action("Index")" class="simple-filter-form justify-content-md-end d-flex gap-2 flex-wrap">
+            @if (isPlatformOwner)
+            {
+                <select name="orgIdFilter" class="form-select form-select-sm" style="min-width: 180px;" onchange="this.form.submit()">
+                    <option value="">-- All Organizations --</option>
+                    @foreach (var item in (SelectList)ViewBag.Organizations)
+                    {
+                        <option value="@item.Value" selected="@(item.Value == ViewBag.SelectedOrg?.ToString())">@item.Text</option>
+                    }
+                </select>
+            }
+            <select name="status" class="form-select form-select-sm" style="min-width: 140px;" onchange="this.form.submit()">
+                <option value="">-- All Status --</option>
+                <option value="Pending" selected="@(ViewBag.SelectedStatus == "Pending")">Pending</option>
+                <option value="Paid" selected="@(ViewBag.SelectedStatus == "Paid")">Paid</option>
+            </select>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    @if (isPlatformOwner)
+                    {
+                        <th>Organization</th>
+                    }
+                    <th class="text-end">Gross Amount</th>
+                    <th class="text-end">Commission</th>
+                    <th class="text-end">Net Payable</th>
+                    <th class="text-center" style="width: 110px;">Status</th>
+                    <th>Generated</th>
+                    <th>Settled</th>
+                    <th class="text-end" style="width: 160px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.SettlementID</td>
+                            @if (isPlatformOwner)
+                            {
+                                <td class="fw-semibold text-dark">@item.OrganizationName</td>
+                            }
+                            <td class="text-end">₹@item.TotalGrossAmount.ToString("N2")</td>
+                            <td class="text-end text-muted">₹@item.TotalCommission.ToString("N2")</td>
+                            <td class="text-end fw-semibold">₹@item.TotalNetAmount.ToString("N2")</td>
+                            <td class="text-center">
+                                @if (item.SettlementStatus == "Paid")
+                                {
+                                    <span class="badge bg-success-subtle text-success border rounded px-2 py-1 small">Paid</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning-subtle text-warning border rounded px-2 py-1 small">Pending</span>
+                                }
+                            </td>
+                            <td class="small">@item.GeneratedAt.ToString("dd MMM yyyy")</td>
+                            <td class="small">@(item.SettledAt?.ToString("dd MMM yyyy") ?? "—")</td>
+                            <td class="text-end">
+                                <button class="btn-action btnViewSettlement" data-id="@item.SettlementID" title="View Transactions">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                @if (isPlatformOwner && item.SettlementStatus == "Pending")
+                                {
+                                    <button class="btn-action btn-action-edit btnMarkPaid" data-id="@item.SettlementID" data-org="@item.OrganizationName" data-amount="@item.TotalNetAmount.ToString("N2")" title="Mark Paid">
+                                        <i class="bi bi-check2-circle"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="@(isPlatformOwner ? 9 : 8)" class="text-center py-5 text-muted small">No settlements found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Showing page @ViewBag.CurrentPage of @ViewBag.TotalPages (@ViewBag.TotalItems records)
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(ViewBag.CurrentPage == i ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { orgIdFilter = ViewBag.SelectedOrg, status = ViewBag.SelectedStatus, page = i, pageSize = ViewBag.PageSize })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+<!-- Modal Dialog -->
+<div class="modal fade" id="commonModal" tabindex="-1" aria-labelledby="commonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="commonModalLabel">Settlement</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="commonModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('commonModal'));
+
+            $('#btnGenerateSettlement').on('click', function () {
+                $('#commonModalLabel').text('Generate Settlement');
+                $('#commonModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+                $.get('@Url.Action("Generate")', function (html) {
+                    $('#commonModalBody').html(html);
+                });
+            });
+
+            $(document).on('click', '.btnViewSettlement', function () {
+                var id = $(this).data('id');
+                $('#commonModalLabel').text('Settlement #' + id);
+                $('#commonModalBody').html('<div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary" role="status"></div></div>');
+                modal.show();
+                $.get('@Url.Action("Details")/' + id, function (html) {
+                    $('#commonModalBody').html(html);
+                });
+            });
+
+            $(document).on('submit', '#generateSettlementForm', function (e) {
+                e.preventDefault();
+                var $form = $(this);
+                $.post($form.attr('action'), $form.serialize(), function (res) {
+                    if (res.success) {
+                        modal.hide();
+                        Swal.fire({ icon: 'success', title: 'Settlement generated', text: res.message }).then(() => location.reload());
+                    } else {
+                        Swal.fire({ icon: 'warning', title: 'Unable to generate', text: res.message });
+                    }
+                });
+            });
+
+            $(document).on('click', '.btnMarkPaid', function () {
+                var id = $(this).data('id');
+                var org = $(this).data('org');
+                var amount = $(this).data('amount');
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Mark settlement as paid?',
+                    html: 'Confirm ₹' + amount + ' has been transferred to <strong>' + org + '</strong>.',
+                    input: 'text',
+                    inputPlaceholder: 'Payment reference (optional)',
+                    showCancelButton: true,
+                    confirmButtonText: 'Mark Paid'
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        $.post('@Url.Action("MarkPaid")', {
+                            settlementId: id,
+                            paymentReference: result.value,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        }, function (res) {
+                            if (res.success) {
+                                Swal.fire({ icon: 'success', title: 'Settled', text: res.message }).then(() => location.reload());
+                            } else {
+                                Swal.fire({ icon: 'error', title: 'Failed', text: res.message });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+    @Html.AntiForgeryToken()
+}

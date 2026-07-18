@@ -325,7 +325,14 @@
                                         <input type="url" name="meetingUrl" class="form-control form-control-sm" value="@session?.MeetingURL" placeholder="https://..." required />
                                     </div>
                                     <div class="col-md-2">
-                                        <button type="submit" class="btn btn-sm btn-primary w-100">Save Link</button>
+                                        @if (Model.AppointmentType == "Video" && Model.PaymentStatus != null && Model.PaymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-send me-1"></i>Send Link</button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-primary w-100">Save Link</button>
+                                        }
                                     </div>
                                 </div>
                             </form>
@@ -400,7 +407,7 @@
                         {
                             <!-- Start Consultation -->
                             <a href="@Url.Action("Workspace", "Consultation", new { id = Model.AppointmentID })" class="btn btn-success w-100 py-2"><i class="bi bi-stethoscope me-1.5"></i>Open Consultation Workspace</a>
-                            
+
                             <!-- Mark No Show -->
                             <form method="post" action="@Url.Action("UpdateStatus")" class="mt-2">
                                 @Html.AntiForgeryToken()
@@ -411,7 +418,31 @@
                             </form>
                         }
 
-                        if (Model.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+                        if (Model.Status.Equals("Rescheduled", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <!-- Confirm the new rescheduled slot -->
+                            <form method="post" action="@Url.Action("UpdateStatus")">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+                                <input type="hidden" name="NewStatus" value="Approved" />
+                                <input type="hidden" name="remarks" value="Rescheduled slot confirmed." />
+                                <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-circle me-1.5"></i>Confirm Rescheduled Slot</button>
+                            </form>
+
+                            <!-- Reject button -->
+                            <button class="btn btn-outline-danger w-100 mt-2" data-bs-toggle="collapse" data-bs-target="#rejectReasonCollapse"><i class="bi bi-x-circle me-1.5"></i>Reject Appointment</button>
+                            <div class="collapse mt-2" id="rejectReasonCollapse">
+                                <form method="post" action="@Url.Action("UpdateStatus")" class="card card-body p-3">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="AppointmentID" value="@Model.AppointmentID" />
+                                    <input type="hidden" name="NewStatus" value="Rejected" />
+                                    <textarea name="remarks" class="form-control form-control-sm mb-2" rows="2" placeholder="State rejection reason..." required></textarea>
+                                    <button type="submit" class="btn btn-danger btn-sm">Confirm Rejection</button>
+                                </form>
+                            </div>
+                        }
+
+                        if (Model.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase) || Model.Status.Equals("Rescheduled", StringComparison.OrdinalIgnoreCase))
                         {
                             <!-- Reschedule option -->
                             <button class="btn btn-outline-primary w-100 mt-2" id="btnOpenRescheduleModal" data-bs-toggle="modal" data-bs-target="#rescheduleModal"><i class="bi bi-clock-history me-1.5"></i>Reschedule Slot</button>

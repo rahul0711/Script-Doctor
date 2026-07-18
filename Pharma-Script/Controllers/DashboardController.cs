@@ -117,6 +117,7 @@ namespace Pharma_Script.Controllers
             int specsCount   = 0;
             int doctorsCount = 0;
             int patientsCount = 0;
+            int appointmentsCount = 0;
 
             if (isPlatformOwner)
             {
@@ -131,9 +132,19 @@ namespace Pharma_Script.Controllers
 
                 var userList = await _uow.Users.GetAllAsync();
                 usersCount = userList.Count();
-                
+
                 doctorsCount = await _uow.Doctors.GetSearchCountAsync(null, null, null, null, null, string.Empty);
                 patientsCount = await _uow.Patients.GetSearchCountAsync(null, null, string.Empty);
+                appointmentsCount = await _uow.Appointments.GetSearchCountAsync(null, null, null, null, null, null, null, null, null, null);
+
+                // Marketplace revenue widgets (platform-wide).
+                ViewBag.TotalRevenue = await _uow.Payments.GetTotalRevenueAsync();
+                ViewBag.TodayRevenue = await _uow.Payments.GetTodayRevenueAsync();
+                ViewBag.PendingSettlementsCount = await _uow.Settlements.GetPendingCountAsync(null);
+                ViewBag.CompletedSettlementsCount = await _uow.Settlements.GetCompletedCountAsync(null);
+                ViewBag.RevenueSeries = await _uow.Payments.GetDailyRevenueAsync(14);
+                ViewBag.RecentPayments = await _uow.Payments.SearchAndPaginateAsync(null, "Paid", null, 1, 5);
+                ViewBag.RecentSettlements = await _uow.Settlements.GetRecentAsync(null, 5);
             }
             else if (orgId.HasValue)
             {
@@ -147,9 +158,18 @@ namespace Pharma_Script.Controllers
 
                 var userList = await _uow.Users.GetByOrganizationIdAsync(orgId.Value);
                 usersCount = userList.Count();
-                
+
                 doctorsCount = await _uow.Doctors.GetSearchCountAsync(orgId.Value, null, null, null, null, string.Empty);
                 patientsCount = await _uow.Patients.GetSearchCountAsync(orgId.Value, null, string.Empty);
+                appointmentsCount = await _uow.Appointments.GetSearchCountAsync(orgId.Value, null, null, null, null, null, null, null, null, null);
+
+                // Marketplace revenue widgets, scoped to this organization.
+                ViewBag.TotalRevenue = await _uow.Payments.GetTotalOrganizationEarningsAsync(orgId.Value);
+                ViewBag.TodayRevenue = await _uow.Payments.GetTodayOrganizationEarningsAsync(orgId.Value);
+                ViewBag.PendingSettlementTotal = await _uow.Settlements.GetPendingTotalAsync(orgId.Value);
+                ViewBag.LastSettlement = await _uow.Settlements.GetLastPaidAsync(orgId.Value);
+                ViewBag.RecentPayments = await _uow.Payments.SearchAndPaginateAsync(orgId.Value, "Paid", null, 1, 5);
+                ViewBag.RecentSettlements = await _uow.Settlements.GetRecentAsync(orgId.Value, 5);
             }
 
             var specList = await _uow.Specializations.GetAllAsync();
@@ -162,6 +182,7 @@ namespace Pharma_Script.Controllers
             ViewBag.SpecsCount    = specsCount;
             ViewBag.DoctorsCount  = doctorsCount;
             ViewBag.PatientsCount = patientsCount;
+            ViewBag.AppointmentsCount = appointmentsCount;
 
             return View();
         }

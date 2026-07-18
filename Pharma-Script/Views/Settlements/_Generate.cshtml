@@ -1,0 +1,23 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<form id="generateSettlementForm" asp-action="Generate" asp-controller="Settlements" method="post">
+    @Html.AntiForgeryToken()
+    <div class="mb-3">
+        <label class="form-label small fw-semibold text-secondary">Organization</label>
+        <select name="organizationId" class="form-select" required>
+            <option value="">-- Choose Organization --</option>
+            @foreach (var item in (SelectList)ViewBag.Organizations)
+            {
+                <option value="@item.Value">@item.Text</option>
+            }
+        </select>
+    </div>
+    <p class="small text-muted">
+        This pulls every captured Razorpay payment for the selected organization that hasn't been
+        included in a settlement yet, and bundles them into one new "Pending" settlement.
+    </p>
+    <div class="modal-footer px-0 pb-0 mt-4 border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Generate</button>
+    </div>
+</form>

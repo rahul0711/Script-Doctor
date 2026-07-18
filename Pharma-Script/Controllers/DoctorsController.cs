@@ -128,7 +128,7 @@ namespace Pharma_Script.Controllers
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            var model = new DoctorViewModel { PaymentGatewayIsActive = true };
+            var model = new DoctorViewModel();
             var isPlatformOwner = User.IsPlatformOwner();
             var userOrgId = User.GetOrganizationId();
 
@@ -204,18 +204,6 @@ namespace Pharma_Script.Controllers
                 return Json(new { success = false, message = "Email address is already in use by another user." });
             }
 
-            // Payment Gateway (Razorpay) - only Organization Admin may configure credentials.
-            // Doctors have no access to this controller at all, so they can never view/edit this.
-            var canManagePaymentGateway = User.IsInRole("Organization Admin");
-            var razorpayKeyId = canManagePaymentGateway ? model.RazorpayKeyId?.Trim() : null;
-            var razorpayKeySecret = canManagePaymentGateway ? model.RazorpayKeySecret?.Trim() : null;
-            if (canManagePaymentGateway
-                && (model.PaymentGatewayIsActive || !string.IsNullOrEmpty(razorpayKeyId) || !string.IsNullOrEmpty(razorpayKeySecret))
-                && (string.IsNullOrEmpty(razorpayKeyId) || string.IsNullOrEmpty(razorpayKeySecret)))
-            {
-                return Json(new { success = false, message = "Enter both Razorpay Key ID and Key Secret to enable online payments for this doctor." });
-            }
-
             // Find Doctor role
             var roles = await _uow.Roles.GetAllAsync();
             var doctorRole = roles.FirstOrDefault(r => r.RoleName.Equals("Doctor", StringComparison.OrdinalIgnoreCase));
@@ -276,19 +264,6 @@ namespace Pharma_Script.Controllers
                 // Assign specializations
                 await _uow.Doctors.AddDoctorSpecializationsAsync(doctorId, model.SpecializationIDs);
 
-                if (canManagePaymentGateway && !string.IsNullOrEmpty(razorpayKeyId) && !string.IsNullOrEmpty(razorpayKeySecret))
-                {
-                    await _uow.DoctorPaymentGateways.AddAsync(new DoctorPaymentGateway
-                    {
-                        OrganizationID = model.OrganizationID,
-                        DoctorID = doctorId,
-                        PaymentProvider = "Razorpay",
-                        KeyID = razorpayKeyId,
-                        KeySecret = razorpayKeySecret,
-                        IsActive = model.PaymentGatewayIsActive
-                    });
-                }
-
                 await _uow.CommitAsync();
                 return Json(new { success = true, message = "Doctor created successfully." });
             }
@@ -341,22 +316,6 @@ namespace Pharma_Script.Controllers
                 ExistingProfileImage = doc.ProfileImage,
                 SpecializationIDs = doc.SpecializationIDs
             };
-
-            if (User.IsInRole("Organization Admin"))
-            {
-                var gateway = await _uow.DoctorPaymentGateways.GetByDoctorIdAsync(doc.DoctorID);
-                if (gateway != null)
-                {
-                    model.HasPaymentGateway = true;
-                    model.RazorpayKeyId = gateway.KeyID;
-                    model.RazorpayKeySecretMasked = MaskSecret(gateway.KeySecret);
-                    model.PaymentGatewayIsActive = gateway.IsActive;
-                }
-                else
-                {
-                    model.PaymentGatewayIsActive = true;
-                }
-            }
 
             var isPlatformOwner = User.IsPlatformOwner();
             if (isPlatformOwner)
@@ -436,27 +395,6 @@ namespace Pharma_Script.Controllers
                 return Json(new { success = false, message = "Doctor profile not found." });
             }
 
-            // Payment Gateway (Razorpay) - only Organization Admin may configure credentials.
-            // A blank Key Secret means "keep the existing one" (it's never sent back to the browser);
-            // a blank Key ID means "leave the stored config untouched, just apply the Active toggle".
-            var canManagePaymentGateway = User.IsInRole("Organization Admin");
-            DoctorPaymentGateway? existingGateway = null;
-            string? razorpayKeyId = null;
-            string? razorpayKeySecretInput = null;
-            if (canManagePaymentGateway)
-            {
-                existingGateway = await _uow.DoctorPaymentGateways.GetByDoctorIdAsync(model.DoctorID);
-                razorpayKeyId = model.RazorpayKeyId?.Trim();
-                razorpayKeySecretInput = model.RazorpayKeySecret?.Trim();
-                var willHaveSecret = !string.IsNullOrEmpty(razorpayKeySecretInput) || !string.IsNullOrEmpty(existingGateway?.KeySecret);
-
-                if ((model.PaymentGatewayIsActive || !string.IsNullOrEmpty(razorpayKeyId) || !string.IsNullOrEmpty(razorpayKeySecretInput))
-                    && (string.IsNullOrEmpty(razorpayKeyId) || !willHaveSecret))
-                {
-                    return Json(new { success = false, message = "Enter both Razorpay Key ID and Key Secret to enable online payments for this doctor." });
-                }
-            }
-
             await _uow.BeginTransactionAsync();
             try
             {
@@ -501,31 +439,6 @@ namespace Pharma_Script.Controllers
                 // Update specializations
                 await _uow.Doctors.ClearDoctorSpecializationsAsync(model.DoctorID);
                 await _uow.Doctors.AddDoctorSpecializationsAsync(model.DoctorID, model.SpecializationIDs);
-
-                if (canManagePaymentGateway)
-                {
-                    if (!string.IsNullOrEmpty(razorpayKeyId))
-                    {
-                        var keySecretToStore = !string.IsNullOrEmpty(razorpayKeySecretInput)
-                            ? razorpayKeySecretInput
-                            : existingGateway?.KeySecret ?? string.Empty;
-
-                        await _uow.DoctorPaymentGateways.UpsertAsync(new DoctorPaymentGateway
-                        {
-                            OrganizationID = model.OrganizationID,
-                            DoctorID = model.DoctorID,
-                            PaymentProvider = "Razorpay",
-                            KeyID = razorpayKeyId,
-                            KeySecret = keySecretToStore,
-                            IsActive = model.PaymentGatewayIsActive
-                        });
-                    }
-                    else if (existingGateway != null)
-                    {
-                        existingGateway.IsActive = model.PaymentGatewayIsActive;
-                        await _uow.DoctorPaymentGateways.UpdateAsync(existingGateway);
-                    }
-                }
 
                 await _uow.CommitAsync();
                 return Json(new { success = true, message = "Doctor profile updated successfully." });
@@ -630,15 +543,6 @@ namespace Pharma_Script.Controllers
             {
                 return Json(new { success = false, message = "Error: " + ex.Message });
             }
-        }
-
-        // Never returns the real secret - only the last 4 characters, for the admin to recognize
-        // which credential is on file without re-exposing the full value to the browser.
-        private static string MaskSecret(string secret)
-        {
-            if (string.IsNullOrEmpty(secret)) return string.Empty;
-            var visible = secret.Length > 4 ? secret[^4..] : secret;
-            return new string('•', 8) + visible;
         }
     }
 }

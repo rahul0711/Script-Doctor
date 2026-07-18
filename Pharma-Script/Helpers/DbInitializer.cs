@@ -288,6 +288,95 @@ namespace Pharma_Script.Helpers
                 }
             }
 
+            // 2e. Ensure marketplace settlement columns exist on Payments (safe to run every startup)
+            using (var conn = new MySqlConnection("server=120.138.7.130;uid=scriptindia;pwd=India@4321;database=ScriptIndia_Healthcare;"))
+            {
+                await conn.OpenAsync();
+
+                (string Column, string Definition)[] columnsToAdd =
+                {
+                    ("PlatformCommission", "DECIMAL(10,2) NULL"),
+                    ("OrganizationAmount", "DECIMAL(10,2) NULL"),
+                    ("RefundStatus", "VARCHAR(20) NOT NULL DEFAULT 'None'")
+                };
+
+                foreach (var (column, definition) in columnsToAdd)
+                {
+                    bool columnExists;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = $@"
+                            SELECT COUNT(*)
+                            FROM information_schema.COLUMNS
+                            WHERE TABLE_SCHEMA = 'ScriptIndia_Healthcare'
+                              AND TABLE_NAME = 'Payments'
+                              AND COLUMN_NAME = '{column}';";
+                        columnExists = Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
+                    }
+
+                    if (!columnExists)
+                    {
+                        try
+                        {
+                            using (var cmd = conn.CreateCommand())
+                            {
+                                cmd.CommandText = $"ALTER TABLE `Payments` ADD COLUMN `{column}` {definition};";
+                                await cmd.ExecuteNonQueryAsync();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[DbInitializer] Failed to add {column} to Payments: {ex.Message}");
+                        }
+                    }
+                }
+            }
+
+            // 2f. Ensure Settlement tables exist (safe to run every startup)
+            using (var conn = new MySqlConnection("server=120.138.7.130;uid=scriptindia;pwd=India@4321;database=ScriptIndia_Healthcare;"))
+            {
+                await conn.OpenAsync();
+
+                const string createOrganizationSettlements = @"
+                    CREATE TABLE IF NOT EXISTS OrganizationSettlements (
+                        SettlementID      INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        OrganizationID    INT NOT NULL,
+                        TotalGrossAmount  DECIMAL(10,2) NOT NULL,
+                        TotalCommission   DECIMAL(10,2) NOT NULL,
+                        TotalNetAmount    DECIMAL(10,2) NOT NULL,
+                        SettlementStatus  ENUM('Pending','Paid') NOT NULL DEFAULT 'Pending',
+                        GeneratedAt       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        SettledAt         DATETIME NULL,
+                        SettledByUserID   INT NULL,
+                        PaymentReference  VARCHAR(255) NULL,
+                        Notes             VARCHAR(500) NULL,
+                        FOREIGN KEY (OrganizationID) REFERENCES Organizations(OrganizationID)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = createOrganizationSettlements;
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                const string createSettlementTransactions = @"
+                    CREATE TABLE IF NOT EXISTS SettlementTransactions (
+                        SettlementTransactionID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        SettlementID      INT NOT NULL,
+                        PaymentID         INT NOT NULL,
+                        GrossAmount       DECIMAL(10,2) NOT NULL,
+                        CommissionAmount  DECIMAL(10,2) NOT NULL,
+                        NetAmount         DECIMAL(10,2) NOT NULL,
+                        FOREIGN KEY (SettlementID) REFERENCES OrganizationSettlements(SettlementID) ON DELETE CASCADE,
+                        FOREIGN KEY (PaymentID) REFERENCES Payments(PaymentID),
+                        UNIQUE(PaymentID)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = createSettlementTransactions;
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+
             // 3. Seed Roles if missing
             var existingRoles = await uow.Roles.GetAllAsync();
             var requiredRoles = new[] { "Platform Owner", "Organization Admin", "Doctor", "Patient", "Receptionist" };

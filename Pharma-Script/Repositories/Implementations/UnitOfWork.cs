@@ -19,7 +19,6 @@ namespace Pharma_Script.Repositories.Implementations
         public IUserRepository Users { get; }
         public ISpecializationRepository Specializations { get; }
         public IDoctorRepository Doctors { get; }
-        public IDoctorPaymentGatewayRepository DoctorPaymentGateways { get; }
         public IDoctorAvailabilityRepository DoctorAvailabilities { get; }
         public IDoctorLeaveRepository DoctorLeaves { get; }
         public IReceptionistRepository Receptionists { get; }
@@ -40,6 +39,7 @@ namespace Pharma_Script.Repositories.Implementations
         public IContactMessageRepository ContactMessages { get; }
         public IConsultationSessionRepository ConsultationSessions { get; }
         public INotificationRepository Notifications { get; }
+        public ISettlementRepository Settlements { get; }
 
         public UnitOfWork(string connectionString)
         {
@@ -56,7 +56,6 @@ namespace Pharma_Script.Repositories.Implementations
             Users = new UserRepository(_connection, () => _transaction);
             Specializations = new SpecializationRepository(_connection, () => _transaction);
             Doctors = new DoctorRepository(_connection, () => _transaction);
-            DoctorPaymentGateways = new DoctorPaymentGatewayRepository(_connection, () => _transaction);
             DoctorAvailabilities = new DoctorAvailabilityRepository(_connection, () => _transaction);
             DoctorLeaves = new DoctorLeaveRepository(_connection, () => _transaction);
             Receptionists = new ReceptionistRepository(_connection, () => _transaction);
@@ -77,6 +76,7 @@ namespace Pharma_Script.Repositories.Implementations
             ContactMessages = new ContactMessageRepository(_connection, () => _transaction);
             ConsultationSessions = new ConsultationSessionRepository(_connection, () => _transaction);
             Notifications = new NotificationRepository(_connection, () => _transaction);
+            Settlements = new SettlementRepository(_connection, () => _transaction);
         }
 
         public async Task OpenConnectionAsync()

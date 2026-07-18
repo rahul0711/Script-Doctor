@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Pharma_Script.Helpers;
@@ -7,6 +9,7 @@ using Pharma_Script.ViewModels.Public;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Pharma_Script.Controllers.Public
@@ -163,6 +166,162 @@ namespace Pharma_Script.Controllers.Public
 
             ViewData["Title"] = "My Profile";
             return View(vm);
+        }
+
+        // GET /{slug}/my/profile/edit
+        [HttpGet("profile/edit")]
+        public async Task<IActionResult> EditProfile()
+        {
+            var patient = await GetValidatedPatientAsync();
+            if (patient == null) return Forbid();
+
+            var vm = new PublicEditProfileViewModel
+            {
+                Tenant = Tenant,
+                PatientID = patient.PatientID,
+                UserID = patient.UserID,
+                FirstName = patient.FirstName,
+                LastName = patient.LastName,
+                Email = patient.Email,
+                Phone = patient.Phone,
+                DateOfBirth = patient.DateOfBirth,
+                Gender = patient.Gender,
+                BloodGroup = patient.BloodGroup,
+                Height = patient.Height,
+                Weight = patient.Weight,
+                EmergencyContactName = patient.EmergencyContactName,
+                EmergencyContactNumber = patient.EmergencyContactNumber,
+                Address = patient.Address,
+                City = patient.City,
+                State = patient.State,
+                Country = patient.Country,
+                Pincode = patient.Pincode
+            };
+
+            ViewData["Title"] = "Edit Profile";
+            return View(vm);
+        }
+
+        // POST /{slug}/my/profile/edit
+        [HttpPost("profile/edit")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProfile(PublicEditProfileViewModel model)
+        {
+            var patient = await GetValidatedPatientAsync();
+            if (patient == null) return Forbid();
+
+            if (patient.PatientID != model.PatientID || patient.UserID != model.UserID)
+            {
+                return Forbid();
+            }
+
+            ModelState.Remove("CurrentPassword");
+            ModelState.Remove("NewPassword");
+            ModelState.Remove("ConfirmNewPassword");
+
+            var wantsPasswordChange = !string.IsNullOrWhiteSpace(model.NewPassword);
+
+            if (!ModelState.IsValid)
+            {
+                model.Tenant = Tenant;
+                TempData["Error"] = "Please correct the highlighted errors and try again.";
+                ViewData["Title"] = "Edit Profile";
+                return View(model);
+            }
+
+            var user = await Uow.Users.GetByIdAsync(patient.UserID);
+            if (user == null)
+            {
+                TempData["Error"] = "User account not found.";
+                return RedirectToAction("EditProfile");
+            }
+
+            var existingUser = await Uow.Users.GetByEmailAsync(model.Email);
+            if (existingUser != null && existingUser.UserID != patient.UserID)
+            {
+                model.Tenant = Tenant;
+                TempData["Error"] = "Email address is already in use by another account.";
+                ViewData["Title"] = "Edit Profile";
+                return View(model);
+            }
+
+            if (wantsPasswordChange)
+            {
+                if (string.IsNullOrWhiteSpace(model.CurrentPassword) || !PasswordHasher.VerifyPassword(model.CurrentPassword, user.PasswordHash))
+                {
+                    model.Tenant = Tenant;
+                    TempData["Error"] = "Current password is incorrect. Password was not changed.";
+                    ViewData["Title"] = "Edit Profile";
+                    return View(model);
+                }
+            }
+
+            await Uow.BeginTransactionAsync();
+            try
+            {
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+                user.Email = model.Email;
+                user.Phone = model.Phone;
+                if (wantsPasswordChange)
+                {
+                    user.PasswordHash = PasswordHasher.HashPassword(model.NewPassword!);
+                }
+                await Uow.Users.UpdateAsync(user);
+
+                patient.DateOfBirth = model.DateOfBirth;
+                patient.Gender = model.Gender;
+                patient.BloodGroup = model.BloodGroup;
+                patient.Height = model.Height;
+                patient.Weight = model.Weight;
+                patient.EmergencyContactName = model.EmergencyContactName;
+                patient.EmergencyContactNumber = model.EmergencyContactNumber;
+                patient.Address = model.Address;
+                patient.City = model.City;
+                patient.State = model.State;
+                patient.Country = model.Country;
+                patient.Pincode = model.Pincode;
+
+                await Uow.Patients.UpdateAsync(patient);
+
+                await Uow.CommitAsync();
+
+                // Refresh the auth cookie so the header name/email reflect the change immediately.
+                await ReissueAuthCookieAsync(user);
+
+                TempData["Success"] = wantsPasswordChange
+                    ? "Profile and password updated successfully."
+                    : "Profile updated successfully.";
+                return RedirectToAction("MyProfile");
+            }
+            catch (Exception ex)
+            {
+                await Uow.RollbackAsync();
+                model.Tenant = Tenant;
+                TempData["Error"] = $"An error occurred: {ex.Message}";
+                ViewData["Title"] = "Edit Profile";
+                return View(model);
+            }
+        }
+
+        private async Task ReissueAuthCookieAsync(User user)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, "Patient"),
+                new Claim("FullName", $"{user.FirstName} {user.LastName}".Trim())
+            };
+            if (user.OrganizationID.HasValue)
+            {
+                claims.Add(new Claim("OrganizationID", user.OrganizationID.Value.ToString()));
+            }
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var currentAuth = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var authProperties = currentAuth.Properties ?? new AuthenticationProperties { ExpiresUtc = DateTimeOffset.UtcNow.AddHours(2) };
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
         }
 
         // ------------------------------------------------------------------

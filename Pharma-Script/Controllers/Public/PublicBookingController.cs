@@ -26,11 +26,13 @@ namespace Pharma_Script.Controllers.Public
     {
         private readonly IAppointmentService _appointmentService;
         private readonly IPaymentService _paymentService;
+        private readonly IPlatformPaymentSettings _platformPayment;
 
-        public PublicBookingController(IUnitOfWork uow, IAppointmentService appointmentService, IPaymentService paymentService) : base(uow)
+        public PublicBookingController(IUnitOfWork uow, IAppointmentService appointmentService, IPaymentService paymentService, IPlatformPaymentSettings platformPayment) : base(uow)
         {
             _appointmentService = appointmentService;
             _paymentService = paymentService;
+            _platformPayment = platformPayment;
         }
 
         [HttpGet("")]
@@ -47,14 +49,12 @@ namespace Pharma_Script.Controllers.Public
                 AppointmentDate = DateTime.Today
             };
 
-            var gateway = await Uow.DoctorPaymentGateways.GetByDoctorIdAsync(doctorId);
-
             var vm = new PublicBookingViewModel
             {
                 Tenant = Tenant,
                 Doctor = doctor!,
                 Booking = model,
-                PaymentGatewayAvailable = gateway != null && gateway.IsActive
+                PaymentGatewayAvailable = _platformPayment.IsConfigured
             };
 
             ViewData["Title"] = $"Book Dr. {doctor!.FirstName} {doctor.LastName}";
@@ -83,17 +83,16 @@ namespace Pharma_Script.Controllers.Public
             booking.DoctorID = doctorId;
             booking.PatientID = patient.PatientID;
 
-            var gateway = await Uow.DoctorPaymentGateways.GetByDoctorIdAsync(doctorId);
-            if (gateway == null || !gateway.IsActive)
+            if (!_platformPayment.IsConfigured)
             {
-                return Json(new { success = false, message = "Online payment is not available for this doctor right now. Please contact the clinic to book your appointment." });
+                return Json(new { success = false, message = "Online payment is currently unavailable. Please try again later or contact support." });
             }
 
             try
             {
                 var fee = await _appointmentService.QuoteFeeAsync(booking, OrganizationId);
                 var receipt = $"appt-{doctorId}-{patient.PatientID}-{DateTime.UtcNow.Ticks}";
-                var order = await _paymentService.CreateOrderAsync(gateway.KeyID, gateway.KeySecret, fee, receipt);
+                var order = await _paymentService.CreateOrderAsync(_platformPayment.KeyId, _platformPayment.KeySecret, fee, receipt);
 
                 return Json(new
                 {
@@ -151,18 +150,15 @@ namespace Pharma_Script.Controllers.Public
                 return RedirectToAction("Confirmation", new { slug = existingSlug, doctorId, appointmentId = existingPayment.AppointmentID.Value });
             }
 
-            // Fetched regardless of IsActive: verification of an already-captured payment must still
-            // succeed even if an admin disables online payments for this doctor in the interim.
-            var gateway = await Uow.DoctorPaymentGateways.GetByDoctorIdAsync(doctorId);
-            if (gateway == null)
+            if (!_platformPayment.IsConfigured)
             {
                 var doctorForError = await Uow.Doctors.GetDoctorDetailsByIdAsync(doctorId, OrganizationId);
                 var vmForError = new PublicBookingViewModel { Tenant = Tenant, Doctor = doctorForError!, Booking = booking };
-                TempData["Error"] = "Payment configuration for this doctor is missing. Please contact support - your payment may still have been captured.";
+                TempData["Error"] = "Payment configuration is missing. Please contact support - your payment may still have been captured.";
                 return View(vmForError);
             }
 
-            var verification = await _paymentService.VerifyAndFetchAsync(gateway.KeyID, gateway.KeySecret, booking.RazorpayOrderId, booking.RazorpayPaymentId, booking.RazorpaySignature);
+            var verification = await _paymentService.VerifyAndFetchAsync(_platformPayment.KeyId, _platformPayment.KeySecret, booking.RazorpayOrderId, booking.RazorpayPaymentId, booking.RazorpaySignature);
             if (!verification.IsValid)
             {
                 var doctor = await Uow.Doctors.GetDoctorDetailsByIdAsync(doctorId, OrganizationId);
@@ -171,16 +167,21 @@ namespace Pharma_Script.Controllers.Public
                 return View(vm);
             }
 
+            var amount = verification.AmountPaise / 100m;
+            var commission = Math.Round(amount * _platformPayment.CommissionPercent / 100m, 2, MidpointRounding.AwayFromZero);
+
             var payment = new Payment
             {
-                Amount = verification.AmountPaise / 100m,
+                Amount = amount,
                 PaymentMethod = verification.PaymentMethod ?? "Razorpay",
                 TransactionReference = booking.RazorpayPaymentId,
                 PaymentStatus = "Paid",
                 PaidAt = DateTime.Now,
                 Currency = "INR",
                 RazorpayOrderId = booking.RazorpayOrderId,
-                RazorpaySignature = booking.RazorpaySignature
+                RazorpaySignature = booking.RazorpaySignature,
+                PlatformCommission = commission,
+                OrganizationAmount = amount - commission
             };
 
             try

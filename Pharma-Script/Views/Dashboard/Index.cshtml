@@ -96,6 +96,18 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-card-info">
+                    <p>Appointments</p>
+                    <h3 class="stat-value">@ViewBag.AppointmentsCount</h3>
+                </div>
+                <div class="stat-card-icon icon-blue">
+                    <i class="bi bi-calendar2-check"></i>
+                </div>
+            </div>
+        </div>
     }
 
     <div class="col-12 col-sm-6 col-xl-3">
@@ -110,6 +122,207 @@
         </div>
     </div>
 </div>
+
+@* ── Marketplace revenue/settlement row ──────────────────────── *@
+@if (User.IsPlatformOwner())
+{
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-card-info">
+                    <p>Total Revenue</p>
+                    <h3 class="stat-value">₹@(((decimal)ViewBag.TotalRevenue).ToString("N2"))</h3>
+                </div>
+                <div class="stat-card-icon icon-green"><i class="bi bi-cash-stack"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-card-info">
+                    <p>Today's Revenue</p>
+                    <h3 class="stat-value">₹@(((decimal)ViewBag.TodayRevenue).ToString("N2"))</h3>
+                </div>
+                <div class="stat-card-icon icon-blue"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <a href="@Url.Action("Index", "Settlements", new { status = "Pending" })" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="stat-card-info">
+                        <p>Pending Settlements</p>
+                        <h3 class="stat-value text-dark">@ViewBag.PendingSettlementsCount</h3>
+                    </div>
+                    <div class="stat-card-icon icon-warning"><i class="bi bi-hourglass-split"></i></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <a href="@Url.Action("Index", "Settlements", new { status = "Paid" })" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="stat-card-info">
+                        <p>Completed Settlements</p>
+                        <h3 class="stat-value text-dark">@ViewBag.CompletedSettlementsCount</h3>
+                    </div>
+                    <div class="stat-card-icon icon-green"><i class="bi bi-check2-circle"></i></div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="panel mb-4">
+        <div class="panel-header">
+            <span class="panel-title">Revenue (last 14 days)</span>
+        </div>
+        <div class="panel-body">
+            <canvas id="revenueChart" height="90"></canvas>
+        </div>
+    </div>
+}
+else if (User.IsOrganizationAdmin())
+{
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-card-info">
+                    <p>Today's Earnings</p>
+                    <h3 class="stat-value">₹@(((decimal)ViewBag.TodayRevenue).ToString("N2"))</h3>
+                </div>
+                <div class="stat-card-icon icon-green"><i class="bi bi-cash-stack"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-card-info">
+                    <p>Revenue Overview</p>
+                    <h3 class="stat-value">₹@(((decimal)ViewBag.TotalRevenue).ToString("N2"))</h3>
+                </div>
+                <div class="stat-card-icon icon-blue"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <a href="@Url.Action("Index", "Settlements")" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="stat-card-info">
+                        <p>Pending Settlement</p>
+                        <h3 class="stat-value text-dark">₹@(((decimal)ViewBag.PendingSettlementTotal).ToString("N2"))</h3>
+                    </div>
+                    <div class="stat-card-icon icon-warning"><i class="bi bi-hourglass-split"></i></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            @{
+                var lastSettlement = ViewBag.LastSettlement as Pharma_Script.Models.OrganizationSettlement;
+            }
+            <a href="@Url.Action("Index", "Settlements")" class="text-decoration-none">
+                <div class="stat-card">
+                    <div class="stat-card-info">
+                        <p>Last Settlement@(lastSettlement != null ? $" · {lastSettlement.SettledAt:dd MMM yyyy}" : "")</p>
+                        <h3 class="stat-value text-dark">₹@((lastSettlement?.TotalNetAmount ?? 0m).ToString("N2"))</h3>
+                    </div>
+                    <div class="stat-card-icon icon-green"><i class="bi bi-check2-circle"></i></div>
+                </div>
+            </a>
+        </div>
+    </div>
+}
+
+@if (User.IsPlatformOwner() || User.IsOrganizationAdmin())
+{
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-lg-6">
+            <div class="panel h-100">
+                <div class="panel-header">
+                    <span class="panel-title">Recent Payments</span>
+                </div>
+                <div class="panel-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-3">Patient</th>
+                                    <th>Doctor</th>
+                                    <th class="text-end pe-3">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ var recentPayments = (IEnumerable<Pharma_Script.Models.Payment>)ViewBag.RecentPayments; }
+                                @if (recentPayments != null && recentPayments.Any())
+                                {
+                                    foreach (var p in recentPayments)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 small">@p.PatientName</td>
+                                            <td class="small">@p.DoctorName</td>
+                                            <td class="text-end pe-3 small fw-semibold">₹@p.Amount.ToString("N2")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr><td colspan="3" class="text-center text-muted small py-4">No payments yet.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="panel h-100">
+                <div class="panel-header">
+                    <span class="panel-title">Recent Settlements</span>
+                </div>
+                <div class="panel-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    @if (User.IsPlatformOwner())
+                                    {
+                                        <th class="ps-3">Organization</th>
+                                    }
+                                    <th class="@(User.IsPlatformOwner() ? "" : "ps-3")">Net Amount</th>
+                                    <th class="text-end pe-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ var recentSettlements = (IEnumerable<Pharma_Script.Models.OrganizationSettlement>)ViewBag.RecentSettlements; }
+                                @if (recentSettlements != null && recentSettlements.Any())
+                                {
+                                    foreach (var s in recentSettlements)
+                                    {
+                                        <tr>
+                                            @if (User.IsPlatformOwner())
+                                            {
+                                                <td class="ps-3 small">@s.OrganizationName</td>
+                                            }
+                                            <td class="small @(User.IsPlatformOwner() ? "" : "ps-3")">₹@s.TotalNetAmount.ToString("N2")</td>
+                                            <td class="text-end pe-3">
+                                                @if (s.SettlementStatus == "Paid")
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border small">Paid</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning-subtle text-warning border small">Pending</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr><td colspan="3" class="text-center text-muted small py-4">No settlements yet.</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <div class="panel">
     <div class="panel-header">
@@ -141,3 +354,43 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @if (User.IsPlatformOwner())
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+        <script>
+            var revenueLabels = [
+                @foreach (var point in (IEnumerable<(DateTime Date, decimal Amount)>)ViewBag.RevenueSeries)
+                {
+                    @:'@point.Date.ToString("dd MMM")',
+                }
+            ];
+            var revenueData = [
+                @foreach (var point in (IEnumerable<(DateTime Date, decimal Amount)>)ViewBag.RevenueSeries)
+                {
+                    @:@point.Amount,
+                }
+            ];
+
+            new Chart(document.getElementById('revenueChart'), {
+                type: 'line',
+                data: {
+                    labels: revenueLabels,
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: revenueData,
+                        borderColor: '#2b6cb0',
+                        backgroundColor: 'rgba(43,108,176,0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        </script>
+    }
+}

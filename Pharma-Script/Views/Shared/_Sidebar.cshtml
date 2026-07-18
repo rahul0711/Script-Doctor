@@ -28,6 +28,12 @@
 
             <li class="sidebar-section-label">My Practice</li>
 
+            <li class="@(_currentController == "DoctorProfile" ? "active" : "")">
+                <a href="@Url.Action("Index", "DoctorProfile")">
+                    <i class="bi bi-person-vcard"></i>My Profile
+                </a>
+            </li>
+
             <li class="@(_currentController == "Appointments" ? "active" : "")">
                 <a href="@Url.Action("Index", "Appointments")">
                     <i class="bi bi-calendar2-check"></i>Appointments
@@ -115,6 +121,11 @@
             <li class="@(_currentController == "Patients" ? "active" : "")">
                 <a href="@Url.Action("Index", "Patients")">
                     <i class="bi bi-heart-pulse"></i>Patients
+                </a>
+            </li>
+            <li class="@(_currentController == "Settlements" ? "active" : "")">
+                <a href="@Url.Action("Index", "Settlements")">
+                    <i class="bi bi-cash-stack"></i>Settlements
                 </a>
             </li>
         }

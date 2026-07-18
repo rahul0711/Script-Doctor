@@ -229,6 +229,31 @@
         });
     </script>
     
+    @if (TempData["Success"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Success"])),
+                toast: true,
+                position: 'top-end',
+                timer: 4000,
+                showConfirmButton: false
+            });
+        </script>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["Error"]))
+            });
+        </script>
+    }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
